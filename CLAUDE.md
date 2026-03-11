@@ -22,6 +22,14 @@ copier.yml                 Copier questionnaire + config
 
 **This repo IS the framework.** The `template/` directory is what Copier copies into target projects. Everything outside `template/` is framework documentation and Copier config.
 
+**Reference implementation**: [JAuto-Corp/customer-portal](https://github.com/JAuto-Corp/customer-portal) — the source codebase this framework was extracted from.
+
+## Before Working
+
+1. Read `docs/ROADMAP.md` — find the next unchecked item in the current milestone
+2. Read `context/WORKING.md` — check the last observation block for session context
+3. Read `docs/DOGFOODING.md` — understand the bootstrap development workflow
+
 ## Development Protocol
 
 1. Changes to `template/` affect all projects on next `copier update`
