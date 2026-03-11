@@ -1,0 +1,52 @@
+#!/bin/bash
+# justinventit session-start hook
+# Generates a session brief from state files
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/utils.sh"
+
+REPO_ROOT=$(get_repo_root)
+STATE_DIR=$(get_state_dir)
+DOCS_DIR=$(get_docs_dir)
+
+echo "=== SESSION STATE ==="
+
+# Current branch and uncommitted files
+BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+UNCOMMITTED=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+echo "Branch: $BRANCH ($UNCOMMITTED uncommitted files)"
+
+# Worktree context (if applicable)
+if is_worktree; then
+  EPIC=$(get_branch_config "epic")
+  echo "Worktree: epic-$EPIC (isolated)"
+fi
+
+# Active work pointer
+if [ -f "$DOCS_DIR/CURRENT_WORK.md" ]; then
+  # Extract the Active section
+  ACTIVE=$(sed -n '/^## Active/,/^## /p' "$DOCS_DIR/CURRENT_WORK.md" | head -5 | tail -4)
+  if [ -n "$ACTIVE" ]; then
+    echo ""
+    echo "Active work:"
+    echo "$ACTIVE"
+  fi
+fi
+
+# Latest WORKING.md observation block (last entry)
+if [ -f "$STATE_DIR/WORKING.md" ]; then
+  LAST_BLOCK=$(grep -n "^## [0-9]" "$STATE_DIR/WORKING.md" | tail -1 | cut -d: -f1)
+  if [ -n "$LAST_BLOCK" ]; then
+    echo ""
+    echo "Last state:"
+    tail -n +"$LAST_BLOCK" "$STATE_DIR/WORKING.md" | head -6
+  fi
+fi
+
+echo ""
+echo "=== END ==="
+echo ""
+echo "Read: context/WORKING.md (full state)"
+echo "Read: docs/PLAYBOOK.md (routing)"
+echo "Run:  git log -3 (recent commits)"

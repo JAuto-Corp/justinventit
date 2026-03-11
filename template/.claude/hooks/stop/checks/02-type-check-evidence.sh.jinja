@@ -1,0 +1,14 @@
+#!/bin/bash
+# Check: Type check evidence — was type-check run this session?
+# Looks for evidence that the type check command was executed
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../lib/utils.sh"
+
+# This is a basic check — the full implementation would parse
+# the session transcript for evidence of the command being run.
+# For now, this is a reminder nudge, not a hard block.
+
+report_check "warn" "Reminder: Run '{{ type_check_command }}' before ending session."
+exit 0

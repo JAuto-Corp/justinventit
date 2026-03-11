@@ -1,0 +1,93 @@
+# {{ project_name }} — Development Guide
+
+## Codebase Map
+
+```
+# TODO: Fill in your project's directory structure after first session
+# Example:
+# src/           Application source code
+# tests/         Test suite
+# docs/          Documentation
+```
+
+{% if project_description %}
+{{ project_description }}
+{% endif %}
+
+<!-- forge:start — DO NOT EDIT between forge markers (updated by copier update) -->
+
+## Before Working
+
+1. Read `docs/PLAYBOOK.md` — session entry point, identifies active lifecycle phase
+2. If in execution phase: Read `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase SPEC.md
+3. Sync: `git fetch origin && git log --oneline HEAD..origin/$(git branch --show-current) | head -5`
+
+## TDD Gate (Non-Negotiable)
+
+**No code without scenarios. No scenarios without acceptance criteria.**
+
+| Step | Output | Gate |
+|-|-|-|
+| 1. Plan | SPEC.md + SCENARIOS.md | Planning outputs exist |
+| 2. RED | Scenario runs and FAILS | Failure = correct (missing impl) |
+| 3. GREEN | Implementation code, scenario PASSES | `{{ type_check_command }}` passes |
+| 4. VALIDATE | `/verify:complete` passes | Hard block on missing scenarios |
+
+**Scope classification:**
+
+| Trigger (ANY match) | Scope | TDD Required? |
+|-|-|-|
+| New DB tables/columns | Standard+ | Yes |
+| New API routes | Standard+ | Yes |
+| New UI pages/major components | Standard+ | Yes |
+| 4+ files modified | Standard+ | Yes |
+| Single-file bug fix, no new surface area | Quick | No |
+
+## Work Routing
+
+| Source | Route |
+|-|-|
+| Quick fix (single-file, no new surface area) | Fix → Commit with `Fixes #N` |
+| Standard+ (see TDD Gate scope triggers) | SPEC → SCENARIOS → RED → GREEN → VALIDATE |
+| External concern | Append to `context/DISCOVERIES.md` → keep working |
+
+## Before Writing Code
+
+> Before implementing 20+ lines, invoke the matching best-practices skill.
+> If a skill's information is wrong or outdated, update the skill immediately.
+
+## Development Protocol
+
+For each PROGRESS.md item: implement → check off → commit. If exit landmarks met → Signal `[PHASE_COMPLETE]`.
+
+<!-- forge:end -->
+
+## Git Workflow
+
+**Branch Strategy**: `{{ main_branch }}`{% if staging_branch %} (production), `{{ staging_branch }}` (integration){% endif %}, `feature/*` (work branches)
+
+{% if staging_branch %}
+**Merge path**: `feature/*` → PR to `{{ staging_branch }}` → PR from `{{ staging_branch }}` to `{{ main_branch }}`. Never merge directly to `{{ main_branch }}`.
+{% else %}
+**Merge path**: `feature/*` → PR to `{{ main_branch }}`.
+{% endif %}
+
+> **Agents commit, humans push.** Create commits freely, but request user confirmation before pushing or merging.
+
+## Essential Commands
+
+```bash
+# Validation
+{{ type_check_command }}              # Type check
+{{ build_command }}                    # Full build
+{% if unit_testing != 'none' %}
+# Tests
+# TODO: Add your test command
+{% endif %}
+```
+
+## Session State Management
+
+**State files** (read in order): `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase `PROGRESS.md`
+
+Invoke `work` skill for transitions (`/work:handoff`, `/work:pause`, `/work:continue`).

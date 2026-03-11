@@ -1,0 +1,37 @@
+# Playbook
+
+> Session entry point. Read this first to determine what to do.
+
+## Active Phase
+
+**Current**: Setup (framework just installed)
+
+## Phase Routing
+
+| Phase | Action |
+|-|-|
+| Setup | Fill in CLAUDE.md codebase map, review hooks, try first ATDD cycle |
+| Planning | Create SPEC.md + SCENARIOS.md for next feature |
+| Execution | Read state chain: CURRENT_WORK → WORKING → SPEC → SCENARIOS → PROGRESS |
+| Validation | Run `/verify:complete` before marking phase done |
+
+## State Chain
+
+Read in order when in execution phase:
+
+1. `docs/CURRENT_WORK.md` — what epic/sprint/phase is active
+2. `context/WORKING.md` — immediate next action (append-only blocks)
+3. Phase `SPEC.md` — acceptance criteria
+4. Phase `SCENARIOS.md` — Gherkin scenarios (ENTRY GATE)
+5. Phase `PROGRESS.md` — implementation checklist
+
+## ATDD Enforcement
+
+Standard+ scope (4+ files, new routes, new tables, new pages):
+- **SCENARIOS.md must exist before implementation begins**
+- `/work:start` and `/work:continue` check for this
+- `/verify:complete` hard-blocks on missing scenarios
+
+Quick fixes (single-file, no new surface area):
+- Acceptance criteria in commit message only
+- No formal SCENARIOS.md required

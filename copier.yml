@@ -1,0 +1,120 @@
+_min_copier_version: "9.0.0"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+
+# Project identity
+project_name:
+  type: str
+  help: "Project name (used in CLAUDE.md header)"
+
+project_description:
+  type: str
+  help: "One-line project description"
+  default: ""
+
+# Stack
+stack:
+  type: str
+  help: "Primary stack"
+  choices:
+    - nextjs
+    - react-vite
+    - rails
+    - django
+    - fastapi
+    - go
+    - rust
+    - other
+  default: nextjs
+
+language:
+  type: str
+  help: "Primary language"
+  choices:
+    - typescript
+    - javascript
+    - python
+    - ruby
+    - go
+    - rust
+    - other
+  default: typescript
+
+# Database
+database:
+  type: str
+  help: "Database system"
+  choices:
+    - supabase
+    - postgres
+    - mysql
+    - sqlite
+    - mongodb
+    - none
+  default: supabase
+
+# Testing
+testing:
+  type: str
+  help: "E2E testing framework"
+  choices:
+    - playwright
+    - cypress
+    - none
+  default: playwright
+
+unit_testing:
+  type: str
+  help: "Unit testing framework"
+  choices:
+    - jest
+    - vitest
+    - pytest
+    - rspec
+    - go-test
+    - none
+  default: jest
+
+# Team
+team_size:
+  type: str
+  help: "Development team size (affects agent coordination defaults)"
+  choices:
+    solo: "Solo developer with AI"
+    small: "2-3 developers with AI"
+    large: "4+ developers with AI"
+  default: solo
+
+# Features
+use_worktrees:
+  type: bool
+  help: "Enable git worktree isolation for parallel epics?"
+  default: false
+
+use_tds:
+  type: bool
+  help: "Enable Test Data System (TDS) with stories/scenarios?"
+  default: false
+  when: "{{ testing != 'none' }}"
+
+# Build
+type_check_command:
+  type: str
+  help: "Type check command (e.g., 'pnpm type-check', 'mypy .', 'cargo check')"
+  default: "pnpm type-check"
+
+build_command:
+  type: str
+  help: "Build command (e.g., 'pnpm build', 'cargo build', 'go build ./...')"
+  default: "pnpm build"
+
+# Git
+main_branch:
+  type: str
+  help: "Production branch name"
+  default: main
+
+staging_branch:
+  type: str
+  help: "Integration branch name (empty if no staging branch)"
+  default: staging
