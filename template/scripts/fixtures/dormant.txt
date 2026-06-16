@@ -1,0 +1,7 @@
+state: parked
+role: dormant
+heartbeat_at: 2026-06-16T05:04:33Z
+wake_count: 12
+cadence_seconds: 3600
+context: work complete; intentionally idle, awaiting dispatch
+next_wake_at: none

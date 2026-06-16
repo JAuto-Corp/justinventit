@@ -1,0 +1,6 @@
+# The dev-log DATA is local/stateful — gitignored so `copier update` never
+# clobbers it and so the event stream stays per-checkout (decision f).
+# The STRUCTURE (this dir + README) is tracked; the events are not.
+events.jsonl
+outbox/
+*.jsonl

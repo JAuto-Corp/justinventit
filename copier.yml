@@ -12,6 +12,23 @@ project_description:
   help: "One-line project description"
   default: ""
 
+# Project shape
+# ---------------------------------------------------------------------------
+# project_type gates two things downstream:
+#   1. the default isolation_tier (greenfield -> none, brownfield -> schema)
+#   2. the adoption path the docs steer toward (staged for brownfield,
+#      full-system for greenfield).
+# "framework" is for projects that are themselves Copier templates / tooling
+# (e.g. justinventit dogfooding itself) — treated like greenfield for defaults.
+project_type:
+  type: str
+  help: "Project shape (drives isolation defaults + adoption path)"
+  choices:
+    greenfield: "Greenfield — new project, no existing code/DB to protect"
+    brownfield: "Brownfield — existing codebase, staged adoption, real DB"
+    framework: "Framework — this project is itself agentic tooling/templates"
+  default: greenfield
+
 # Stack
 stack:
   type: str
@@ -41,6 +58,11 @@ language:
   default: typescript
 
 # Database
+# ---------------------------------------------------------------------------
+# `database` names the DB *system* (informational / stack scaffolding).
+# `db_adapter` (below) names which 5-verb isolation adapter implementation to
+# scaffold — they are related but distinct: a project may run Postgres yet want
+# only the `generic-sql` adapter, or run Supabase but isolate via plain schemas.
 database:
   type: str
   help: "Database system"
@@ -52,6 +74,22 @@ database:
     - mongodb
     - none
   default: supabase
+
+# db_adapter selects the isolation-adapter implementation (provision / heal /
+# teardown / status / seed) that the L3 isolation tier scaffolds. Keep this
+# generic: the *mechanism* is portable, the *content* (heal SQL, seed data) is
+# project-supplied. `supabase` ships the branch-DB hooks; `postgres` ships the
+# schema/template-DB hooks; `none` scaffolds no DB isolation at all.
+# Default derives from the chosen `database` so the common case is one fewer
+# decision — overridable.
+db_adapter:
+  type: str
+  help: "Which DB-isolation adapter to scaffold (5-verb: provision/heal/teardown/status/seed)"
+  choices:
+    none: "No DB isolation adapter"
+    postgres: "Generic Postgres (schema/template-DB isolation)"
+    supabase: "Supabase (branch-DB hooks; project supplies the heal hook)"
+  default: "{% if database == 'supabase' %}supabase{% elif database == 'postgres' %}postgres{% else %}none{% endif %}"
 
 # Testing
 testing:
@@ -75,27 +113,80 @@ unit_testing:
     - none
   default: jest
 
-# Team
-team_size:
-  type: str
-  help: "Development team size (affects agent coordination defaults)"
-  choices:
-    solo: "Solo developer with AI"
-    small: "2-3 developers with AI"
-    large: "4+ developers with AI"
-  default: solo
-
-# Features
-use_worktrees:
-  type: bool
-  help: "Enable git worktree isolation for parallel epics?"
-  default: false
-
 use_tds:
   type: bool
   help: "Enable Test Data System (TDS) with stories/scenarios?"
   default: false
   when: "{{ testing != 'none' }}"
+
+# Orchestration tier (L2)
+# ---------------------------------------------------------------------------
+# THE coordination dial. `solo` is the default and the design contract:
+# at N=1 the orchestration tier is a NO-OP SHIM — the dev-log core alone gives
+# full solo coherence, and the operator IS the implementer. `cluster` scaffolds
+# the L2 machinery (mailbox, cadence, external pacemaker, dispatch). This is
+# additive, never a degraded mode of solo.
+orchestration_tier:
+  type: str
+  help: "Multi-agent coordination tier (solo = no-op shim; cluster = mailbox/pacemaker/cadence)"
+  choices:
+    solo: "Solo — single agent; orchestration tier is a no-op shim (default)"
+    cluster: "Cluster — multiple coordinated agents; scaffold L2 machinery"
+  default: solo
+
+# team_size is only meaningful in cluster mode — it seeds the initial cluster
+# size for the size-control loop (which can still dial 1..N at runtime).
+# In solo mode it is forced to 1 by the `when` guard (question is skipped).
+team_size:
+  type: int
+  help: "Initial number of coordinated agents (cluster mode only; the size-control loop dials 1..N at runtime)"
+  default: 1
+  when: "{{ orchestration_tier == 'cluster' }}"
+
+# external_pacemaker is the #1 structural fix for the wake-loop SPOF: an
+# out-of-band supervisor that re-injects the resume prompt so in-turn
+# ScheduleWakeup becomes a fast-path optimization rather than the sole
+# continuity mechanism. Only relevant once there is a cluster to keep alive.
+external_pacemaker:
+  type: str
+  help: "Out-of-band wake-loop supervisor (eliminates the 'live process, dead loop' SPOF)"
+  choices:
+    none: "None — rely on in-turn ScheduleWakeup only (not recommended for clusters)"
+    host-cron: "Host cron — a host-level cron supervisor injects the resume prompt"
+    tmux-supervisor: "tmux supervisor — send-keys the resume prompt into the agent pane"
+  default: tmux-supervisor
+  when: "{{ orchestration_tier == 'cluster' }}"
+
+# Isolation tier (L3)
+# ---------------------------------------------------------------------------
+# DB-isolation dial, independent of cluster size. Two dials gated on the
+# EXPENSIVE resource (branch-DB-mins / pooler / CI), never on agent count.
+#   none              — shared dev DB; zero ceremony (greenfield default)
+#   schema            — schema-per-stream; the portable sweet spot
+#                       (sub-second, no CI/rate/pooler tax) — brownfield default
+#   compose           — compose-per-worktree; full container isolation
+#   supabase-branch   — Supabase branch DB; opt-in ONLY, project-supplied heal
+#                       hook, hard cap ~2-3 streams (pooler/rate ceiling)
+# Default branches on project_type per the scoping proposal: greenfield/framework
+# -> none, brownfield -> schema. supabase-branch is NEVER a default.
+isolation_tier:
+  type: str
+  help: "DB write-isolation per parallel stream (gated on cost, NOT agent count)"
+  choices:
+    none: "None — shared dev DB, zero ceremony"
+    schema: "Schema-per-stream — portable sweet spot (sub-second, no CI/rate tax)"
+    compose: "Compose-per-worktree — full container isolation"
+    supabase-branch: "Supabase branch DB — opt-in only; project supplies heal hook; hard cap ~2-3"
+  default: "{% if project_type == 'brownfield' %}schema{% else %}none{% endif %}"
+
+# max_parallel_streams caps concurrent write-isolated streams. The branch tier
+# is bound by the pooler/rate ceiling (~2-3) independent of cluster size, so the
+# default tightens automatically when isolation_tier == supabase-branch.
+max_parallel_streams:
+  type: int
+  help: "Max concurrent write-isolated streams (branch tier is hard-capped ~3 by the pooler ceiling)"
+  default: "{% if isolation_tier == 'supabase-branch' %}2{% elif isolation_tier == 'none' %}1{% else %}3{% endif %}"
+  when: "{{ isolation_tier != 'none' }}"
 
 # Build
 type_check_command:
@@ -118,3 +209,84 @@ staging_branch:
   type: str
   help: "Integration branch name (empty if no staging branch)"
   default: staging
+
+# ===========================================================================
+# UPDATE HYGIENE — stateful / generated file protection
+# ===========================================================================
+# CRITICAL (data-loss guard): `copier update` re-renders the template over a
+# live project. Without these rules it CLOBBERS files the project owns — env
+# secrets, generated types, local orchestration state, the dev-log. The forge
+# markers in CLAUDE.md protect *content within a framework-managed file*; these
+# rules protect *whole files the framework must never own*.
+#
+# `_skip_if_exists`: file IS rendered on first `copier copy`, then NEVER
+#   overwritten on subsequent `copier update` if it already exists. Use for
+#   files the framework SEEDS once but the project then mutates (state files,
+#   answers-derived configs). If missing on update, it is recreated.
+#
+# `_exclude`: file is NEVER copied at all (neither copy nor update). Use for
+#   purely project-generated / secret / machine-local artifacts the template
+#   should not even ship a seed for. NOTE: setting `_exclude` REPLACES Copier's
+#   built-in default excludes, so the Copier/VCS defaults are re-listed here.
+# ---------------------------------------------------------------------------
+
+_skip_if_exists:
+  # --- Local state files (append-only / per-session; framework seeds, project owns) ---
+  - "context/WORKING.md"          # append-only observation log — never re-seed over live blocks
+  - "context/CHAIN.json"          # skill-chain convergence state
+  - "context/FRICTION_LOG.md"     # accumulated friction signals
+  - "context/DISCOVERIES.md"      # accumulated external-concern log
+  - "docs/CURRENT_WORK.md"        # current-work pointer; mutated every session
+
+  # --- Dev-log data dir (L1 coherence anchor — append-only event stream + derived views) ---
+  - "context/devlog/**"           # threads / decisions / design-intent / user-actions / findings
+  - "context/devlog/*"
+
+  # --- Copier answers (seeded once; updated in place by Copier itself, never re-templated) ---
+  - ".copier-answers.yml"
+
+_exclude:
+  # --- Copier / VCS defaults (must re-list because _exclude replaces the built-in set) ---
+  - "copier.yml"
+  - "copier.yaml"
+  - "~*"
+  - "*.py[co]"
+  - "__pycache__"
+  - ".git"
+  - ".DS_Store"
+  - ".svn"
+
+  # --- Environment / secrets (machine-local; NEVER ship or overwrite) ---
+  - ".env"
+  - ".env.*"
+  - "*.env"
+  - "*.env.*"
+  - ".env.local"
+  - ".env.*.local"
+
+  # --- Generated types / schema snapshots (regenerated from the live DB, never templated) ---
+  - "**/database.types.ts"
+  - "**/*.generated.ts"
+  - "**/__generated__/**"
+  - "**/schema.generated.*"
+
+  # --- Per-worktree / per-branch isolation state (local-only, gitignored class) ---
+  - ".supabase-branch.json"
+  - "**/.supabase-branch.json"
+  - ".isolation-stream.json"
+  - "**/.isolation-stream.json"
+
+  # --- Liveness / pacemaker runtime state (per-session; written by the Stop hook
+  #     and the pacemaker, never templated) ---
+  - "context/cadence/*.txt"        # per-role cadence/heartbeat files (live liveness)
+  - "context/cadence/heartbeat.log"
+  - "**/.pacemaker-state/**"        # per-role resume/escalate dedup state
+  - "**/.pacemaker-state"
+
+  # --- Build / dependency artifacts ---
+  - "node_modules"
+  - ".next"
+  - "dist"
+  - "build"
+  - "target"
+  - "__pycache__"

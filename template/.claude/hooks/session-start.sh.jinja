@@ -46,7 +46,17 @@ fi
 
 echo ""
 echo "=== END ==="
+
+# Dev-log attention query — the ONE read for "where did I leave everything"
+# (overdue gates + stalled threads + blocked-on-user). The solo agent's payoff.
+ATTENTION="$REPO_ROOT/scripts/attention.sh"
+if [ -x "$ATTENTION" ]; then
+  echo ""
+  "$ATTENTION" || true
+fi
+
 echo ""
 echo "Read: context/WORKING.md (full state)"
 echo "Read: docs/PLAYBOOK.md (routing)"
+echo "Run:  scripts/log.sh attention (re-check the dev-log)"
 echo "Run:  git log -3 (recent commits)"
