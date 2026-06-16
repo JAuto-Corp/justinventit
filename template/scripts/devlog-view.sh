@@ -31,13 +31,19 @@ case "$sub" in
     jq -rs --argjson stale "$STALE_HOURS" '
       ( [ now ] | .[0] ) as $now
       | group_by(.thread_id)
-      | map({
-          thread_id: .[0].thread_id,
-          title: ( map(select(.type=="thread")) | (.[-1].title // "—") ),
-          last_event_at: ( map(.ts) | max ),
-          resolved: ( any(.type=="done" and (.resolves=="thread")) ),
-          events: length
-        })
+      | map(
+          ( map(.ts) | max ) as $last
+          | ( [ .[] | select(.type=="done" and (.resolves=="thread")) | .ts ] | max ) as $cutoff
+          | {
+              thread_id: .[0].thread_id,
+              title: ( map(select(.type=="thread")) | (.[-1].title // "—") ),
+              last_event_at: $last,
+              # Resolved only if a bare `done` cutoff is at/after the last event.
+              # A later event (work resumed) re-opens the thread — the bare done
+              # is a timestamp-gated cutoff, not a permanent close.
+              resolved: ( $cutoff != null and $cutoff >= $last ),
+              events: length
+            } )
       | map(select(.resolved | not))
       | sort_by(.last_event_at) | reverse
       | .[]
@@ -47,13 +53,21 @@ case "$sub" in
     ;;
 
   gates)
-    # A gate is pending unless a later `done` event references its id or thread.
+    # A gate is PENDING unless resolved by one of two `done` forms:
+    #   1. event-id:  `done --ref <id>`  → resolves ONLY the event with that id.
+    #   2. thread cutoff: bare `done` (resolves=="thread") → a TIMESTAMP-GATED
+    #      cutoff that resolves items logged AT/BEFORE the done's ts, but does
+    #      NOT mask items logged AFTER it (so re-opening work on a closed thread
+    #      stays visible, and one resolution never hides newer siblings).
     jq -rs '
-      ( map(select(.type=="done") | (.resolves // empty)) ) as $resolved_refs
-      | ( map(select(.type=="done") | .thread_id) ) as $resolved_threads
+      # Set of explicitly-referenced event ids (done --ref <id>).
+      ( [ .[] | select(.type=="done" and (.resolves != "thread")) | .resolves ] ) as $resolved_refs
+      # Per-thread latest "bare done" cutoff timestamp (resolves=="thread").
+      | ( reduce ( .[] | select(.type=="done" and (.resolves=="thread")) ) as $d
+            ({}; .[$d.thread_id] = ( [ .[$d.thread_id], $d.ts ] | map(select(. != null)) | max )) ) as $thread_cutoff
       | map(select(.type=="gate"))
       | map(select( (.id as $i | $resolved_refs | index($i)) | not ))
-      | map(select( (.thread_id as $t | $resolved_threads | index($t)) | not ))
+      | map(select( ($thread_cutoff[.thread_id]) as $c | ($c == null) or (.ts > $c) ))
       | sort_by(.ts)
       | if length==0 then "(no pending gates)" else .[]
         | "GATE | \(.thread_id) | on:\(.gated_on // "?") | \(.gate) | \(.ts)" end
@@ -63,13 +77,18 @@ case "$sub" in
   user-actions)
     # Blocked-on-user queue: action events with for=user, not yet resolved,
     # ordered by urgency (now > soon > whenever). The highest-ROI artifact.
+    # Resolution semantics mirror `gates` (see above): `done --ref <id>` resolves
+    # ONLY that action; a bare `done` (resolves=="thread") is a timestamp-gated
+    # cutoff that resolves at/before its ts but never masks a LATER action on the
+    # same thread — so closing action A never hides a still-open action B.
     jq -rs '
       def urank: {"now":0,"soon":1,"whenever":2}[.urgency // "soon"] // 1;
-      ( map(select(.type=="done") | (.resolves // empty)) ) as $resolved_refs
-      | ( map(select(.type=="done") | .thread_id) ) as $resolved_threads
+      ( [ .[] | select(.type=="done" and (.resolves != "thread")) | .resolves ] ) as $resolved_refs
+      | ( reduce ( .[] | select(.type=="done" and (.resolves=="thread")) ) as $d
+            ({}; .[$d.thread_id] = ( [ .[$d.thread_id], $d.ts ] | map(select(. != null)) | max )) ) as $thread_cutoff
       | map(select(.type=="action" and ((.for // "user")=="user")))
       | map(select( (.id as $i | $resolved_refs | index($i)) | not ))
-      | map(select( (.thread_id as $t | $resolved_threads | index($t)) | not ))
+      | map(select( ($thread_cutoff[.thread_id]) as $c | ($c == null) or (.ts > $c) ))
       | sort_by(urank)
       | if length==0 then "(nothing blocked on user)" else .[]
         | "[\(.urgency // "soon")] \(.thread_id) | \(.action)\(if .unblocks then " — unblocks: \(.unblocks)" else "" end)" end

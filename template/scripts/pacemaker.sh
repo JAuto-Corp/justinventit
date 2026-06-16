@@ -162,15 +162,28 @@ resume_pane() {
     notify "Pacemaker: role $role loop-dead but tmux unavailable to auto-resume."
     return 1
   fi
-  if ! tmux has-session -t "$target" 2>/dev/null; then
-    log "tmux target '$target' not found for role=$role — escalating"
+  # EXACT session-name match. `tmux has-session -t a` and `send-keys -t a` use
+  # PREFIX matching, so with session 'ab' alive and 'a' dead the resume would
+  # land in 'ab' (wrong-pane injection). Require an exact name in the live
+  # session list, and target it with tmux's exact-match `=` prefix so a later
+  # send-keys can never resolve to a different (prefix-shared) session.
+  if ! tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -qxF -- "$target"; then
+    log "tmux session '$target' not found (exact match) for role=$role — escalating"
     notify "Pacemaker: role $role loop-dead but no tmux session '$target' to resume."
     return 1
   fi
-  # Send the prompt text, then Enter as a separate send-keys (so the prompt body is
-  # typed literally and submitted as one message).
-  tmux send-keys -t "$target" "$RESUME_PROMPT" 2>/dev/null
-  tmux send-keys -t "$target" Enter 2>/dev/null
+  # Exact-match target for send-keys. tmux anchors a session-exact target as
+  # `=name:` (the trailing `:` separates session from window/pane; a bare `=name`
+  # is parsed as a PANE name and fails to resolve). `=name:` rejects the prefix
+  # collision that a plain `name` would silently accept (`name` → first session
+  # whose name starts with it, e.g. 'a' → 'ab').
+  local tgt="=$target:"
+  # Send the prompt LITERALLY (-l) so an overridden RESUME_PROMPT containing tmux
+  # key tokens (Enter/Space/C-c/BSpace) is TYPED, not interpreted. Submit with a
+  # separate Enter keystroke. `--` ends option parsing so a prompt starting with
+  # '-' is not mistaken for a flag.
+  tmux send-keys -t "$tgt" -l -- "$RESUME_PROMPT" 2>/dev/null
+  tmux send-keys -t "$tgt" Enter 2>/dev/null
   log "RESUMED role=$role pane='$target' (send-keys resume prompt)"
 }
 
@@ -255,7 +268,9 @@ for ROLE in $ROLES; do
       log "role=$ROLE process-dead (already escalated for this window) — skip"
       continue
     fi
-    echo "$KEY" > "$SF" 2>/dev/null || true
+    # DRY_RUN must NOT mutate dedup state — otherwise a dry-run against the real
+    # state dir would suppress the NEXT genuine cron escalation for this window.
+    [ -z "$DRY_RUN" ] && { echo "$KEY" > "$SF" 2>/dev/null || true; }
     log "role=$ROLE PROCESS-DEAD (heartbeat ${HB_AGE}s old ≥ ${HEARTBEAT_DEAD}s) — escalate"
     notify "Pacemaker: role $ROLE appears PROCESS-DEAD (no heartbeat for $((HB_AGE/60))m). Manual respawn may be needed."
     if [ -n "$RESPAWN_HOOK" ]; then
@@ -284,7 +299,9 @@ for ROLE in $ROLES; do
     log "role=$ROLE loop-dead (already resumed for this window, key=$KEY) — skip"
     continue
   fi
-  echo "$KEY" > "$SF" 2>/dev/null || true
+  # DRY_RUN must NOT mutate dedup state — otherwise a dry-run against the real
+  # state dir would suppress the NEXT genuine cron resume for this stall window.
+  [ -z "$DRY_RUN" ] && { echo "$KEY" > "$SF" 2>/dev/null || true; }
   log "role=$ROLE ALIVE+LOOP-DEAD (hb ${HB_AGE}s fresh, loop ${OVERDUE}s overdue ≥ grace ${GRACE}s) — RESUME"
   resume_pane "$ROLE"
 done

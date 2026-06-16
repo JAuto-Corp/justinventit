@@ -67,10 +67,35 @@ now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
 have_jq() { command -v jq >/dev/null 2>&1; }
 
 # Escape a string for embedding in JSON.
+# jq is the canonical encoder. The no-jq fallback must ALSO produce valid JSON:
+# beyond \ and ", every control char (< 0x20) must be escaped, else the line is
+# invalid JSON and every downstream jq view (which requires jq) fails to parse.
 json_str() {
   if have_jq; then jq -Rn --arg s "$1" '$s'; else
-    local s="$1"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"
-    s="${s//	/\\t}"; printf '"%s"' "${s//$'\n'/\\n}"
+    local s="$1"
+    s="${s//\\/\\\\}"        # backslash first
+    s="${s//\"/\\\"}"        # double-quote
+    # Named short escapes for the common control chars.
+    s="${s//$'\b'/\\b}"      # backspace   0x08
+    s="${s//$'\f'/\\f}"      # form feed   0x0C
+    s="${s//$'\n'/\\n}"      # newline     0x0A
+    s="${s//$'\r'/\\r}"      # carriage rt 0x0D
+    s="${s//$'\t'/\\t}"      # tab         0x09
+    # Any REMAINING control byte (0x00–0x1F) -> \u00XX. These are rare but make
+    # the JSON invalid if left raw. Iterate the low range we have not handled.
+    local c hex
+    for c in $'\x01' $'\x02' $'\x03' $'\x04' $'\x05' $'\x06' $'\x07' \
+             $'\x0b' $'\x0e' $'\x0f' $'\x10' $'\x11' $'\x12' $'\x13' \
+             $'\x14' $'\x15' $'\x16' $'\x17' $'\x18' $'\x19' $'\x1a' \
+             $'\x1b' $'\x1c' $'\x1d' $'\x1e' $'\x1f'; do
+      case "$s" in
+        *"$c"*)
+          printf -v hex '\\u%04x' "'$c"
+          s="${s//$c/$hex}"
+          ;;
+      esac
+    done
+    printf '"%s"' "$s"
   fi
 }
 
