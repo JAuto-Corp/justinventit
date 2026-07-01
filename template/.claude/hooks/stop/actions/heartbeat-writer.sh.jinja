@@ -1,0 +1,95 @@
+#!/bin/bash
+{% if orchestration_tier == 'cluster' and external_pacemaker != 'none' -%}
+# Stop ACTION: heartbeat-writer — the PRODUCER half of the pacemaker liveness contract.
+#
+# WHY: scripts/pacemaker.sh (the external wake-loop supervisor) READS a per-role
+# liveness signal `heartbeat_at:` out of context/cadence/<role>.txt on every sweep —
+# but nothing WROTE it (a consumer with no producer; see docs/PACEMAKER.md). This
+# turn-end Stop action is that producer. It stamps a fresh `heartbeat_at:` (the
+# process-alive signal) into the role's cadence file while PRESERVING the
+# agent-managed `next_wake_at:` (the loop-intent signal). Two independent signals:
+# this hook owns one, the agent owns the other — exactly the two-signal contract.
+#
+# CONSUMER MATCH (scripts/pacemaker.sh — do not drift from these):
+#   CADENCE_DIR="${PACEMAKER_CADENCE_DIR:-${CADENCE_DIR:-./context/cadence}}"
+#   CAD="$CADENCE_DIR/$ROLE.txt"
+#   field(){ grep -m1 "^$2:" "$1" | sed "s/^$2:[[:space:]]*//"; }
+#   STATE=$(field ... state); NEXT=$(field ... next_wake_at); HB=$(field ... heartbeat_at)
+#   CAD_S=$(field ... cadence_seconds); CAD_MIN=$(field ... cadence_min)
+# We honor the SAME dir-override precedence and emit EXACTLY those `key: value`
+# fields so the file round-trips byte-for-byte through the pacemaker's parser.
+#
+# DISCIPLINE (ported from the JAuto turn-end heartbeat Stop hook): a Stop action MUST
+# NEVER block and MUST always exit 0 — a Stop hook that exits non-zero or hangs stalls
+# the agent loop. Every internal failure below is swallowed; the last line is exit 0.
+
+set -uo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$SCRIPT_DIR/../../lib/utils.sh" 2>/dev/null || true
+
+REPO_ROOT="$( (get_repo_root) 2>/dev/null || echo . )"
+
+# Resolve to the SAME file the pacemaker reads: same dir-override precedence, and a
+# role name (default `main` — the pacemaker's own SOLO/N=1 example role).
+CADENCE_DIR="${PACEMAKER_CADENCE_DIR:-${CADENCE_DIR:-$REPO_ROOT/context/cadence}}"
+ROLE="${JUSTINVENTIT_ROLE:-${DEVLOG_ACTOR:-main}}"
+CAD="$CADENCE_DIR/$ROLE.txt"
+
+now()   { date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null; }
+# EXACT parser the pacemaker uses, so preserved fields survive the round-trip.
+field() { grep -m1 "^$2:" "$1" 2>/dev/null | sed "s/^$2:[[:space:]]*//"; }
+
+mkdir -p "$CADENCE_DIR" 2>/dev/null || exit 0
+
+HEARTBEAT_AT="$(now)"
+[ -n "$HEARTBEAT_AT" ] || exit 0   # no usable clock → write nothing rather than garbage
+
+if [ -f "$CAD" ]; then
+  # PRESERVE every agent-managed field; the ONLY mutation is heartbeat_at.
+  STATE="$(field "$CAD" state)"
+  NEXT="$(field "$CAD" next_wake_at)"
+  CAD_S="$(field "$CAD" cadence_seconds)"
+  CAD_MIN="$(field "$CAD" cadence_min)"
+  CONTEXT="$(field "$CAD" context)"
+  WC="$(field "$CAD" wake_count)"
+else
+  # Seed a fresh role file. next_wake_at defaults to `none` (dormant) so a role that
+  # has NOT yet armed its own loop is never falsely resumed — the pacemaker skips
+  # `next_wake_at: none`. The agent claims loop-supervision by writing its own
+  # next_wake_at; this hook never invents a wake intent it cannot honor.
+  STATE="awake"
+  NEXT="none"
+  CAD_S="${CADENCE_SECONDS:-1800}"
+  CAD_MIN=""
+  CONTEXT="turn-end heartbeat (auto-seeded by stop hook)"
+  WC="0"
+fi
+[ -n "$STATE" ] || STATE="awake"
+[ -n "$NEXT" ]  || NEXT="none"
+
+# Atomic write (temp + rename) so a concurrent pacemaker sweep never reads a
+# half-written cadence file.
+TMP="$CAD.tmp.$$"
+{
+  printf 'state: %s\n' "$STATE"
+  printf 'role: %s\n' "$ROLE"
+  printf 'heartbeat_at: %s\n' "$HEARTBEAT_AT"
+  [ -n "$WC" ] && printf 'wake_count: %s\n' "$WC"
+  if [ -n "$CAD_S" ]; then
+    printf 'cadence_seconds: %s\n' "$CAD_S"
+  elif [ -n "$CAD_MIN" ]; then
+    printf 'cadence_min: %s\n' "$CAD_MIN"
+  fi
+  [ -n "$CONTEXT" ] && printf 'context: %s\n' "$CONTEXT"
+  printf 'next_wake_at: %s\n' "$NEXT"
+} > "$TMP" 2>/dev/null && mv -f "$TMP" "$CAD" 2>/dev/null || rm -f "$TMP" 2>/dev/null
+
+exit 0
+{% else -%}
+# Stop ACTION: heartbeat-writer — INERT in this project.
+# Gated OFF: this project is not `orchestration_tier: cluster` with an external
+# pacemaker, so no supervisor consumes `heartbeat_at:` and there is nothing to
+# produce. Present as a no-op so the stop-runner action glob stays uniform.
+exit 0
+{% endif -%}
