@@ -1,0 +1,7 @@
+state: awake
+role: process_dead
+heartbeat_at: 2026-06-16T03:05:03Z
+wake_count: 5
+cadence_seconds: 1800
+context: session crashed; no turns taken for 2h
+next_wake_at: 2026-06-16T03:08:23Z

@@ -1,0 +1,7 @@
+state: awake
+role: healthy
+heartbeat_at: 2026-06-16T05:04:03Z
+wake_count: 88
+cadence_seconds: 1800
+context: nominal; loop armed
+next_wake_at: 2026-06-16T05:20:03Z

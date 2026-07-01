@@ -1,0 +1,7 @@
+state: awake
+role: alive_loopdead
+heartbeat_at: 2026-06-16T05:03:03Z
+wake_count: 42
+cadence_seconds: 1800
+context: mid-arc; transient API error cut the turn before re-arm — loop is dead, process alive
+next_wake_at: 2026-06-16T04:05:03Z

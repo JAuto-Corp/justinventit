@@ -1,0 +1,5 @@
+state: awake
+role: noNextWake
+heartbeat_at: 2026-06-16T05:03:33Z
+cadence_seconds: 1800
+context: heartbeat-only cadence format; fresh
