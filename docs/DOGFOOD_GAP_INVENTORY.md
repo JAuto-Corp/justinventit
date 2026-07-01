@@ -9,7 +9,7 @@
 
 ## 1. Executive summary
 
-The template captures the *shape* of the reference `.claude/` (skill routing, stop-pipeline, forge markers) but ships the orchestrator skills as **stubs** and is **missing the enforcement hooks + the command-wiring layer**. Every M1 target has a concrete cp source to port — **nothing in M1 must be authored from scratch.** Two *correctness* gaps surfaced that are NOT in the current ROADMAP M1 list and are cheap to fix (§6).
+The template captures the *shape* of the reference `.claude/` (skill routing, stop-pipeline, forge markers) but ships the orchestrator skills as **stubs** and is **missing the enforcement hooks + the command-wiring layer**. Every M1 target has a concrete cp source to port — **nothing in M1 must be authored from scratch.** **One** *correctness* gap surfaced that is NOT in the current ROADMAP M1 list and is cheap to fix — the command-wiring layer (§6). *(A second candidate, a `memory/` seed, was retracted on verification — the template's `pre-compact.sh` does not read that file; see §4.)*
 
 Scale of the gap: cp has ~24 skill areas (many domain-specific), 18 hooks, 2 agents, 83 command wrappers; the template generates 5 skill files, 9 hooks, 0 agents, 0 commands. But **~half of cp's skills are domain-specific and are deliberately NOT framework gaps** (§5) — the real portable gap is smaller and well-bounded.
 
@@ -28,7 +28,7 @@ Scale of the gap: cp has ~24 skill areas (many domain-specific), 18 hooks, 2 age
 | P1 | `e2e` skill | skills | yes | med (nav needs adaptation) |
 | P1 | migration-safety guard | hooks | yes | Jinja `db_system` gate |
 | P1 | `patterns` / `team-lead` spawn-templates / `scope` / `chain` / `check` | skills | partial | low-med |
-| P1 | `memory/` seed file (hook first-run safety) | memory | **NEW** (not listed) | trivial |
+| ~~P1~~ | ~~`memory/` seed file~~ **RETRACTED** on verification — template `pre-compact.sh` does not read `modified-files.json` (see §4) | memory | — | non-defect |
 | P2 | `intake` / `integrate` / `orchestrator` skills | skills | no | med-high (orchestrator: abstract Supabase) |
 | P2 | portable `code-reviewer` agent (conditional) | agents | no | low |
 
@@ -73,8 +73,8 @@ All M1 skill targets have direct cp sources at depth. `work` drives every other 
 
 ## 4. Agents / Commands / Rules / Memory
 
-- **Commands — REAL GAP (P0, correctness).** `CLAUDE.md.jinja` tells the agent to invoke `/work:handoff`, `/work:pause`, `/verify:complete`, `/capture:audit` etc., but the template generates **no `.claude/commands/` files** — so those slash commands are *dead on arrival* in a generated project. cp's pattern is thin wrappers (~18-25L each: "read the X skill, execute Y"). Fix = generate 6-10 wrapper files mirroring the existing orchestrator skills. Cheap, high-leverage, and a genuine correctness bug in current template output. (cp's `tm/` command dir = Task-Master domain, ignore.)
-- **Memory — GAP (P1, correctness-adjacent).** The template's `pre-compact.sh` reads `.claude/memory/modified-files.json`, but the template doesn't scaffold `memory/` or seed that file → possible first-run hook error. Fix = seed `memory/modified-files.json` (`{"session_start":null,"files":[]}`) and/or make hooks defensively `mkdir -p`.
+- **Commands — REAL GAP (P0, correctness).** `CLAUDE.md.jinja` tells the agent to invoke specific slash commands — verified: `/verify:complete` (L34) and `/work:handoff` / `/work:pause` / `/work:continue` (L93) — but the template generates **no `.claude/commands/` files**, so those 4 commands are *dead on arrival* in a generated project. cp's pattern is thin wrappers (~15-25L each: "read the X skill, execute Y"). **Defect fix (this PR):** generate 4 generic wrappers for exactly the invoked commands, pointing at the existing skills — no domain coupling, no skill content. (The *full* commands layer for every skill sub-command is the M1 build, not this defect. cp's `tm/` command dir = Task-Master domain, ignore.)
+- **Memory — RETRACTED (verified 07-01, non-defect).** On direct read, the template's `pre-compact.sh` appends a compaction marker to `context/WORKING.md` (via `get_state_dir`) — it does **not** read `.claude/memory/modified-files.json`, and no template hook references it. The original finding conflated cp's `pre-compact.sh` (which does use that file) with the template's. No seed needed; no defect.
 - **Agents — mostly NON-gap.** Both cp agents (`e2e-validator`, `tds-author`) are domain-specific reference guides, not portable. Empty `agents/` is largely correct. Only portable candidate: a generic `code-reviewer.md` (Sonnet, file tools) to support `team-lead` multi-agent review — LOW value, conditional on using that flow.
 - **Rules — NON-gap.** Neither cp nor template uses path-scoped rules at the primary project level. Nothing to port.
 
@@ -90,9 +90,10 @@ Flagging this explicitly so the port scope is not overstated: the portable gap i
 
 ## 6. Newly-surfaced gaps NOT in ROADMAP M1
 
-Two cheap, high-leverage items the current M1 checklist does not list — recommend folding in:
-1. **Command-wiring layer** (P0) — closes the dead-slash-command correctness gap; ~6-10 thin files.
-2. **`memory/` seed** (P1) — prevents a possible `pre-compact.sh` first-run error; one seed file.
+One cheap, high-leverage item the current M1 checklist does not list — recommend folding in:
+1. **Command-wiring layer** (P0) — closes the dead-slash-command correctness gap. The 4 *invoked* commands are fixed as an M0 defect (see §4); the full commands layer for all skills remains an M1 build item.
+
+*(A second item — a `memory/` seed — was listed here on first pass but **RETRACTED on verification**: the template's `pre-compact.sh` does not read that file. See §4.)*
 
 ---
 
@@ -100,7 +101,7 @@ Two cheap, high-leverage items the current M1 checklist does not list — recomm
 
 A dependency-ordered cut, cheapest-correctness and prerequisites first. **Proposal only; awaiting the user sequencing nod (U-27).**
 
-1. **Correctness quick-wins** — command-wiring layer + `memory/` seed (both cheap; fix dead commands + first-run hook safety).
+1. **Command-wiring** — the 4 invoked commands are already fixed as an M0 defect (this landed separately); the *full* commands layer (wrappers for every skill sub-command) sequences here. *(The memory-seed item is retracted — see §4.)*
 2. **write-isolation guard** — single cheapest P0, zero coupling.
 3. **hook test harness** — prerequisite for developing the enforcement checks safely.
 4. **stop-checks 03/04/05 + landmark-checkoff** — the enforcement backbone (harness-tested).
