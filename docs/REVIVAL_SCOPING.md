@@ -100,4 +100,31 @@ Recommendation: record #2824 as an M3-adjacent research note in the framework, n
 2. **Proceed to M1?** — the cut in §4 is idle-bandwidth-sized and dogfood-anchored. Green-light M1 item 0 (heartbeat-writer) as the first build, or keep research-only?
 3. **Carried-open from the 06-15 scoping** (product-ish, route user-ward): (a) sizing-policy-vs-knob for L2 (agentic auto-scaling vs a static `team_size`); (b) default isolation tier; (c) the log/coordination cut boundary (cadence is dual-use — dev-log noun vs coordination verb).
 
-No action taken beyond this memo. Health U-20 HOLD respected. Awaiting O.
+---
+
+## 7. Design-question recommendations (draft — for collaborative resolution)
+
+Per O ruling (07-01): these are PI-34-class, resolved collaboratively (O + a second-opinion pass) when **M1 proper** gets scoped. Drafted here as starting positions; **none block item-0**.
+
+### Q1 — L2 sizing: agentic auto-scale vs static knob
+**Recommend: hybrid — a static `team_size` *ceiling* knob (M2 default), with the orchestrator free to scale *down* within it by the work-graph; full agentic scale-*up* deferred to M3 behind a cost-aware heuristic.**
+Rationale: agentic scale-up (dynamic spawn to N) is the risky direction — it blows past API rate limits, branch-DB provision minutes, and disk (all hit in the June throttle incident) and is hard to bound. Scale-*down* is safe and captures most of the value: run serial/quiet when work is serial, open parallel streams only for genuinely-independent work. This matches how the live cluster actually runs (fixed role set; orchestrator throttles activity rather than spawning unboundedly). So: **knob sets the max; policy fills below it.** Auto-scale-up = a cost-gated M3 research line.
+
+### Q2 — Default isolation tier
+**Recommend: derive from `project_type`, don't pick one global default — greenfield → `none`; brownfield → `schema` (pg-schema per parallel-write stream).** (Affirms the defaults M0 already wired into copier.yml.)
+Rationale: isolation cost is only justified by **parallel-WRITE streams**, not agent count (O + read-only roles share the main checkout). Greenfield solo/small has no parallel writers → `none`. Brownfield against a live DB needs write isolation, and pg-`schema` is the cheapest mechanism that works (no branch-DB provisioning cost). `supabase-branch` stays opt-in (hard cap ~3), `compose`-per-worktree for container stacks. Default = derived + cheapest-that-works; heavier tiers are explicit opt-ins.
+
+### Q3 — Log-vs-coordination cut boundary (cadence is dual-use)
+**Recommend: dev-log (thread organization — durable nouns) → L1 portable core; coordination transport (mailbox/dispatch verbs) → L2. Split cadence by its two faces: the cadence *file/state* (a per-agent noun — "what am I doing, when do I next wake") → L1 state-chain; the cross-agent liveness *loop* (pacemaker watchdog + heartbeat aggregation) → L2/cluster-only.**
+Rationale: a single agent still benefits from writing "what I'm doing / next wake" — self-continuity across compaction, a noun, useful at cluster-size-1 → core. The cross-agent auto-resume machinery only means something at >1 → L2. **Item-0 is the clean seam that proves this cut:** the heartbeat-*writer* produces the L1 cadence noun (present whenever cadence is used); the *pacemaker* consumes it only when `external_pacemaker != none` (L2). The writer's gate (`orchestration_tier == cluster AND external_pacemaker != none`) is thus the boundary made executable.
+
+---
+
+## 8. Status (rulings landed 07-01)
+
+- **(a) M0** — PUSHED + self-PR **#1** open (O merge-acks at gate per charter).
+- **(b) M1 item-0** — heartbeat-writer Stop action BUILT (opus agent) + P-reviewed (lossless vs the documented single-line cadence contract; exit-0 discipline) → **PR #2** open, stacked on `feat/m0-revival`. **Rest of M1 HOLD** for user sequencing nod.
+- **(c)** design-Q recommendations drafted (§7 above).
+- **#2824** — disposition confirmed by O + recorded on the issue (static tier-table serves intent; benchmark mechanism parked M3-adjacent).
+
+Health U-20 HOLD respected.
