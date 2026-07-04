@@ -1,10 +1,19 @@
 #!/bin/bash
 # ===========================================================================
-# Self-test: migration-safety PreToolUse guard  (guards/migration-safety.sh.jinja)
+# Self-test: migration-safety PreToolUse guard  (guards/migration-safety.sh[.jinja])
 # ---------------------------------------------------------------------------
-# The guard is DB-system-aware and ships as a Jinja template. This suite RENDERS
-# it for db_adapter=supabase into the harness temp root, then drives the rendered
-# script through the generic harness. Contract (matches write-isolation / cp):
+# The guard is DB-system-aware. It ships two ways depending on context, and this
+# suite must run green in BOTH (dogfood exit-gate requirement — the harness runs
+# inside every generated project, not just the template repo):
+#   * GENERATED PROJECT — the guard is already rendered to guards/migration-safety.sh
+#     (no .jinja, no Jinja vars left). Use it directly; do NOT try to re-render.
+#   * TEMPLATE REPO (self-test) — only guards/migration-safety.sh.jinja exists.
+#     Render it for db_adapter=supabase into the harness temp root, then drive it.
+# The DDL/apply cases below assert the SUPABASE variant's behavior; if the guard
+# in this project is a different variant (db_adapter=postgres/none), they are
+# skipped so the harness stays green regardless of DB choice.
+#
+# Contract (matches write-isolation / cp):
 #   * reads a PreToolUse JSON payload on STDIN (.tool_name / .tool_input)
 #   * exit 2 = block (DDL in execute_sql; apply_migration with no local file)
 #   * exit 0 = allow (DML; apply_migration WITH a file; malformed/empty payload)
@@ -17,21 +26,38 @@
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/harness.sh"
 
+RENDERED="$HERE/../guards/migration-safety.sh"
 SRC="$HERE/../guards/migration-safety.sh.jinja"
 
-# --- Render the .jinja (db_adapter=supabase) into the harness temp root -------
-# HARNESS_TMP is created (and auto-removed on exit) by harness.sh.
-GUARD="$HARNESS_TMP/migration-safety.supabase.sh"
-if ! python3 - "$SRC" supabase supabase "$GUARD" <<'PY'
+if [ -f "$RENDERED" ]; then
+  # Generated-project context: guard already rendered for this project's DB.
+  GUARD="$RENDERED"
+elif [ -f "$SRC" ]; then
+  # Template-repo context: render the supabase variant into the harness temp root.
+  # HARNESS_TMP is created (and auto-removed on exit) by harness.sh.
+  GUARD="$HARNESS_TMP/migration-safety.supabase.sh"
+  if ! python3 - "$SRC" supabase supabase "$GUARD" <<'PY'
 import sys, jinja2
 src, adapter, database, out = sys.argv[1:5]
 env = jinja2.Environment(keep_trailing_newline=True)
 tmpl = env.from_string(open(src).read())
 open(out, "w").write(tmpl.render(db_adapter=adapter, database=database))
 PY
-then
-  echo "FAIL: could not render migration-safety.sh.jinja (need python3 + jinja2)"
-  exit 1
+  then
+    echo "FAIL: could not render migration-safety.sh.jinja (need python3 + jinja2)"
+    exit 1
+  fi
+else
+  echo "SKIP: no migration-safety guard present (neither rendered .sh nor .jinja)"
+  exit 0
+fi
+
+# The cases below exercise the SUPABASE variant (execute_sql / apply_migration).
+# If this project rendered a different variant (postgres -> Bash matcher, or
+# none -> no-op), there is nothing supabase-shaped to assert -> skip cleanly.
+if ! grep -q 'execute_sql' "$GUARD"; then
+  echo "SKIP: guard is not the supabase variant (db_adapter != supabase) — no supabase cases to run"
+  exit 0
 fi
 
 # Rendered script must be valid bash before we exercise it.
