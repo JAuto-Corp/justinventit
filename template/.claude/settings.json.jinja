@@ -1,3 +1,5 @@
+{%- set mig_variant = 'supabase' if (db_adapter == 'supabase' or database == 'supabase') else ('sql' if (db_adapter == 'postgres' or database == 'postgres') else 'none') -%}
+{%- set mig_matcher = 'mcp__supabase__execute_sql|mcp__supabase__apply_migration' if mig_variant == 'supabase' else 'Bash' -%}
 {
   "hooks": {
     "PreToolUse": [
@@ -9,7 +11,16 @@
             "command": "bash .claude/hooks/guards/write-isolation.sh"
           }
         ]
-      }
+      }{% if mig_variant != 'none' %},
+      {
+        "matcher": "{{ mig_matcher }}",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guards/migration-safety.sh"
+          }
+        ]
+      }{% endif %}
     ],
     "SessionStart": [
       {

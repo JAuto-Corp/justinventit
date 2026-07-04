@@ -1,0 +1,142 @@
+{%- set mig_variant = 'supabase' if (db_adapter == 'supabase' or database == 'supabase') else ('sql' if (db_adapter == 'postgres' or database == 'postgres') else 'none') -%}
+{%- if mig_variant == 'none' -%}
+#!/bin/bash
+#
+# PreToolUse guard: migration-safety   (DISABLED for this configuration)
+# ---------------------------------------------------------------------------
+# This project selected no SQL migration workflow (db_adapter=none, or a
+# database with no tracked-DDL migration model). The guard renders as a
+# deliberate no-op and is NOT registered in settings.json for this
+# configuration, so it never runs. Present only so the path stays stable across
+# template regenerations.
+# ---------------------------------------------------------------------------
+exit 0
+{%- else -%}
+#!/bin/bash
+#
+# PreToolUse guard: migration-safety   (DB system: {{ 'supabase' if mig_variant == 'supabase' else 'generic-sql' }})
+# ---------------------------------------------------------------------------
+# Enforces FILE-FIRST schema migrations: schema changes (DDL — CREATE / ALTER /
+# DROP of tables, indexes, types, ...) must go through tracked, source-controlled
+# migration files, NOT ad-hoc SQL execution or un-filed migration applies. This
+# prevents schema drift between environments — the migration files are the single
+# source of truth, and CI/CD replays them to every environment on merge.
+#
+# Ported from: customer-portal/.claude/hooks/pre-tool-migration.sh — same two
+# block mechanisms (DDL-in-ad-hoc-execution -> exit 2; apply-without-local-file
+# -> exit 2), generalized to be DB-system-aware. The generic core ("DDL goes
+# through tracked migration files, not ad-hoc execution") is identical across
+# adapters; the tool names + workflow commands below are Jinja-injected for THIS
+# project's DB system.
+#
+# Blocking convention (matches write-isolation.sh / cp): exit 2 == block,
+# exit 0 == allow. A block reason is emitted on BOTH channels — plain text on
+# stderr (the channel Claude Code surfaces to the agent on a PreToolUse exit-2)
+# and a {"decision":"block","reason":...} object on stdout.
+#
+# Fail-open-safe: empty / unparseable payload, missing jq, or an unparseable
+# migration name -> ALLOW (exit 0). The guard must never crash or false-block a
+# legitimate operation. (No `set -e`, for exactly that reason.)
+# ---------------------------------------------------------------------------
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+
+# Read the PreToolUse JSON payload from stdin; empty -> fail open (allow).
+PAYLOAD="$(cat 2>/dev/null)"
+[ -z "$PAYLOAD" ] && exit 0
+
+# Need jq to parse; if unavailable, fail open (allow) rather than false-block.
+command -v jq >/dev/null 2>&1 || exit 0
+
+TOOL_NAME="$(printf '%s' "$PAYLOAD" | jq -r '.tool_name // empty' 2>/dev/null)"
+
+# Generic DDL signature: CREATE / ALTER / DROP of a schema object. Kept
+# conservative (object keyword required after whitespace) so DML like
+# "SELECT created_at" or a "create_date" column never false-matches. Matched
+# case-insensitively against a lowercased query/command.
+DDL_RE='(create|alter|drop)[[:space:]]+(table|index|type|schema|view|sequence)'
+
+# Block emitter: reason on stderr (agent-visible) + structured decision on
+# stdout (cp/write-isolation parity). jq -n --arg JSON-escapes the multi-line
+# reason safely.
+emit_block() {
+  printf '%s\n' "$1" >&2
+  jq -n --arg r "$1" '{decision:"block", reason:$r}' 2>/dev/null
+  exit 2
+}
+{% if mig_variant == 'supabase' %}
+# --- (a) execute_sql carrying DDL -> block (DDL belongs in a migration) ------
+if [[ "$TOOL_NAME" == *execute_sql* ]]; then
+  QUERY="$(printf '%s' "$PAYLOAD" | jq -r '.tool_input.query // empty' 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  [ -z "$QUERY" ] && exit 0                        # nothing to inspect -> allow
+  if printf '%s' "$QUERY" | grep -qE "$DDL_RE"; then
+    emit_block "MIGRATION SAFETY: DDL (schema change) detected in mcp__supabase__execute_sql.
+Schema changes must go through a tracked migration file, not ad-hoc execution:
+  1. supabase migration new <name>        (creates supabase/migrations/<ts>_<name>.sql)
+  2. edit the .sql file with your DDL
+  3. mcp__supabase__apply_migration(...)  (applies the filed migration)
+execute_sql is for DML (data queries) only."
+  fi
+  exit 0                                           # DML -> allow
+fi
+
+# --- (b) apply_migration without a local file -> block (file-first) ----------
+if [[ "$TOOL_NAME" == *apply_migration* ]]; then
+  MIGRATION_NAME="$(printf '%s' "$PAYLOAD" | jq -r '.tool_input.name // empty' 2>/dev/null)"
+  [ -z "$MIGRATION_NAME" ] && exit 0               # unparseable name -> fail open
+
+  # File-first check: is there a local migration file whose name contains
+  # MIGRATION_NAME? (Deliberately avoids array-length / nullglob syntax, which
+  # embeds a brace-hash that collides with Jinja's comment delimiter.) An
+  # unmatched glob stays literal, so the [ -e ] test is false and we fall
+  # through to the block.
+  MIG_DIR="$PROJECT_DIR/supabase/migrations"
+  FOUND=""
+  if [ -d "$MIG_DIR" ]; then
+    for f in "$MIG_DIR"/*"$MIGRATION_NAME"*.sql; do
+      [ -e "$f" ] && { FOUND="$f"; break; }
+    done
+  fi
+  if [ -z "$FOUND" ]; then
+    emit_block "MIGRATION SAFETY: mcp__supabase__apply_migration blocked — no local migration file for '$MIGRATION_NAME'.
+File-first: the migration must exist under supabase/migrations/ BEFORE it is applied. The file is the source of truth; CI replays it to every environment on merge.
+  1. supabase migration new $MIGRATION_NAME
+  2. edit supabase/migrations/<ts>_$MIGRATION_NAME.sql with your DDL
+  3. re-run mcp__supabase__apply_migration(...)"
+  fi
+  exit 0                                           # local file exists -> allow
+fi
+
+# Any other tool that happened to match -> allow.
+exit 0
+{% else %}
+# --- generic-SQL: ad-hoc DDL run through a SQL client on Bash -> block -------
+# A generic SQL database has no dedicated "apply_migration" MCP tool; ad-hoc DDL
+# arrives as a shell command invoking a SQL client (psql/mysql/...). Block only
+# INLINE DDL (e.g. `psql -c "CREATE TABLE ..."`); do NOT block DDL replayed FROM
+# a migration file (`-f file` / `< file`) — that IS the file-first path we want.
+if [[ "$TOOL_NAME" == "Bash" ]]; then
+  CMD="$(printf '%s' "$PAYLOAD" | jq -r '.tool_input.command // empty' 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  [ -z "$CMD" ] && exit 0
+  # Only consider SQL-client invocations (else this is not a DB operation).
+  if printf '%s' "$CMD" | grep -qE '(psql|mysql|mariadb|sqlite3|cockroach[[:space:]]+sql|usql)'; then
+    # DDL sourced from a file / a migration tool is the sanctioned path -> allow.
+    if printf '%s' "$CMD" | grep -qE '(-f[[:space:]]|<[[:space:]]|migrat)'; then
+      exit 0
+    fi
+    if printf '%s' "$CMD" | grep -qE "$DDL_RE"; then
+      emit_block "MIGRATION SAFETY: inline DDL (schema change) detected in an ad-hoc SQL command.
+Schema changes must go through a tracked migration file, not ad-hoc execution:
+  1. create a new migration file under your migrations/ directory
+  2. put the DDL in that file
+  3. apply it with your migration tool (which replays the file, e.g. psql -f <file>)
+Ad-hoc SQL clients are for DML (data queries) only."
+    fi
+  fi
+  exit 0
+fi
+
+# Any other tool that happened to match -> allow.
+exit 0
+{% endif %}
+{%- endif -%}
