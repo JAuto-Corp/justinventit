@@ -23,10 +23,14 @@ project_description:
 project_type:
   type: str
   help: "Project shape (drives isolation defaults + adoption path)"
+  # NOTE: Copier dict-choice semantics are {label: value} — the KEY is the
+  # human-readable label shown to the user, the VALUE is what gets stored and
+  # what the template compares against (project_type == 'brownfield', etc.).
+  # Keep short values on the right so `== 'shortkey'` comparisons work.
   choices:
-    greenfield: "Greenfield — new project, no existing code/DB to protect"
-    brownfield: "Brownfield — existing codebase, staged adoption, real DB"
-    framework: "Framework — this project is itself agentic tooling/templates"
+    "Greenfield — new project, no existing code/DB to protect": greenfield
+    "Brownfield — existing codebase, staged adoption, real DB": brownfield
+    "Framework — this project is itself agentic tooling/templates": framework
   default: greenfield
 
 # Stack
@@ -86,9 +90,9 @@ db_adapter:
   type: str
   help: "Which DB-isolation adapter to scaffold (5-verb: provision/heal/teardown/status/seed)"
   choices:
-    none: "No DB isolation adapter"
-    postgres: "Generic Postgres (schema/template-DB isolation)"
-    supabase: "Supabase (branch-DB hooks; project supplies the heal hook)"
+    "No DB isolation adapter": none
+    "Generic Postgres (schema/template-DB isolation)": postgres
+    "Supabase (branch-DB hooks; project supplies the heal hook)": supabase
   default: "{% if database == 'supabase' %}supabase{% elif database == 'postgres' %}postgres{% else %}none{% endif %}"
 
 # Testing
@@ -130,8 +134,8 @@ orchestration_tier:
   type: str
   help: "Multi-agent coordination tier (solo = no-op shim; cluster = mailbox/pacemaker/cadence)"
   choices:
-    solo: "Solo — single agent; orchestration tier is a no-op shim (default)"
-    cluster: "Cluster — multiple coordinated agents; scaffold L2 machinery"
+    "Solo — single agent; orchestration tier is a no-op shim (default)": solo
+    "Cluster — multiple coordinated agents; scaffold L2 machinery": cluster
   default: solo
 
 # team_size is only meaningful in cluster mode — it seeds the initial cluster
@@ -151,9 +155,9 @@ external_pacemaker:
   type: str
   help: "Out-of-band wake-loop supervisor (eliminates the 'live process, dead loop' SPOF)"
   choices:
-    none: "None — rely on in-turn ScheduleWakeup only (not recommended for clusters)"
-    host-cron: "Host cron — a host-level cron supervisor injects the resume prompt"
-    tmux-supervisor: "tmux supervisor — send-keys the resume prompt into the agent pane"
+    "None — rely on in-turn ScheduleWakeup only (not recommended for clusters)": none
+    "Host cron — a host-level cron supervisor injects the resume prompt": host-cron
+    "tmux supervisor — send-keys the resume prompt into the agent pane": tmux-supervisor
   default: tmux-supervisor
   when: "{{ orchestration_tier == 'cluster' }}"
 
@@ -173,10 +177,10 @@ isolation_tier:
   type: str
   help: "DB write-isolation per parallel stream (gated on cost, NOT agent count)"
   choices:
-    none: "None — shared dev DB, zero ceremony"
-    schema: "Schema-per-stream — portable sweet spot (sub-second, no CI/rate tax)"
-    compose: "Compose-per-worktree — full container isolation"
-    supabase-branch: "Supabase branch DB — opt-in only; project supplies heal hook; hard cap ~2-3"
+    "None — shared dev DB, zero ceremony": none
+    "Schema-per-stream — portable sweet spot (sub-second, no CI/rate tax)": schema
+    "Compose-per-worktree — full container isolation": compose
+    "Supabase branch DB — opt-in only; project supplies heal hook; hard cap ~2-3": supabase-branch
   default: "{% if project_type == 'brownfield' %}schema{% else %}none{% endif %}"
 
 # max_parallel_streams caps concurrent write-isolated streams. The branch tier

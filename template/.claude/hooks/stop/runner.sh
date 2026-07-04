@@ -49,8 +49,13 @@ if [ -d "$CHECKS_DIR" ]; then
       continue
     fi
 
-    # Run the check (forward the captured stop-hook JSON on STDIN)
-    CHECK_OUTPUT=$("$check" 2>&1 <<<"$HOOK_INPUT") || {
+    # Run the check (forward the captured stop-hook JSON on STDIN).
+    # Invoke via `bash` (not a direct exec) so a check that lost its +x bit —
+    # e.g. a .jinja-rendered check whose source mode was 644 — still runs. This
+    # matches the framework's hook-invocation convention (settings.json wires
+    # every hook as `bash .claude/hooks/...`) and keeps the pipeline immune to
+    # executable-bit drift across git modes / copier renders / filesystems.
+    CHECK_OUTPUT=$(bash "$check" 2>&1 <<<"$HOOK_INPUT") || {
       BLOCKED=true
       BLOCK_MESSAGES+=("$CHECK_OUTPUT")
     }
@@ -61,7 +66,7 @@ fi
 if [ -d "$ACTIONS_DIR" ]; then
   for action in "$ACTIONS_DIR"/*.sh; do
     [ -f "$action" ] || continue
-    "$action" 2>/dev/null <<<"$HOOK_INPUT" || true  # Actions don't block
+    bash "$action" 2>/dev/null <<<"$HOOK_INPUT" || true  # Actions don't block; +x-independent
   done
 fi
 
