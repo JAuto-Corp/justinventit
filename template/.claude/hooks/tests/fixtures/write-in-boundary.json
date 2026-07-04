@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "notes/allowed.md",
+    "content": "relative path resolves under CLAUDE_PROJECT_DIR -> inside the boundary"
+  }
+}

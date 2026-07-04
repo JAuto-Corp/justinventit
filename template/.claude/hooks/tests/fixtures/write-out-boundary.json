@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/etc/passwd",
+    "content": "absolute path outside CLAUDE_PROJECT_DIR -> must be blocked"
+  }
+}
