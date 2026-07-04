@@ -1,0 +1,42 @@
+name: ci
+
+# GENERATE + HARNESS coherence gate (M2-item-1).
+# copier-copies the template across a representative answer matrix and asserts
+# each generated project is coherent — catching the class of build-time
+# regression the M1 dogfood surfaced (copier.yml dict-choice inversion that
+# silently strips machinery; a rendered stop-check that comes out dead).
+# No secrets are used.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-matrix-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history — copier renders the template from HEAD)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install copier
+        run: python -m pip install --upgrade pip copier
+
+      - name: Ensure jq is available
+        run: jq --version || sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate matrix + coherence assertions
+        run: bash scripts/ci/generate-matrix-check.sh "$(command -v copier)"
