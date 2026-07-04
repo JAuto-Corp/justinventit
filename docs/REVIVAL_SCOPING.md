@@ -102,20 +102,20 @@ Recommendation: record #2824 as an M3-adjacent research note in the framework, n
 
 ---
 
-## 7. Design-question recommendations (draft — for collaborative resolution)
+## 7. Design-question decisions — **RULED**
 
-Per O ruling (07-01): these are PI-34-class, resolved collaboratively (O + a second-opinion pass) when **M1 proper** gets scoped. Drafted here as starting positions; **none block item-0**.
+**Ratified by O (PI-36, dispatch `01KWNG8RK1CTP5XHFYTP6DYMWJ`, 2026-07-04):** all three are now **decided as drafted**, no longer open questions — Q1 hybrid ceiling-knob (matches the June throttle lessons), Q2 isolation derived from `project_type`, Q3 the L1-cadence-noun / L2-liveness-loop split (item-0 proved the seam). They stand as ruled inputs to M1/M2. *(Superseded the original 07-01 draft framing.)*
 
 ### Q1 — L2 sizing: agentic auto-scale vs static knob
-**Recommend: hybrid — a static `team_size` *ceiling* knob (M2 default), with the orchestrator free to scale *down* within it by the work-graph; full agentic scale-*up* deferred to M3 behind a cost-aware heuristic.**
+**Ruled (O, PI-36): hybrid — a static `team_size` *ceiling* knob (M2 default), with the orchestrator free to scale *down* within it by the work-graph; full agentic scale-*up* deferred to M3 behind a cost-aware heuristic.**
 Rationale: agentic scale-up (dynamic spawn to N) is the risky direction — it blows past API rate limits, branch-DB provision minutes, and disk (all hit in the June throttle incident) and is hard to bound. Scale-*down* is safe and captures most of the value: run serial/quiet when work is serial, open parallel streams only for genuinely-independent work. This matches how the live cluster actually runs (fixed role set; orchestrator throttles activity rather than spawning unboundedly). So: **knob sets the max; policy fills below it.** Auto-scale-up = a cost-gated M3 research line.
 
 ### Q2 — Default isolation tier
-**Recommend: derive from `project_type`, don't pick one global default — greenfield → `none`; brownfield → `schema` (pg-schema per parallel-write stream).** (Affirms the defaults M0 already wired into copier.yml.)
+**Ruled (O, PI-36): derive from `project_type`, don't pick one global default — greenfield → `none`; brownfield → `schema` (pg-schema per parallel-write stream).** (Affirms the defaults M0 already wired into copier.yml.)
 Rationale: isolation cost is only justified by **parallel-WRITE streams**, not agent count (O + read-only roles share the main checkout). Greenfield solo/small has no parallel writers → `none`. Brownfield against a live DB needs write isolation, and pg-`schema` is the cheapest mechanism that works (no branch-DB provisioning cost). `supabase-branch` stays opt-in (hard cap ~3), `compose`-per-worktree for container stacks. Default = derived + cheapest-that-works; heavier tiers are explicit opt-ins.
 
 ### Q3 — Log-vs-coordination cut boundary (cadence is dual-use)
-**Recommend: dev-log (thread organization — durable nouns) → L1 portable core; coordination transport (mailbox/dispatch verbs) → L2. Split cadence by its two faces: the cadence *file/state* (a per-agent noun — "what am I doing, when do I next wake") → L1 state-chain; the cross-agent liveness *loop* (pacemaker watchdog + heartbeat aggregation) → L2/cluster-only.**
+**Ruled (O, PI-36): dev-log (thread organization — durable nouns) → L1 portable core; coordination transport (mailbox/dispatch verbs) → L2. Split cadence by its two faces: the cadence *file/state* (a per-agent noun — "what am I doing, when do I next wake") → L1 state-chain; the cross-agent liveness *loop* (pacemaker watchdog + heartbeat aggregation) → L2/cluster-only.**
 Rationale: a single agent still benefits from writing "what I'm doing / next wake" — self-continuity across compaction, a noun, useful at cluster-size-1 → core. The cross-agent auto-resume machinery only means something at >1 → L2. **Item-0 is the clean seam that proves this cut:** the heartbeat-*writer* produces the L1 cadence noun (present whenever cadence is used); the *pacemaker* consumes it only when `external_pacemaker != none` (L2). The writer's gate (`orchestration_tier == cluster AND external_pacemaker != none`) is thus the boundary made executable.
 
 ---
