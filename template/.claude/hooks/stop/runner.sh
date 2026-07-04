@@ -8,6 +8,14 @@ CHECKS_DIR="$SCRIPT_DIR/checks"
 ACTIONS_DIR="$SCRIPT_DIR/actions"
 SKIP_FILE="$SCRIPT_DIR/skip"
 
+# Capture the Stop-hook JSON once so EVERY check/action can read it. Checks 03-05
+# gate on the phase-complete signal, which they parse out of transcript_path in
+# this payload — without capturing it here the first reader would drain STDIN and
+# starve the rest. Empty when the runner is invoked manually / under test. Checks
+# 01/02 ignore STDIN, so forwarding it is a no-op for them.
+HOOK_INPUT=""
+if [ ! -t 0 ]; then HOOK_INPUT="$(cat)"; fi
+
 # Collect skipped checks
 SKIPPED=()
 if [ -f "$SKIP_FILE" ]; then
@@ -41,8 +49,8 @@ if [ -d "$CHECKS_DIR" ]; then
       continue
     fi
 
-    # Run the check
-    CHECK_OUTPUT=$("$check" 2>&1) || {
+    # Run the check (forward the captured stop-hook JSON on STDIN)
+    CHECK_OUTPUT=$("$check" 2>&1 <<<"$HOOK_INPUT") || {
       BLOCKED=true
       BLOCK_MESSAGES+=("$CHECK_OUTPUT")
     }
@@ -53,7 +61,7 @@ fi
 if [ -d "$ACTIONS_DIR" ]; then
   for action in "$ACTIONS_DIR"/*.sh; do
     [ -f "$action" ] || continue
-    "$action" 2>/dev/null || true  # Actions don't block
+    "$action" 2>/dev/null <<<"$HOOK_INPUT" || true  # Actions don't block
   done
 fi
 
