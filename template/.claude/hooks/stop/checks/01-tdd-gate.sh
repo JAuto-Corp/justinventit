@@ -8,8 +8,15 @@ source "$SCRIPT_DIR/../../lib/utils.sh"
 
 REPO_ROOT=$(get_repo_root)
 
-# Count modified files in this session
-MODIFIED_COUNT=$(git diff --name-only HEAD~1 2>/dev/null | wc -l | tr -d ' ')
+# Count modified files in this session. Guard HEAD~1: on a shallow / first-commit
+# repo it has no parent, so `git diff HEAD~1` exits 128 — which under `set -e`
+# would false-block a fresh project's FIRST stop. Skip-when-no-parent = graceful
+# no-op (treat as quick scope), matching checks 03-05.
+if git rev-parse --verify -q HEAD~1 >/dev/null 2>&1; then
+  MODIFIED_COUNT=$(git diff --name-only HEAD~1 2>/dev/null | wc -l | tr -d ' ')
+else
+  MODIFIED_COUNT=0
+fi
 
 # If fewer than 4 files, likely quick scope — pass
 if [ "$MODIFIED_COUNT" -lt 4 ]; then
