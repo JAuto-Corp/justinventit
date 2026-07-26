@@ -27,7 +27,9 @@ complain, not pass.**
   Checks `01-05` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
   progress-complete) consume ONLY these inputs, with a uniform exit contract:
   0 = pass, 1 = block (message names the failed rule), 3 = cannot-evaluate (message names the
-  missing/malformed input) — and 3 is rendered as loudly as 1, never as success.
+  missing/malformed input), and **any other exit (2, 127, signals, crashes) = runner-error,
+  handled identically to 3** — the contract enumerates the full code space so a crashed
+  check can never read as success; 3-and-above render as loudly as 1.
 - Absent/malformed state: local session → visible warning naming the missing input
   (never brick); CI → fail closed. "Cannot evaluate" is a distinct, visible outcome from
   "pass" EVERYWHERE (exit codes and messages distinguish them).
@@ -79,18 +81,35 @@ trusts only what it can attest.
 The unit of classification is the **scenario/behavior, not the file**. For each behavior
 touched by a PR:
 
-1. From the ledger: a `kind: red` event for its scenarios at some ancestor commit, then a
-   `kind: green` at a descendant → **RED-observed** (the ideal).
+**The RED workflow, stated**: local dirty-tree red runs guide the session but are
+inadmissible for CI; the admissible RED is produced by **committing the failing test (the
+RED commit) and running the suite at that commit** — clean provenance, exit non-zero,
+ledger `red` event. This is one extra commit per behavior, by design: the RED point becomes
+part of the PR's history and the classifier's evidence.
+
+1. From the ledger: a `kind: red` event for its scenarios at a commit **within the PR's own
+   range** — ancestor of head AND descendant of `merge-base(head, target)` (an unrelated
+   branch's historical red never qualifies) — then a `kind: green` at a descendant →
+   **RED-observed** (the ideal). Rotation cannot evict it: the attestation bundle is
+   assembled at push time from the PR range and travels with the PR, independent of local
+   ledger rotation thereafter.
 2. No red event but tests for the behavior were added/modified in the PR and pass →
    **same-change**: satisfies the gate for Quick scope ONLY (the declared exemption,
    restated in ARCHITECTURE §5 and DEV_LOOP §1). For Standard+ it is a **block**, not a
    flag — the RED stage is mandatory there, full stop.
 3. Impl changed with no test touch and no ledger events → **untested-change** (the
    violation class).
+4. A `red` event exists and the behavior's tests still fail at head → **in-progress**:
+   block with a distinct "RED not yet GREEN" message (not misclassified as any of 1-3).
+No PR state falls outside these four; the classifier's own no-match branch is a
+cannot-evaluate error, never a pass.
 
-This replaces diff-filter heuristics (the v1 CI classifier compared *added* test files
-against *added-or-modified* impl files, misclassifying every PR that edited existing code —
-verified defect). Test-touch detection uses the pairing registry (§5), not filename addition.
+This replaces diff-filter heuristics. Accuracy note (audit-corrected): the v1 classifier's
+AM-on-impl side was the *deliberate* #3225 remedy (A-only had made every edit-shaped PR look
+impl-less); the residual defect is that TEST detection remained A-only, so PRs modifying
+existing test files misclassify. Behavior-unit classification supersedes both sides rather
+than reverting the #3225 ruling. Test-touch detection uses the pairing registry (§5), not
+filename addition.
 
 ## 5. Enforcement placement (provider-neutral contract)
 
@@ -126,5 +145,6 @@ suites), classifier patterns' values.
 - Evidence staleness/provenance (major): §3 — commit-bound, dirty-flagged, infra-vs-assertion RED.
 - Fail-loud vs local-only inputs (major): §2/§5 — authority classification per input; CI fails closed; ledger travels with the push.
 - Classifier promotion blocked (blocker, arch-level): §4 — behavior-unit classification replaces the diff-filter heuristic entirely.
-- Isolation-adapter lifecycle (major): out of this spec's scope — owned by the L3 adapter
-  interface (template M3 deliverable, tracked in ROADMAP; not silently dropped).
+- Isolation-adapter lifecycle (major): out of this spec's scope — workspace/DB classes and
+  registry semantics are normative in `WORKSPACE_LIFECYCLE.md`; the adapter interface is the
+  named `ISOLATION_ADAPTERS.md` planned spec in `ARCHITECTURE.md` §9 with acceptance criteria.

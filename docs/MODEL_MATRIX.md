@@ -54,11 +54,11 @@ seat_classes:               # role → tier (+ rationale, fallback CHAIN — nev
   implement:        { tier: doing }
   explore:          { tier: doing }
   capture:          { tier: doing }
-  diagnostic:       { tier: thinking, note: "escalate-on-stall rule, not default-high" }
+  diagnostic:       { tier: thinking, note: "dispatched deliberately, not default-on; cost control = dispatch discipline, not lower effort" }
   docs_baseline:    { tier: authoring, fallback: thinking, note: "two-tier synthesis ruling" }
   docs_maintenance: { tier: maint,  requires: "hierarchy exists (gate, not vibe)" }
   cross_review:     { tier: thinking, second_opinion: { when: "second-runtime-configured", runtime: other, effort: xhigh, else: "same-runtime fresh-context pass" } }
-  frontend:         { tier: doing, raise_to: maint }
+  frontend:         { tier: doing, escalate_to: thinking, note: "escalation raises the TIER (judgment-heavy UI work); tiers order thinking > authoring-adjacent > doing > maint on capability — a tier change is never a model downgrade dressed as a raise" }
 models:                     # per-runtime model ids per TIER — complete on every runtime
   claude: { thinking: opus-5, authoring: fable-5, doing: opus-5, maint: sonnet-5 }
   codex:  { thinking: gpt-5.6-sol, authoring: gpt-5.6-sol, doing: gpt-5.6-sol, maint: gpt-5.6-terra }
@@ -74,7 +74,7 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 | orchestrate (O), integrate (I) | claude opus-5 @ xhigh | official "xhigh for demanding agentic work"; FrontierBench xhigh>max |
 | design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule |
 | implement, explore, capture | claude opus-5 @ low | official: low "scopes work to what was asked"; cheapest sanctioned Claude tier |
-| diagnostic | opus-5 @ high→xhigh on stall | official escalate-on-shallow-reasoning guidance |
+| diagnostic | opus-5 @ xhigh (thinking tier) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
 | cross-review | opus-5 @ xhigh + codex sol @ xhigh second opinion | standing cross-runtime lane |
 | codex seats (pilot) | gpt-5.6-sol @ xhigh (review) / low (mechanical) | Sol default LOW is official; ultra excluded (auto-delegation) |

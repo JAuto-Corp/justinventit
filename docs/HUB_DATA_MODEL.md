@@ -83,9 +83,9 @@ a backend as a silent reject. Verbs are runtime-agnostic shell (`hub.sh` success
 |-|-|-|-|
 | Concurrency | full (DB) | full single-host (WAL) | flock append; single-writer-at-a-time |
 | Reads | SQL views | SQL views | full scan folds |
-| Cursors | table | table | offset files |
+| Cursors | table | table | **hub_id-valued** files (byte offsets would be invalidated by repair-by-rewrite) |
 | Multi-host | yes | no | no |
-| Guarantees | full contract | full contract | **stated weaker**: no fold caching, scan cost O(log size), repair-by-rewrite |
+| Guarantees | full contract | full contract | **stated weaker**: no fold caching, O(n) full-scan folds, repair-by-rewrite; crash atomicity is length-prefixed-record + truncate-to-last-valid on open (flock serializes writers but does NOT make appends crash-atomic; >PIPE_BUF appends can tear — the recovery scan is the mechanism, and its fixture corrupts a tail record and asserts truncation) |
 
 Backend choice is a questionnaire dial; the verb surface is identical. The conformance suite
 runs against all three in framework CI (idempotent replay, interleaved writers, cursor crash
@@ -96,11 +96,19 @@ recovery, tenancy isolation, partial-write recovery).
 - `schema_version` per project, written at adopt/upgrade; framework ships ordered
   migrations per backend; verbs refuse to run against a newer schema than they know
   (fail loudly, upgrade instruction in the error).
-- **JAuto migration path**: existing `orchestration_*` tables gain `project_id` (backfilled
-  to the JAuto project id) + compound keys via additive migration; `msg.sh hub` verbs are
-  re-pointed to the new hub CLI when it reaches parity; staging remains the backend until the
-  Phase-5 go/no-go. Old rows never rewritten — folds tolerate pre-namespace events tagged at
-  backfill.
+- **JAuto migration path — corrected by audit (in-place compound-keying is NOT additive)**:
+  `orchestration_roles.letter` is a `char(1)` PK with 4 inbound FKs, `threads.id` a slug PK
+  with 4 more, plus views and RLS — re-keying in place would drop and recreate all of them
+  on the live hub. The actual path: (1) **additive phase**: add `project_id` as a NULLABLE
+  column backfilled to the JAuto id, with partial unique INDEXES only — PKs, FKs, views
+  untouched; the staging instance remains effectively single-tenant and fully functional.
+  `hub_id` dedup tightens via a new-rows-only NOT NULL enforcement (trigger/app-level);
+  legacy NULL rows are grandfathered outside the dedup contract. (2) **cutover phase
+  (Phase-5 go/no-go, a declared NON-additive exception to law 7, executed as a cutover not
+  as surgery)**: stand up a fresh multi-project-schema deployment, export/import with a
+  dual-write window and read-compatibility views on the old side, then retire the old
+  tables. Verb clients are version-negotiated: refuse-newer applies to WRITES only — reads
+  degrade gracefully during the window, so un-upgraded seats are never bricked mid-migration.
 
 ## 7. Routed review findings dispositioned here
 

@@ -29,7 +29,12 @@ where both layers share one runtime-facing artifact. Rules:
   modified → **named conflict, update blocked** (fail loudly, never silent overwrite, and a
   local edit is never absorbed as the new base); project regions → never touched.
 - Framework updates are applied by this **deterministic composer** (Copier update task),
-  region-by-marker, never whole-file copies.
+  region-by-marker, never whole-file copies. The decision table is TOTAL: unchanged →
+  apply; locally modified → named conflict; project region → untouched; **region missing
+  locally / markers corrupt → named conflict (treated as local modification, never
+  recreated silently); NEW upstream region → inserted at its manifest anchor (the normal
+  upgrade case); region removed upstream → deleted only if local hash matches lock, else
+  named conflict.** Any input outside these branches is a composer error, not a skip.
 - Conformance test: compose → recompose → byte-identical (idempotence), and a seeded local
   edit inside a framework region must produce the named-conflict failure.
 
@@ -40,7 +45,12 @@ where both layers share one runtime-facing artifact. Rules:
 | Root entry | native AGENTS.md discovery (concat global→root→cwd) | `CLAUDE.md` = `@AGENTS.md` + runtime extras |
 | Nested entry | native per-directory discovery | **not native** — composer emits per-directory `CLAUDE.md` shims (`@<relpath>/AGENTS.md`) for every nested AGENTS.md |
 | Payload ceiling | `project_doc_max_bytes` (default 32768), silent truncation | no hard ceiling; same budget applied by policy |
-| Verification | `codex debug prompt-input` fixture test in CI | automated fixture: headless `claude -p` run in the fixture repo asserting tier-marker visibility at root and nested working dirs |
+| Verification | `codex debug prompt-input` fixture test in CI | automated fixture: headless `claude -p` run in the fixture repo asserting tier-marker visibility AND ordering at root and nested working dirs |
+
+The fixture suite's capstone is an **equivalence assertion**: one canonical fixture
+hierarchy rendered through both runtimes (codex `debug prompt-input`, claude headless
+probe), normalized, and compared — same regions, same effective order. Per-runtime
+visibility checks alone cannot falsify the contract's actual premise.
 | Transitional bridge | `project_doc_fallback_filenames=["CLAUDE.md"]` only for dirs not yet migrated | n/a |
 
 **Claude resolution algorithm (normative)**: Claude Code natively loads `CLAUDE.md` files
@@ -57,9 +67,19 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
 ## 4. Budget
 
 - **Budgeted**: the deterministic repo-owned payload — worst-case concatenation
-  root + deepest nested chain per working directory. CI computes it per directory containing
-  an AGENTS.md and fails above **28 KB** (4 KB reserved headroom for global/user context CI
-  cannot see).
+  root + deepest nested chain per **declared workspace root** (not every directory: see the
+  skill-payload exclusion below). CI fails above **26 KB**, with a **6 KB reserve** sized to
+  measured reality, not aspiration (the reference environment's global tier already measures
+  ~4.8 KB — a 4 KB reserve was arithmetically breached on day one). The doctor script
+  re-measures the reserve against actual global files and warns when reality erodes it.
+- **Skill-payload AGENTS.md files are NOT entry contracts.** Vendored/skill trees (e.g.
+  `.agents/skills/**`, one of which ships an 81 KB AGENTS.md) are excluded from the entry
+  hierarchy by an explicit exclusion list: the CI budget check skips them, the composer
+  emits no shims for them, and seats do not run with cwd inside them (a cwd inside an
+  excluded tree inherits its payload — the doctor flags that configuration).
+- **Claude auto-memory is outside this contract** (invisible to Codex, not part of the
+  AGENTS payload) but is counted in a separate per-runtime context-health report with its
+  own budget, so total Claude-side context stays observable.
 - **Enforced at launch**: the seat launcher / doctor script measures the COMBINED payload
   (global + repo chain, exact separators) where the global tier is actually visible, and
   refuses to launch (with the measured breakdown) if it would cross the runtime ceiling —
@@ -93,7 +113,10 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
 ## 7. Migration order (JAuto)
 
 1. Author root AGENTS.md within budget; CLAUDE.md becomes shim + extras (old content routed
-   to skills/docs — nothing dropped without a pointer).
+   to skills/docs — nothing dropped without a pointer). Acknowledged magnitude: the current
+   root CLAUDE.md is ~43.6 KB against a 26 KB budget — this step sheds >15 KB by routing,
+   and is authoring-tier work, not mechanical trimming. The skill-payload exclusion list
+   (§4) ships in the same change, since JAuto already contains vendored AGENTS.md files.
 2. Nested AGENTS.md for `apps/web`, `apps/scheduler`, `test-data` + generated Claude shims.
 3. Retire duplicated session-entry protocols (PLAYBOOK §, CLAUDE.md Quick Start) in the same
    change that lands the single canonical section.

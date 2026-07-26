@@ -40,7 +40,7 @@ only by its own cadence loop or a human, and the watchdog reports rather than re
 ```
 booted → active ⇄ standby (armed wake) → dormant (deliberate, next_wake=none)
 active/standby → STALLED (heartbeat age > grace)  → revived → active
-any → dead (lease expired, unrenewed past grace)   ↘ report-only if not revivable
+any → dead (stalled + revival budget exhausted, or operator-declared) ↘ report-only if not revivable
 ```
 
 - **Heartbeat**: written by a turn-end hook on BOTH runtimes (Codex hooks support Stop; the
@@ -49,12 +49,17 @@ any → dead (lease expired, unrenewed past grace)   ↘ report-only if not revi
   numeric field is a loud error, not a watchdog crash.
 - **Grace**: `max(floor, 2 × cadence_seconds)`. `dormant` + `next_wake_at: none` is
   deliberate sleep, never a stall.
-- **Leases + fencing (CAS, not blind write)**: every revival path (pacemaker, doorbell,
-  human script) must acquire the seat's lease via **compare-and-swap**: read
-  `{epoch: n, holder, expires_at}`; acquisition succeeds only if the CAS primitive
-  atomically verifies `epoch == n AND (holder is null OR expires_at < now)` while writing
-  `{epoch: n+1, holder: <unique token>, expires_at}`. Two racers reading epoch n cannot both
-  win — exactly one CAS succeeds; the loser observes the changed epoch and stands down.
+- **Leases exist only for revival windows — liveness is heartbeats.** A healthy seat runs
+  **unleased** (`holder: null` is the normal state); staleness is judged by heartbeat age,
+  never by lease state. Every revival path (pacemaker, doorbell, human script) must acquire
+  the seat's revival lease via **compare-and-swap**: read `{holder, expires_at}`;
+  acquisition succeeds only if the CAS primitive atomically verifies
+  `holder is null OR expires_at < now` while writing `{holder: <fencing token = fresh ULID>,
+  expires_at}`. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
+  across registry recreation and re-adoption, so there is no counter to reset (the epoch
+  field survives only as a human-readable revival counter with no fencing role). Two racers
+  cannot both win — exactly one CAS succeeds; the loser observes a foreign token and stands
+  down.
   CAS implementation per registry backend: hub-backed registry = transactional
   conditional update; file-backed registry = a **per-seat mutex** (`flock` on
   `<letter>.lock`, held for the whole operation) inside which the acquirer re-reads the
@@ -65,18 +70,26 @@ any → dead (lease expired, unrenewed past grace)   ↘ report-only if not revi
   (renewal: holder == self).
   The revived seat **validates its fencing token (holder + epoch) before its first
   side-effect** and re-validates before irreversible actions; a stale token = stop
-  immediately. Renewal extends `expires_at` under the same holder; release nulls holder
-  without bumping epoch. **The one normative dead predicate: lease expired and unrenewed
-  past grace.** Process liveness checks are diagnostics for the report, never the trigger.
+  immediately. **Handoff**: the reviver passes its fencing token in the revival payload; the
+  revived seat validates token-equality against the CURRENT lease record before its first
+  side-effect and re-validates before irreversible actions; the reviver releases (nulls
+  holder) only AFTER observing the revived seat's first heartbeat — never mid-turn — after
+  which the seat runs unleased again. **The normative state predicates**: STALLED =
+  heartbeat age > grace (and state not `dormant`); DEAD = stalled AND the configured
+  revival budget is exhausted (N failed/unclaimed revival windows) or an operator declares
+  it. Lease state never defines liveness; process checks are diagnostics for reports, never
+  triggers.
   Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
-  crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race**) run
+  crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race, registry
+  recreation mid-lease** — token fencing must hold across a recreated registry) run
   against every registry backend.
 
 ## 3. Launch and resume
 
 | | Claude seat | Codex seat |
 |-|-|-|
-| Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
+| Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <project_id>-<tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
+| **Tier verification (both runtimes, mandatory)** | launcher confirms the booted session reports the intended model+effort | **empirically required**: a nonexistent Codex profile boots the DEFAULT tier with exit 0, and config errors are non-fatal — the launcher runs a post-boot probe asserting the RESOLVED model/effort and fails loudly on mismatch; tier selection is never trusted |
 | Resume | `--resume <uuid>` / remote-control push | interactive `codex resume <name>`; headless poke: `codex exec resume <letter> "<drain prompt>" < /dev/null` |
 | Tier | model+effort args from matrix | **project-qualified** profile (`~/.codex/<project_id>-<tier>.config.toml`), selected by the launcher from the seat record's `project_id` — two consuming projects never collide; per-poke override `-c model_reasoning_effort=...` |
 | Effort constancy | hold constant per session (prompt-cache) | same rule |
@@ -141,10 +154,21 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
 - **First roles: read-heavy** (review/audit/second-opinion), `sandbox read-only` +
   `codex apply` for proposed patches. Write scope is a Phase-5 decision on pilot evidence.
 
+## 6a. Registry migration (live-path move)
+
+The registry relocation (`sessions/<L>.id` → `<project_id>/sessions/<letter>.json`) moves a
+path read by **seven live sites** (launcher, msg CLI, fleet-status, both cron ingest
+wrappers, the ingester, and the session-start hook) — so it ships phased: (1) new tooling
+writes BOTH forms and reads new-then-legacy; (2) each reader site migrates against a
+checklist enumerating all seven; (3) legacy files retire only when the checklist is clean.
+**Letter case**: canonical form in all protocol files is **lowercase**; adapters normalize
+at external boundaries that demand otherwise (e.g. a DB CHECK constraint requiring
+uppercase) — the mirror contract names this conversion explicitly.
+
 ## 7. Routed review findings dispositioned here
 
 - Seat lifecycle races / split-brain (major): §2 — leases + fencing epochs on every revival path.
 - Non-revivable runtimes (major): §1 — capability negotiation; report-only watchdog mode.
 - Doorbell races/bursts/missed events (major): §4 — cursor-based subscribe, coalescing, expiry, lease.
 - Mailbox authorization (major, shared with hub spec): §5 — mechanism where possible, etiquette as last resort.
-- Trust/secrets boundary (major, partial): §6 — trust verification at boot, hash-pinned hook bypass list, .rules bans; full threat model is tracked as a named M3 deliverable in ROADMAP (not silently dropped).
+- Trust/secrets boundary (major, partial): §6 — trust verification at boot, hash-pinned hook bypass list, .rules bans; full threat model is the named `THREAT_MODEL.md` planned spec in `ARCHITECTURE.md` §9 with acceptance criteria (not silently dropped).

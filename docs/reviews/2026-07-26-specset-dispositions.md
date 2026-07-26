@@ -44,3 +44,31 @@ provenance (green = head, red = ancestor via merge-base); matrix recast as four 
 authored inputs → generated `matrix.resolved.yaml`; authoring tier resolvable on every
 runtime with fallback chains; single dead-state predicate (lease expiry, process checks
 diagnostic-only). Remaining verification: the fresh-context spec-auditor ×2 phase gate.
+
+## R3 — spec-auditor ×2 batch (same day)
+
+Inputs: `2026-07-26-spec-auditor-1.md` (1B/5M/4m, DISPATCH WITH FIXES) and
+`2026-07-26-spec-auditor-2.md` (4B/8M, DESIGN ROUND NEEDED; two claims empirically
+confirmed by g). All 22 distinct findings dispositioned in this commit:
+- HUB §6 migration rebuilt: additive nullable-project_id phase + declared non-additive
+  cutover phase w/ dual-write + read-degrading version negotiation (both audits' blocker).
+- Leases: revival-window-only; fencing by ULID token equality (kills epoch-reset AND
+  equal-epoch classes); reviver→seat token handoff + release-after-first-heartbeat;
+  liveness = heartbeats; DEAD = stalled + revival budget exhausted.
+- Codex tier verification mandatory post-boot (empirical: missing profile = silent default).
+- RED workflow stated (commit-the-red); ancestry bounded to PR range via merge-base;
+  push-time attestation bundle defeats rotation; classifier case 4 (in-progress) added;
+  exit-code space totalized (crash ≠ pass).
+- Budget 26KB + measured 6KB reserve; skill-payload AGENTS.md exclusion list; Claude
+  memory in a separate per-runtime health report; >15KB CLAUDE.md shed acknowledged.
+- Composer decision table totalized (missing/corrupt/new/removed-upstream branches).
+- Matrix: diagnostic = thinking tier at dispatch (no phantom efforts); frontend
+  escalate_to:thinking (tier ordering defined); ROADMAP citations re-pointed to ARCH §9.
+- jsonl honesty: hub_id-valued cursors, O(n) folds, length-prefixed records +
+  truncate-to-last-valid recovery w/ tail-corruption fixture.
+- Registry migration section (7 reader sites, dual-write phase); lowercase-canonical
+  letter case w/ boundary conversion.
+- #3225 autopsy corrected; cross-runtime equivalence fixture added as capstone.
+
+PHASE-1 GATE: both auditors + two Codex passes complete, all findings dispositioned →
+**gate CLOSED**. Residual verification rides the implementation PRs' normal review flow.
