@@ -1,171 +1,163 @@
-# Architecture
+# Architecture (v2)
 
-> Why each layer exists, and how they connect.
+> Status: **v2, 2026-07-26** — supersedes the 8-layer model (v1, ~2026-03) and resolves its
+> conflict with `REVIVAL_SCOPING.md` §3 in favor of the **three-layer lens**. The old 8 layers
+> survive as components mapped into the new layers (§3). Authored under the agentic-separation
+> program (customer-portal plan `mossy-discovering-moler`); design inputs traced there.
 
-## Design Principles
+## 1. Design laws
 
-1. **Route, don't dump** — CLAUDE.md is a routing table, not a manual. Under 200 lines.
-2. **Load on demand** — Skills, rules, and docs are lazy-loaded. Only what's needed enters context.
-3. **Enforce, don't suggest** — Hooks turn conventions into gates. Without enforcement, conventions drift.
-4. **Tests define done** — The agent doesn't decide when work is complete. The ATDD cycle does.
-5. **The system improves itself** — Friction signals feed back into skills, hooks, and rules.
+The v1 principles (route don't dump · load on demand · enforce don't suggest · tests define
+done · the system improves itself) still hold. v2 adds seven laws learned from watching the
+source system rot in specific, diagnosable ways:
 
-## The 8 Layers
+1. **Fail loudly.** A gate or hook that cannot resolve its inputs reports that visibly —
+   silent-success and broken must be distinguishable. For *local-only* state (gitignored
+   session files), "loud" means a visible warning naming the missing/malformed input; it must
+   never brick a seat. Hard-fail is reserved for CI-visible contexts where the input is
+   versioned. *Origin: nine enforcement gates in the source system fell through to
+   `{"continue": true}` for months after a state-format drift, without one error.*
+2. **Single source of truth; indexes are generated.** Any index, map, roster, or matrix is
+   generated from the filesystem or config and freshness-gated in CI (regenerate +
+   `git diff --quiet`). Hand-groomed indexes decay to lies. *Origin: a documentation map whose
+   every count was wrong and which omitted the system's entire current command surface.*
+3. **Two context layers, explicit everywhere.** Layer A = agentic development platform
+   (this framework's scope: levers, hooks, coordination, TDD method, seat protocol).
+   Layer B = project context (the consuming project's scope: domain skills, schema, product
+   docs, deployment). Every file belongs to exactly one layer; forge markers and Copier
+   update-hygiene (`_skip_if_exists` / `_exclude`) enforce the boundary. The two layers are
+   separately planned, staffed, and paced — each with its own internal tier hierarchy.
+4. **Progressive disclosure under a hard budget.** The entry contract (the AGENTS.md
+   concatenation a session actually receives) stays ≤32KB worst-case — the Codex
+   `project_doc_max_bytes` ceiling doubles as the health budget for every runtime. Everything
+   deeper is routed by reference, not inlined.
+5. **Multi-consumer from day one.** Coordination state (hub records, rosters, dispatches) is
+   project-namespaced; storage backends are pluggable. The framework must serve a second
+   consuming project without schema surgery.
+6. **Record-as-byproduct.** Transport is a side-effect of recording — one append yields both
+   the durable record and the message. Derived views are computed on read, never
+   hand-maintained. Cross-seat waits use event doorbells (a bounded watcher that re-invokes
+   the session *on* the event); polling cadence is the fallback, not the default. Doorbells
+   are a cross-session primitive only — in-session subagents already re-invoke their parent.
+7. **Additive migration only.** Every change to a live consuming project ships through its
+   normal PR flow, and the old path keeps working until the new one is proven.
 
-### Layer 0: CLAUDE.md (Entry Point + Router)
-
-The single file every Claude Code session reads first. It answers three questions:
-1. **Where am I?** — Codebase map (directories, core flow, schema source of truth)
-2. **What should I do first?** — Before-working checklist, routes to PLAYBOOK.md
-3. **How do I do it?** — Routing tables mapping needs → skills, tools, documents
-
-**Hard constraint**: Under 200 lines. Anthropic's research shows adherence drops significantly past this threshold. Domain-specific knowledge belongs in path-scoped rules (Layer 1) or skills (Layer 1), not CLAUDE.md.
-
-### Layer 1: Skills (Lazy-Loaded Knowledge)
-
-Two categories:
-
-**Orchestrator skills** control workflow:
-- `work` — lifecycle state machine (start → continue → pause → handoff → done)
-- `verify` — verification gates (phase, sprint, epic, file, feature, audit)
-- `capture` — issue parking without context-switching
-- `team-lead` — agent team coordination (WAIT pattern, file ownership)
-- `e2e` — test execution modes (conductor, direct, SQL)
-- `patterns` — shared sub-patterns loaded by other skills
-- `workflow` — meta-skill for editing the system itself
-
-**Domain skills** encode best practices:
-- Invoked before writing 20+ lines of code
-- Scoped to technology (API patterns, frontend aesthetics, DB relationships, etc.)
-- Project-specific — these are stubs in the framework, filled in per project
-
-Skills use SKILL.md with YAML frontmatter (`name`, `description`). Only frontmatter loads at session start. Full content loads on invocation via the Skill tool.
-
-### Layer 2: State Machine (Work Lifecycle)
-
-State file chain (read in order each session):
-
-```
-PLAYBOOK.md        → Which lifecycle phase? (planning, execution, validation)
-CURRENT_WORK.md    → What epic/sprint/phase is active?
-WORKING.md         → What's the immediate next action? (append-only observation blocks)
-SPEC.md            → What are the acceptance criteria for this phase?
-SCENARIOS.md       → What are the Gherkin scenarios? (ENTRY GATE)
-PROGRESS.md        → What's been checked off?
-```
-
-The `work` skill manages transitions between states. Handoffs write goal-focused context to WORKING.md so the next agent (or session) can reconstruct intent.
-
-**WORKING.md format** — append-only dated observation blocks:
-```markdown
-## 2026-03-11T14:30Z
-Phase: epic-N/sprint-1/phase-1
-Completed: PROGRESS #1-3
-Next: PROGRESS #4
-Blockers: none
-```
-
-This format hits Anthropic's prefix cache (stable prefix = cached) for significant cost/latency reduction.
-
-### Layer 3: ATDD Gate (Quality Control)
-
-The sequence: **Plan → RED → GREEN → VALIDATE**
+## 2. The three layers
 
 ```
-SPEC.md (what to build, exit landmarks)
-  → SCENARIOS.md (Gherkin — MUST exist before code)
-    → Stories (.stories.ts — given/when/then, seeds)
-      → Scenarios (.scenario.ts — executable config)
-        → RED (scenario fails — feature absent)
-          → Implementation
-            → GREEN (scenario passes)
-              → /verify:complete (exit gate)
+L1  PORTABLE CORE          the single-session development method
+    context contract · levers (scope/go/check) + chain state · ATDD/TDD gate ·
+    hooks pipeline + evidence ledger · dev-log · memory scaffolding · agents (spec-auditor)
+
+L2  ORCHESTRATION TIER     many sessions, one program
+    hub (verbs + project-namespaced state, pluggable backends) · seats + roster + launcher
+    (runtime-plural: claude | codex) · mailboxes · cadence/heartbeat · pacemaker/watchdog ·
+    doorbells · model/effort matrix (generated config)
+
+L3  INFRA ISOLATION        parallel work without collisions
+    worktrees · DB isolation adapters (none/schema/compose/branch) · port allocation ·
+    per-worktree trust/config for each runtime
 ```
 
-**Scope classification is objective** — the agent doesn't self-classify:
+A solo project consumes L1 only (`orchestration_tier: solo`). A fleet adds L2. Parallel
+write-heavy work adds L3. Each tier is independently adoptable and independently testable.
 
-| Trigger | Scope | TDD Required? |
+## 3. Where the v1 layers went
+
+| v1 layer | v2 home | Notes |
 |-|-|-|
-| New DB tables/columns | Standard+ | Yes |
-| New API routes | Standard+ | Yes |
-| New UI pages/major components | Standard+ | Yes |
-| 4+ files modified | Standard+ | Yes |
-| Single-file bug fix, no new surface area | Quick | No |
+| L0 Entry/router | L1 context contract | AGENTS.md-canonical; see §4 |
+| L1 Skills | L1 (orchestrator skills) + **Layer B** (domain skills) | domain skills are project context, not framework |
+| L2 State machine | L1 (chain state + lifecycle files) | the "state-file chain" reading; the *orchestration* reading of "L2" is now the actual L2 |
+| L3 ATDD gate | L1 TDD gate | rebuilt fail-loud; see TDD_GATE spec |
+| L4 Hooks | L1 hooks pipeline | decomposed runner + fixture harness is canonical |
+| L5 Agent teams | L1 (in-session teams) + L2 (cross-session seats) | the boundary is the session: teams live inside one session; seats are sessions |
+| L6 CI/CD | L1 gate definitions + Layer B implementation | framework ships gate *patterns* + a generated-project CI skeleton; the project owns its pipeline |
+| L7 Memory | L1 memory scaffolding | index ≤ a hard byte budget; topic files; generated index discipline applies |
 
-Gates are enforced at multiple system boundaries:
-- `/work:start` and `/work:continue` block without SCENARIOS.md
-- `/verify:complete` hard-blocks on missing scenarios
-- Stop hook blocks session exit if scenarios weren't executed
+The two incompatible definitions of "Layer 2" (state-file chain vs orchestration tier) are
+hereby resolved: **L2 means the orchestration tier.** The state-file chain is an L1 component.
 
-### Layer 4: Hooks (Invisible Enforcement)
+## 4. Context contract (summary — full spec: `CONTEXT_CONTRACT.md`)
 
-Hook pipeline architecture:
+- **AGENTS.md is canonical.** It is the shared entry contract read natively by Codex and via a
+  one-line `@AGENTS.md` import by Claude Code (`CLAUDE.md` = the import + runtime-specific
+  extras only). Nested AGENTS.md files scope subtree guidance (loaded only when working
+  there). The ecosystem (Cursor, Windsurf, Cline) reads root AGENTS.md natively; this contract
+  is CLI-first but IDE-compatible.
+- **Delivery tiers**: global (user-level, both runtimes) → repo root → nested. Content at each
+  tier is layer-tagged (A or B). The worst-case concatenation per working directory is
+  budget-checked in CI (law 4) — the ceiling applies to the *payload*, not the root file.
+- **Two-axis organization**: tier (global/root/nested) × layer (A agentic / B project). Layer A
+  content is forge-marked and framework-owned; Layer B content is project-owned. Nested
+  AGENTS.md files are the bridge: they reference Layer B domain indexes so project knowledge
+  is one hop from every seat without inflating the entry budget.
+- **Runtime deltas stated once**: Claude-only channels (auto-memory, skill `/name` invocation,
+  hooks-injected context) and Codex-only channels (`$name` skills, `.rules` execpolicy,
+  `--output-schema`) are documented in the contract; durable rules a Codex seat needs must
+  live in AGENTS.md or `.rules` — never only in Claude memory.
 
-```
-.claude/hooks/
-  session-start.sh       ← Session brief (phase, next item, skill routing)
-  pre-compact.sh         ← State preservation before context compression
-  stop/
-    checks/              ← Individual check functions
-      01-tdd-gate.sh     ← Scenarios exist for standard+ scope
-      02-evidence.sh     ← Commits match checked PROGRESS items
-      03-type-check.sh   ← Build validation ran
-      04-scenarios.sh    ← Scenarios were executed
-      05-tdd-cycle.sh    ← RED recorded before GREEN
-    actions/             ← Post-check actions
-      discovery.sh       ← [DISCOVERY:*] → GitHub issues
-      friction.sh        ← [FRICTION:*] → friction log
-      landmarks.sh       ← Commit trailers → PROGRESS checkoff
-    runner.sh            ← Aggregates check results
-  guards/
-    write-guard.sh       ← Worktree isolation
-    migration-guard.sh   ← DB migration safety
-  lib/
-    utils.sh             ← Shared utilities
-    evidence.sh          ← Build evidence tracking
-```
+## 5. Levers and the chain (L1)
 
-Each check is independently testable: `bash checks/01-tdd-gate.sh` exits 0 (pass) or 1 (block with message). New checks are added by dropping a file. Project-specific checks go in a separate directory from framework checks.
+The execute lever is **`go`** — the proven live triad is `scope → go → check`, with
+convergence state in `context/CHAIN.json` and knobs in `chain-config.json`. The v1 `work`
+family is retained as the lifecycle sub-skill set (`start/continue/pause/handoff/done`,
+epic/sprint planning) invoked *by* the levers, not as a competing top-level surface. All
+three levers share the orient → equip → act skeleton; iteration-counter ownership, tier
+ladders, stall detection, and relay mechanics are defined once, in the chain skill, and
+referenced — never restated — by the levers (law 2 applies to skill content too).
 
-**Relaxation mode**: `JUSTINVENTIT_HOOK_MODE=relaxed` downgrades blocks to warnings for prototype spikes.
+The development loop, end to end (mandatory stages bolded):
+**scope** (design + SPEC) → **spec-audit** (fresh-context adversarial ×2 + cross-runtime
+second opinion) → **RED** → **GREEN** → **review** (cross-review) → **integrate** →
+**document** (doc delta or explicit no-doc-impact declaration, gated like tests) →
+**capture** (durable parking of discoveries). Details: `DEV_LOOP.md`.
 
-### Layer 5: Agent Teams (Coordination)
+## 6. Seats, runtimes, and models (L2 — full specs: `SEAT_PROTOCOL.md`, `MODEL_MATRIX.md`)
 
-**The WAIT pattern**: After spawning teammates and assigning tasks, the lead must stop making tool calls. Messages only arrive when the lead is idle. Act → stop → receive → act → stop.
+A **seat** is `{letter, runtime: claude|codex, model, effort, workdir, session-handle}` —
+a persistent, addressable, revivable terminal session. Seats coordinate through the hub and
+mailboxes; they never read another seat's mailbox. In-session subagents are for judgment work
+that correctly inherits the seat's tier, and for read-only exploration; **hands work goes to
+a seat, and Codex participates only as seats, never as subagents.**
 
-**File ownership**: Absolute — no two teammates edit the same file. The lead writes a team ownership manifest before spawning. Each teammate's prompt includes their owned files and off-limits zones.
+The model/effort matrix is **generated configuration** (questionnaire dial + per-project
+overrides), not prose — the source system rewrote its model policy three times in two weeks
+inside hand-edited documents; a matrix-as-data with one generator would have been one-line
+changes. Tier principles: judgment and synthesis-of-understanding run on thinking-tier
+models; execution runs scoped-down; maintenance documentation may drop tiers only after the
+hierarchy exists to scope it; cross-runtime second opinions are a standing lane.
 
-**Recovery**: Git commits are the durable checkpoint. PROGRESS.md is the phase checkpoint. After context compression, rebuild from `git log` + PROGRESS.md.
+## 7. Hub (L2 — full spec: `HUB_DATA_MODEL.md`)
 
-### Layer 6: CI/CD Pipeline
+The hub is a verb interface — `dispatch / status / rule / thread / finding / attention /
+journal / role` writes, `seats / open / mine / blocked` reads — over project-namespaced state
+with pluggable backends: `postgrest` (shared Postgres/Supabase), `sqlite` (portable default),
+`jsonl` (degraded file-drop). One append = record + transport (law 6). Every verb the
+protocol needs exists as a verb; raw SQL against hub tables is repair-only.
 
-Required status checks before merge:
-- Type checking (language-appropriate)
-- Build validation
-- Test suite
-- Migration validation (if applicable)
+## 8. Enforcement doctrine (L1)
 
-Merge path: `feature/*` → `staging` → `main`. Agents commit freely; humans push.
+- Gates read **machine-readable, schema-validated state** — never prose formats that drift
+  silently. Absent-state semantics per law 1.
+- The evidence ledger records what *ran* (build, tests, RED/GREEN phases) from inside the
+  actual runners — an agent's claim that a test ran is not evidence. Overrides exist but are
+  named, logged tokens, never silent bypasses.
+- Every check is a file, independently testable against shipped fixtures; the hook test
+  harness is part of the framework and runs in the framework's own CI *and* in generated
+  projects.
+- Documentation is a gated stage (law: doc delta or explicit no-doc-impact), and generated
+  indexes are freshness-gated — the two mechanisms that keep the delivery layer current-by
+  construction rather than current-by-diligence.
 
-### Layer 7: Memory (Three-Tier Persistence)
+## 9. Sibling specifications
 
-| Tier | Scope | Location | Survives |
-|-|-|-|-|
-| Session | Current session | `.claude/memory/` | Until session ends |
-| Cross-session | All sessions for this project | `~/.claude/projects/.../memory/` | Forever |
-| Durable | All time | Git-tracked state files (`context/`, `docs/`) | Forever |
-
-MEMORY.md (cross-session, auto-loaded) stays under 200 lines. Topic files hold details, referenced from MEMORY.md.
-
-## How Layers Connect
-
-A single development cycle traced through every layer:
-
-1. **Session starts** → Hook (L4) injects session brief from state files (L2)
-2. **Agent reads CLAUDE.md** (L0) → routes to PLAYBOOK → identifies execution phase
-3. **`/work:continue`** (L1 skill) → reads state chain (L2) → checks SCENARIOS gate (L3)
-4. **Implementation** → domain skill invoked (L1) → tool guards enforce isolation (L4)
-5. **Each PROGRESS item**: implement → check off → commit (L2 state + L6 git)
-6. **E2E validation** → test runner seeds data → agent executes (L3)
-7. **`/verify:complete`** (L1 skill) → exit gate (L3 + L4 + L6)
-8. **Session ends** → stop hook validates evidence, extracts signals (L4) → memory updated (L7)
+| Spec | Scope | Status |
+|-|-|-|
+| `CONTEXT_CONTRACT.md` | AGENTS.md hierarchy, budgets, runtime deltas, layer tagging | Phase 1 |
+| `HUB_DATA_MODEL.md` | namespaced schema, verb interface, backend adapters | Phase 1 |
+| `SEAT_PROTOCOL.md` | roster, launcher, revival, codex seat mechanics, doorbells | Phase 1 |
+| `MODEL_MATRIX.md` | matrix-as-data format, generator, initial values | Phase 1 |
+| `DEV_LOOP.md` | loop stages, role→seat mapping, mandatory gates | Phase 1 |
+| `TDD_GATE.md` | fail-loud gate rebuild, evidence ledger, state contract | Phase 1 |
+| `REVIVAL_SCOPING.md` | strategic memo this v2 ratifies (its §3 lens, its §7 rulings) | historical |
