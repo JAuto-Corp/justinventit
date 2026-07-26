@@ -47,6 +47,7 @@ tiers:                      # named launchable tiers; every tier resolves on eve
   doing:     { effort: low }
   maint:     { effort: medium }
 seat_classes:               # role → tier (+ rationale, fallback CHAIN — never runtime-dead-ends)
+  direct:           { tier: authoring, fallback: thinking, note: "user-interaction + program direction; user-driven turns (dormant cadence); optional seat" }
   orchestrate:      { tier: thinking, fallback: authoring }
   integrate:        { tier: thinking }
   design_authoring: { tier: authoring, fallback: thinking, note: "guidance/SPEC/greater-synthesis authoring" }

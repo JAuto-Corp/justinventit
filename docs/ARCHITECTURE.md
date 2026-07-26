@@ -204,6 +204,7 @@ backend-enforced authorization), not a namespace column bolted on.
 | `DEV_LOOP.md` | loop stages, role→seat mapping, mandatory gates | Phase 1 |
 | `TDD_GATE.md` | fail-loud gate rebuild, evidence ledger, state contract | Phase 1 |
 | `REVIVAL_SCOPING.md` | strategic memo this v2 ratifies (its §3 lens, its §7 rulings) | historical |
+| `WORKSPACE_LIFECYCLE.md` | workspace/DB/local-file classes, persistence tiers, provisioning/sync/cleanup ownership, registry semantics | Phase 1 (added by director ruling 07-26) |
 | `ISOLATION_ADAPTERS.md` | L3 adapter interface: lifecycle state machine, provisioning/cleanup/recovery contract, port leases, conformance suite | **planned (M3)** — acceptance: all four adapters pass one suite |
 | `VERSIONING.md` | template/schema/state compatibility: semver, ranges, migrations, deprecation windows, Copier upgrade tests | **planned (M3)** — acceptance: upgrade from prior template version passes generate-matrix CI |
 | `THREAT_MODEL.md` | trust boundaries, credentials, secret redaction, hook integrity, untrusted-PR behavior, override-token audit | **planned (M3)** — acceptance: every enforcement mechanism maps to a stated boundary |

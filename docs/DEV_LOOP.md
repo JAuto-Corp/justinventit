@@ -23,7 +23,8 @@ Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test g
 
 | Responsibility | Seat mapping |
 |-|-|
-| ORCHESTRATE | O seat: dispatch, cadence, stall watch, user escalation, queueing. Sole approver of memory/guidance revisions proposed by other seats. |
+| DIRECT | director seat (authoring tier, user-driven turns): the user↔cluster interaction point; program direction, design authority, directs ORCHESTRATE by mail; ratifies program-level direction. Does NOT touch cluster mechanics. Optional — in fleets without a director, the user interfaces with O directly and design authority sits with design_authoring sessions. |
+| ORCHESTRATE | O seat: dispatch, cadence, stall watch, user escalation, queueing. Sole approver of memory/guidance revisions proposed by other seats; takes program directives from DIRECT where present, reports cluster state to it at phase boundaries. |
 | SYSTEM DESIGN & BACKEND | design_authoring sessions (fable-class) for SPECs/architecture; implement seats execute them |
 | TEST EXECUTION | implement seats own their RED/GREEN; suite/e2e sweeps are dispatched doing-work; results land as evidence events |
 | DIAGNOSTIC | an implement seat *escalated* (matrix diagnostic class): hypotheses become durable tests + logging in the SAME PR (diagnostic-in-fix discipline), never prose tracethrough |
