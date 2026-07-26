@@ -28,6 +28,14 @@ Rules:
   class, owner, branch, DB ref, created_at; sweeps reconcile registry vs filesystem vs DB
   provider and report drift loudly. *Origin: a live registry file reporting `active: []`
   beside two full agent worktrees.*
+- **Multi-resident workspaces are read-mostly.** When more than one seat shares a working
+  tree (the main checkout typically hosts director + orchestrate + integrate), destructive
+  or tree-shifting git operations there — branch switches, resets, rebases, clean —
+  require prior coordination (mail the co-residents; for contested cases, a workspace
+  lease). Remote-side operations (gh/API merges, pushes of already-committed refs) are
+  always safe. A seat needing a local tree for conflict work uses a temporary worktree,
+  never the shared checkout. *Origin: integrator branch-switches under co-resident
+  sessions, and a seat nearly booted into another seat's authoring checkout.*
 
 ## 2. Database classes
 
