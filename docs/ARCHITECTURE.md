@@ -35,10 +35,12 @@ source system rot in specific, diagnosable ways:
    copy. Copier update-hygiene (`_skip_if_exists` / `_exclude`) enforces the file-level
    boundary; the composer + conformance tests enforce the region-level one. The two layers are
    separately planned, staffed, and paced — each with its own internal tier hierarchy.
-4. **Progressive disclosure under a hard budget.** The entry contract (the AGENTS.md
-   concatenation a session actually receives) stays ≤32KB worst-case — the Codex
-   `project_doc_max_bytes` ceiling doubles as the health budget for every runtime. Everything
-   deeper is routed by reference, not inlined.
+4. **Progressive disclosure under a hard budget.** The repo-owned entry payload is
+   CI-budgeted (28 KB, headroom-reserving); the **combined** payload including user-level
+   context is verified at seat launch / doctor time, where the uncontrolled tier is actually
+   visible — so the Codex 32 KB truncation ceiling is never crossed in a conforming
+   environment, and a global tier that breaches headroom is a named local-environment
+   nonconformance, not silent truncation. Everything deeper is routed by reference.
 5. **Multi-consumer from day one.** Coordination state (hub records, rosters, dispatches) is
    project-namespaced; storage backends are pluggable. The framework must serve a second
    consuming project without schema surgery.
@@ -68,14 +70,18 @@ L3  INFRA ISOLATION        parallel work without collisions
 ```
 
 Adoption is **cumulative** (L2 builds on L1; L3 assumes L2's seats), while components are
-**independently testable**. Three conformance profiles define what "conforming" means at each
-scale — requirements that need capabilities a profile lacks have named substitutes:
+**independently testable**. The following table is THE normative conformance statement —
+where any other document's phrasing differs, this table wins:
 
-| Profile | Tiers | Audit/second-opinion requirement |
-|-|-|-|
-| solo | L1 | fresh-context subagent audit; second opinion = independent subagent pass (cross-runtime not required with one runtime) |
-| fleet | L1+L2 | fresh-context audits + cross-seat review; cross-runtime second opinion when a second runtime is configured |
-| isolated-fleet | L1+L2+L3 | as fleet, plus isolation-adapter conformance |
+| Profile | Tiers | Spec-audit cardinality | Second opinion | Author/reviewer separation |
+|-|-|-|-|-|
+| solo | L1 | 1 fresh-context audit | independent fresh-context pass; **cross-runtime only if a second runtime is configured** | satisfied by fresh context (subagent on Claude; fresh `exec` thread on Codex) — the solo exception |
+| fleet | L1+L2 | 2 fresh-context audits | cross-runtime pass **required if a second runtime is configured, recommended otherwise** | reviewers are never the authoring session |
+| isolated-fleet | L1+L2+L3 | as fleet | as fleet | as fleet, plus isolation-adapter conformance |
+
+"Fresh context" is runtime-neutral: a Claude subagent, or a fresh Codex `exec` thread — a
+Codex-only solo project is fully conformant. Authoring-tier work maps to the best available
+runtime's thinking tier when the preferred one is absent (matrix `fallback` chains).
 
 ## 3. Where the v1 layers went
 
@@ -88,6 +94,7 @@ scale — requirements that need capabilities a profile lacks have named substit
 | L4 Hooks | L1 hooks pipeline | decomposed runner + fixture harness is canonical |
 | L5 Agent teams | L1 (in-session teams) + L2 (cross-session seats) | the boundary is the session: teams live inside one session; seats are sessions |
 | L6 CI/CD | L1 gate definitions + Layer B implementation | framework ships gate *patterns* + a generated-project CI skeleton; the project owns its pipeline |
+| (DB isolation) | L3 **interface** (framework) + Layer B **implementations** | framework owns the adapter interface, lifecycle contract, and conformance suite (`ISOLATION_ADAPTERS.md`, planned); projects own concrete adapters/config |
 | L7 Memory | L1 memory scaffolding | index ≤ a hard byte budget; topic files; generated index discipline applies |
 
 The two incompatible definitions of "Layer 2" (state-file chain vs orchestration tier) are
@@ -131,11 +138,11 @@ ladders, stall detection, and relay mechanics are defined once, in the chain ski
 referenced — never restated — by the levers (law 2 applies to skill content too).
 
 The development loop, end to end (mandatory stages bolded; audit/second-opinion mechanics
-scale by conformance profile per §2):
-**scope** (design + SPEC) → **spec-audit** (fresh-context adversarial; ×2 + cross-runtime
-second opinion at fleet profile) → **RED** → **GREEN** → **review** (cross-review) →
-**integrate** → **document** (doc delta or explicit no-doc-impact declaration, gated like
-tests) → **capture** (durable parking of discoveries). Details: `DEV_LOOP.md`.
+per the §2 profile table): **scope** (design + SPEC) → **spec-audit** → **RED** (Standard+
+scope; Quick scope may satisfy it as same-change per `TDD_GATE.md` §4 — the one declared
+exemption) → **GREEN** → **review** (cross-review) → **integrate** → **document** (doc delta
+or explicit no-doc-impact declaration, gated like tests) → **capture** (durable parking of
+discoveries via hub verbs). Details: `DEV_LOOP.md`.
 
 ## 6. Seats, runtimes, and models (L2 — full specs: `SEAT_PROTOCOL.md`, `MODEL_MATRIX.md`)
 
@@ -197,6 +204,9 @@ backend-enforced authorization), not a namespace column bolted on.
 | `DEV_LOOP.md` | loop stages, role→seat mapping, mandatory gates | Phase 1 |
 | `TDD_GATE.md` | fail-loud gate rebuild, evidence ledger, state contract | Phase 1 |
 | `REVIVAL_SCOPING.md` | strategic memo this v2 ratifies (its §3 lens, its §7 rulings) | historical |
+| `ISOLATION_ADAPTERS.md` | L3 adapter interface: lifecycle state machine, provisioning/cleanup/recovery contract, port leases, conformance suite | **planned (M3)** — acceptance: all four adapters pass one suite |
+| `VERSIONING.md` | template/schema/state compatibility: semver, ranges, migrations, deprecation windows, Copier upgrade tests | **planned (M3)** — acceptance: upgrade from prior template version passes generate-matrix CI |
+| `THREAT_MODEL.md` | trust boundaries, credentials, secret redaction, hook integrity, untrusted-PR behavior, override-token audit | **planned (M3)** — acceptance: every enforcement mechanism maps to a stated boundary |
 
 A cross-runtime adversarial review of this document (GPT-5.6 Sol @ xhigh via `codex exec
 --output-schema`, 2026-07-26) is archived at `docs/reviews/2026-07-26-codex-architecture-v2.json`.

@@ -6,11 +6,20 @@
 
 ## 1. Seat record
 
-Registry: one JSON file per seat at `<coordination-root>/sessions/<letter>.json`
+**Seat-control contract — one owner.** Identity, registry, heartbeat, lease, and watcher
+state form a single project-namespaced contract with exactly one authoritative backend per
+project, named in the project's hub config: single-host fleets (sqlite/jsonl hub, the
+default) use the **file-backed registry** below as authoritative, and hub `roles` rows are
+derived mirrors written by the ingest path; multi-host fleets (postgrest hub) use **hub
+`roles` as authoritative**, and local files are non-authoritative caches. Precedence is
+never mixed per-field; the hub spec's `roles` entity defers to this contract.
+
+Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<letter>.json`
 (supersedes the bare `<letter>.id` files):
 
 ```json
 {
+  "project_id": "immutable, from adoption",
   "letter": "a",
   "runtime": "claude | codex",
   "model": "from matrix",
@@ -40,11 +49,21 @@ any → dead (lease expired + process gone)          ↘ report-only if not revi
   numeric field is a loud error, not a watchdog crash.
 - **Grace**: `max(floor, 2 × cadence_seconds)`. `dormant` + `next_wake_at: none` is
   deliberate sleep, never a stall.
-- **Leases + fencing**: every revival path (pacemaker, doorbell, human script) must acquire
-  the seat's lease (atomic write of holder + incremented epoch + expiry) before acting.
-  A revival carries its epoch; a seat that observes a newer epoch than its own **stops** —
-  the fencing rule that makes double-revival impossible. Lease expiry, not process guesswork,
-  defines `dead`.
+- **Leases + fencing (CAS, not blind write)**: every revival path (pacemaker, doorbell,
+  human script) must acquire the seat's lease via **compare-and-swap**: read
+  `{epoch: n, holder, expires_at}`; acquisition succeeds only if the CAS primitive
+  atomically verifies `epoch == n AND (holder is null OR expires_at < now)` while writing
+  `{epoch: n+1, holder: <unique token>, expires_at}`. Two racers reading epoch n cannot both
+  win — exactly one CAS succeeds; the loser observes the changed epoch and stands down.
+  CAS implementation per registry backend: hub-backed registry = transactional
+  conditional update; file-backed registry = `O_CREAT|O_EXCL` lock-take on
+  `<letter>.lease.<n+1>` followed by rename-commit (both steps fail visibly on collision).
+  The revived seat **validates its fencing token (holder + epoch) before its first
+  side-effect** and re-validates before irreversible actions; a stale token = stop
+  immediately. Renewal extends `expires_at` under the same holder; release nulls holder
+  without bumping epoch. Lease expiry, not process guesswork, defines `dead`.
+  Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
+  crash-mid-acquire) run against every registry backend.
 
 ## 3. Launch and resume
 
@@ -52,7 +71,7 @@ any → dead (lease expired + process gone)          ↘ report-only if not revi
 |-|-|-|
 | Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
 | Resume | `--resume <uuid>` / remote-control push | interactive `codex resume <name>`; headless poke: `codex exec resume <letter> "<drain prompt>" < /dev/null` |
-| Tier | model+effort args from matrix | profile file (`~/.codex/<tier>.config.toml`) from matrix generator; per-poke override `-c model_reasoning_effort=...` |
+| Tier | model+effort args from matrix | **project-qualified** profile (`~/.codex/<project_id>-<tier>.config.toml`), selected by the launcher from the seat record's `project_id` — two consuming projects never collide; per-poke override `-c model_reasoning_effort=...` |
 | Effort constancy | hold constant per session (prompt-cache) | same rule |
 
 Launcher is one script, runtime-dispatched by the seat record. Boot prompts come from
@@ -62,11 +81,17 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
 ## 4. Wake model
 
 - **Doorbell (preferred, cross-seat only)**: a bounded watcher re-invokes the seat ON an
-  event (mailbox append, artifact landing). Contract: watcher subscribes **from its hub
-  cursor** (missed-event-safe — an event landing before the watcher armed is still seen);
-  bursts coalesce (one wake per quiet-window, not per event); watcher expiry = seat's grace
-  window; every wake goes through the lease (§2). In-session subagents NEVER use doorbells —
-  the harness re-invokes the parent natively.
+  event (mailbox append, artifact landing). **Two cursors, never conflated**: the watcher
+  reads from its own *notification cursor* (observation only — advancing it acknowledges
+  nothing); the seat's *processing cursor* advances only after the message's side effect is
+  recorded. Missed-event-safe: the watcher compares the stream head to the processing
+  cursor, so an event landing before the watcher armed still triggers a wake. Redelivery
+  after a crash (side effect done, processing cursor not advanced) is safe because consumer
+  side effects are idempotent by `hub_id` (the hub contract); crash before the side effect
+  simply reprocesses. Bursts coalesce (one wake per quiet-window); watcher expiry = seat's
+  grace window; every wake goes through the lease (§2). Conformance fixtures crash the
+  consumer both before and after side-effect/cursor-advance. In-session subagents NEVER use
+  doorbells — the harness re-invokes the parent natively.
 - **Cadence (fallback)**: self-armed wake at matrix-defined interval; "arm LAST" discipline.
 - **Pacemaker/watchdog (external)**: versioned in-repo, fixture-tested, notify-adapter for
   escalation (desktop/SMS/none). Reads heartbeat files; acts only through leases; skips
@@ -75,10 +100,15 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
 
 ## 5. Mailboxes
 
-- JSONL append files + per-reader cursors (or hub-backed when the backend supports
-  recipient-scoped reads). **Reads are recipient-scoped by mechanism wherever the backend
-  can enforce it**; own-letter-only remains the protocol rule everywhere (a read advances
-  the cursor — reading another seat's mail destroys their delivery).
+- **A mailbox is a recipient-filtered view over hub events** — never an independent
+  authoritative write (see hub spec §1: the transport derives from the same append).
+  Materialized per-recipient JSONL files, where used, are rebuildable projections written by
+  the hub append path itself, not by senders directly.
+- Recipient isolation is **enforced by the backend where it can be** (postgrest:
+  recipient-scoped reads). On the portable single-host backends it is a stated trust
+  assumption: **seats within one project are mutually trusted** (hub spec §4); own-letter-only
+  remains the protocol rule everywhere because a read advances the processing cursor —
+  reading another seat's mail destroys their delivery.
 - Drain on boot and at phase boundaries; drain files are read whole.
 
 ## 6. Codex-seat specifics (first-generation constraints)
@@ -88,9 +118,10 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   no-ops. The launcher verifies trust at boot and fails loudly if absent.
 - **Hooks trust**: interactive seats trust hooks once via `/hooks`; headless pokes use
   `--dangerously-bypass-hook-trust` ONLY for definitions vetted in-repo (hash-pinned list).
-- **`.rules` execpolicy**: hard bans generated from policy config per seat class — e.g.
-  non-integrator: `gh pr merge` forbidden; all seats: staging `apply_migration` forbidden.
-  Unit-tested via `codex execpolicy check`.
+- **`.rules` execpolicy**: generated from the authored command-policy source
+  (`policy.yaml`, owned by `MODEL_MATRIX.md` §1a) per seat class — this spec cites policy
+  ids (e.g. `ban.merge.non-integrator`, `ban.staging-ddl.all`) and never restates rule
+  content. Unit-tested via `codex execpolicy check`.
 - **Delegation gate**: Codex won't self-spawn subagents unless AGENTS.md grants it — the
   no-subagents ruling is enforced by simply never granting it (and `ultra` effort, which
   auto-delegates, is not in the matrix).

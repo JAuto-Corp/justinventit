@@ -21,6 +21,10 @@ Semantic contract (every backend MUST pass the shared conformance suite on all o
 - **Atomicity**: one verb = one atomic append (single event or single transaction of events).
   The mailbox side-effect (transport) derives from the same append — record-as-byproduct —
   and MUST NOT be a second, separately-failable write from the client's perspective.
+  Concretely: **a mailbox is a recipient-filtered view/stream over hub events.** Where a
+  materialized per-recipient file exists (single-host backends), it is a rebuildable
+  projection emitted by the append path (outbox pattern) — senders never write mailbox files
+  directly, and a lost projection is rebuilt from the log, never the reverse.
 - **Recovery**: a backend restarted mid-append leaves either no event or the whole event;
   never a partial.
 
@@ -31,7 +35,7 @@ All keys are compound with `project_id` (immutable, issued at adoption; never in
 | Entity | Purpose | Notes |
 |-|-|-|
 | `projects` | consumer registry | id, name, created; issued by adopt tooling |
-| `roles` | seat registry + liveness fold | letter, runtime, model, effort, capabilities |
+| `roles` | seat registry + liveness — **authority defined by the seat-control contract** (`SEAT_PROTOCOL.md` §1): authoritative on multi-host (postgrest) fleets; a derived mirror of the file-backed registry on single-host fleets | letter, runtime, model, effort, capabilities |
 | `dispatches` | units of assigned work | status ladder; prereq ids; scope class; refs (issue/PR) |
 | `status_events` | dispatch transitions | the event stream dispatch state folds from |
 | `threads` | long-running workstreams | state: live/parked/dead/shipped; checklist; depends_on |
@@ -46,7 +50,10 @@ backend access is repair-only and logged as such.
 ## 3. Verb interface
 
 Writes: `dispatch`, `status`, `rule`, `thread --open/--update`, `finding` (+ `--route`,
-`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`.
+`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, and `capture` — the
+loop-stage-8 verb: a routing alias that records a `finding` by default, `journal` with
+`--kind decision`, or a `doc` pointer with `--doc`, and carries external-tracker refs
+(`--issue N`) so "captured" always means "in the hub, linked to wherever else it lives".
 Reads: `seats`, `open`, `mine`, `blocked`, `history <stream>`, `--json` everywhere.
 
 CLI-side validation fails loudly (enum checks, letter checks) — malformed input never reaches
@@ -62,6 +69,11 @@ a backend as a silent reject. Verbs are runtime-agnostic shell (`hub.sh` success
   project's rows. Mailbox reads are recipient-scoped the same way.
 - **sqlite backend**: one DB file per project (isolation by file boundary + fs permissions).
 - **jsonl backend**: one directory per project; explicitly the degraded mode (see §5).
+- **Recipient-level isolation is enforced only on postgrest.** On sqlite/jsonl the stated
+  trust model is: *seats within one project are mutually trusted* — fs permissions are
+  optional hardening, and own-letter-only is protocol, not security. Projects needing
+  enforced intra-project isolation must run the postgrest backend. (This is a deliberate,
+  documented downgrade — not an accidental gap.)
 - Adversarial isolation tests are part of the conformance suite (attempt cross-project reads
   with a wrong-project client; must fail).
 

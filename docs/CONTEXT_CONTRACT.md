@@ -21,12 +21,15 @@ where both layers share one runtime-facing artifact. Rules:
 
 - Framework-owned regions are delimited by forge markers (`<!-- forge:begin:<region> -->` /
   `<!-- forge:end:<region> -->`).
-- A manifest (`.agents-manifest.json`, generated) lists every region, its owner, and its
-  content hash — the composer's source of truth.
-- Framework updates are applied by a **deterministic composer** (Copier update task): it
-  replaces framework regions by marker, never whole-file copies. Conflict policy: a locally
-  modified framework region blocks the update with a named diff (fail loudly), never silent
-  overwrite; project regions are never touched.
+- **Authored source of truth** = the framework's region source files (template-owned,
+  versioned in the template repo). The installed `.agents-manifest.json` is a **generated
+  LOCK file** (template version + last-applied content hash per region + ownership) — state,
+  not source. The composer distinguishes three cases per region by comparing the local file
+  against the lock hash and the incoming source: unchanged → apply upstream; locally
+  modified → **named conflict, update blocked** (fail loudly, never silent overwrite, and a
+  local edit is never absorbed as the new base); project regions → never touched.
+- Framework updates are applied by this **deterministic composer** (Copier update task),
+  region-by-marker, never whole-file copies.
 - Conformance test: compose → recompose → byte-identical (idempotence), and a seeded local
   edit inside a framework region must produce the named-conflict failure.
 
@@ -37,8 +40,15 @@ where both layers share one runtime-facing artifact. Rules:
 | Root entry | native AGENTS.md discovery (concat global→root→cwd) | `CLAUDE.md` = `@AGENTS.md` + runtime extras |
 | Nested entry | native per-directory discovery | **not native** — composer emits per-directory `CLAUDE.md` shims (`@<relpath>/AGENTS.md`) for every nested AGENTS.md |
 | Payload ceiling | `project_doc_max_bytes` (default 32768), silent truncation | no hard ceiling; same budget applied by policy |
-| Verification | `codex debug prompt-input` fixture test in CI | manual checklist + session-entry smoke test |
+| Verification | `codex debug prompt-input` fixture test in CI | automated fixture: headless `claude -p` run in the fixture repo asserting tier-marker visibility at root and nested working dirs |
 | Transitional bridge | `project_doc_fallback_filenames=["CLAUDE.md"]` only for dirs not yet migrated | n/a |
+
+**Claude resolution algorithm (normative)**: Claude Code natively loads `CLAUDE.md` files
+along the cwd→root chain; each shim's first line is its directory's `@AGENTS.md` import,
+followed by any runtime extras. Effective order therefore mirrors Codex's global→root→nested
+concat, with nearest-file-last precedence; relative imports resolve against the shim's own
+directory; the composer emits each region exactly once across the chain, so duplicate
+handling never arises at read time (duplication is a compose-time error).
 
 Native-discovery behavior is pinned to tested runtime versions in the compatibility test
 fixtures; a runtime upgrade reruns them before rollout. IDE runtimes (Cursor/Windsurf/Cline)
@@ -50,8 +60,11 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
   root + deepest nested chain per working directory. CI computes it per directory containing
   an AGENTS.md and fails above **28 KB** (4 KB reserved headroom for global/user context CI
   cannot see).
-- **Reported, not budgeted**: global tier size (measured on developer machines by the doctor
-  script, warned above 4 KB).
+- **Enforced at launch**: the seat launcher / doctor script measures the COMBINED payload
+  (global + repo chain, exact separators) where the global tier is actually visible, and
+  refuses to launch (with the measured breakdown) if it would cross the runtime ceiling —
+  truncation is a named local-environment nonconformance, never a silent event. Global >4 KB
+  alone is a warning.
 - Byte counting = bytes of the concatenated payload exactly as the Codex renderer assembles
   it (separators included), reproduced by the check script and verified against
   `codex debug prompt-input` in the fixture test.

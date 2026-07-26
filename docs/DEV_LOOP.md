@@ -8,13 +8,13 @@
 | # | Stage | Owner (seat class) | Artifact | Gate (exit condition) |
 |-|-|-|-|-|
 | 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations | SPEC self-check: every named API/number/consumer claim cited or refused |
-| 2 | spec-audit | cross_review (fresh-context ×N per profile) + codex second opinion at fleet | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted |
-| 3 | RED | implement (or test-execution specialist) | executable failing tests + evidence event `phase: red` | runner exit non-zero, recorded with provenance |
-| 4 | GREEN | implement | code + evidence event `phase: green` | runner exit zero, same provenance chain |
+| 2 | spec-audit | cross_review — cardinality, second-opinion, and separation rules per THE normative profile table (`ARCHITECTURE.md` §2) | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted |
+| 3 | RED | implement (or test-execution specialist) | executable failing tests + ledger event `kind: red` (canonical schema: `TDD_GATE.md` §3) | Standard+: runner exit non-zero recorded with provenance. Quick scope: may be satisfied as same-change (`TDD_GATE.md` §4 — the one declared exemption) |
+| 4 | GREEN | implement | code + ledger event `kind: green` | runner exit zero, same provenance chain |
 | 5 | review | cross_review | review findings, fixes | no unresolved actionable findings |
 | 6 | integrate | integrate (I) | merge | checks green ON current head (SHA-bound); merge protocol satisfied |
 | 7 | document | author of change (baseline: docs_baseline) | doc delta OR explicit `no-doc-impact: <reason>` in PR body | doc gate: delta present or declaration present; generated indexes fresh |
-| 8 | capture | any seat | issues/findings via capture verb | nothing left only-in-context |
+| 8 | capture | any seat | hub `capture` verb (alias over `finding`/`journal`/`doc` with external-tracker refs — `HUB_DATA_MODEL.md` §3) | nothing left only-in-context: every discovery has a hub record |
 
 Stages 3-5 iterate via the chain (`go ⇄ check` relay, convergence math in the chain skill).
 Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test gate fails.

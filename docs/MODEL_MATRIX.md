@@ -5,13 +5,31 @@
 
 ## 1. Categories (law 2 applied)
 
-- **Authored source**: `matrix.yaml` — the only file humans/O edit. Questionnaire answers
-  set project defaults; per-project overrides layer on top with stated precedence
-  (override > questionnaire > framework default).
+- **Authored sources — two, separately owned**:
+  - `matrix.yaml` — model/effort selection (this spec). Inputs with stated precedence:
+    project override file > Copier questionnaire answers (`.copier-answers.yml`, itself an
+    authored input with its own schema) > framework defaults shipped in the template.
+  - `policy.yaml` — command policy (§1a): named bans/permissions per seat class. Generators
+    emit `.rules` (Codex) and permission settings (Claude) from it; other specs cite policy
+    ids, never restate rule content.
 - **Generated artifacts** (freshness-gated): launcher tier table (role-launch dispatch),
-  Codex profile files (`~/.codex/<tier>.config.toml` content), `.rules`/permission policy
-  emissions, the human-readable policy table in docs, `.claude/agents/*` + `.codex/agents/*`
-  effort pins.
+  Codex profile files — **project-qualified**: `~/.codex/<project_id>-<tier>.config.toml`,
+  selected by the launcher via the seat record's `project_id`, so consuming projects never
+  collide — `.rules`/permission emissions from `policy.yaml`, the human-readable policy
+  table in docs, `.claude/agents/*` + `.codex/agents/*` effort pins.
+
+### 1a. `policy.yaml` schema (command policy)
+
+```yaml
+schema_version: 1
+bans:
+  ban.merge.non-integrator: { pattern: ["gh","pr","merge"], applies_to: "!integrate", decision: forbidden }
+  ban.staging-ddl.all:      { pattern: ["<mcp>","apply_migration"], target: staging, applies_to: "*", decision: forbidden }
+prompts:  # decision: prompt — allowed with approval
+  ...
+```
+Each entry carries inline match/not_match test cases (mirroring `.rules` fixtures); the
+generator emits both runtime forms and their tests from the same entry.
 - **Runtime state** (never freshness-gated): which seats are currently booted at what tier
   (registry), temporary per-session raises.
 

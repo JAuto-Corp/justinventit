@@ -2,8 +2,11 @@
 
 Source verdict: `2026-07-26-codex-specset-coherence.json` (GPT-5.6 Sol @ xhigh, cross-doc
 coherence pass over ARCHITECTURE v2 + 6 sibling specs). Overall: revise.
-**Status: ALL FINDINGS OPEN** pending revision round R1. Nothing below is dispositioned yet;
-specs claiming disposition of items listed here are superseded by this ledger until R1 lands.
+**Status: R1 LANDED — all 17 rows dispositioned in their owner specs** (this commit).
+Notes: #11 resolved by naming three planned specs (ISOLATION_ADAPTERS, VERSIONING,
+THREAT_MODEL) in ARCHITECTURE §9 with acceptance criteria — those remain planned M3
+deliverables, honestly marked, not claimed complete. Confirmation: R2 coherence pass verdict
+archived beside this file; residual R2 findings, if any, tracked below it.
 
 | # | Sev | Finding (short) | Owner for fix |
 |-|-|-|-|
