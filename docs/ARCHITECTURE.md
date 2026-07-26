@@ -17,15 +17,23 @@ source system rot in specific, diagnosable ways:
    never brick a seat. Hard-fail is reserved for CI-visible contexts where the input is
    versioned. *Origin: nine enforcement gates in the source system fell through to
    `{"continue": true}` for months after a state-format drift, without one error.*
-2. **Single source of truth; indexes are generated.** Any index, map, roster, or matrix is
-   generated from the filesystem or config and freshness-gated in CI (regenerate +
-   `git diff --quiet`). Hand-groomed indexes decay to lies. *Origin: a documentation map whose
-   every count was wrong and which omitted the system's entire current command surface.*
+2. **Single source of truth; indexes are generated.** Four content categories, never
+   conflated: *authored source* (edited by humans/agents), *generated artifacts* (derived from
+   source; never hand-edited; freshness-gated in CI via regenerate + `git diff --quiet`),
+   *runtime state* (rosters, heartbeats, chain state — mutable, excluded from freshness
+   gates), and *derived views* (computed on read, never stored). Any index, map, or matrix is
+   a generated artifact. Hand-groomed indexes decay to lies. *Origin: a documentation map
+   whose every count was wrong and which omitted the system's entire current command surface.*
 3. **Two context layers, explicit everywhere.** Layer A = agentic development platform
    (this framework's scope: levers, hooks, coordination, TDD method, seat protocol).
    Layer B = project context (the consuming project's scope: domain skills, schema, product
-   docs, deployment). Every file belongs to exactly one layer; forge markers and Copier
-   update-hygiene (`_skip_if_exists` / `_exclude`) enforce the boundary. The two layers are
+   docs, deployment). Ownership is at **file granularity everywhere except a small named set
+   of composite files** (AGENTS.md, CLAUDE.md, settings) where the two layers must share one
+   runtime-facing artifact — there, ownership is at *region* granularity: framework-owned
+   regions are forge-marked, region membership is manifested, and updates to framework regions
+   are applied by a deterministic composer with a defined conflict policy, not by whole-file
+   copy. Copier update-hygiene (`_skip_if_exists` / `_exclude`) enforces the file-level
+   boundary; the composer + conformance tests enforce the region-level one. The two layers are
    separately planned, staffed, and paced — each with its own internal tier hierarchy.
 4. **Progressive disclosure under a hard budget.** The entry contract (the AGENTS.md
    concatenation a session actually receives) stays ≤32KB worst-case — the Codex
@@ -59,8 +67,15 @@ L3  INFRA ISOLATION        parallel work without collisions
     per-worktree trust/config for each runtime
 ```
 
-A solo project consumes L1 only (`orchestration_tier: solo`). A fleet adds L2. Parallel
-write-heavy work adds L3. Each tier is independently adoptable and independently testable.
+Adoption is **cumulative** (L2 builds on L1; L3 assumes L2's seats), while components are
+**independently testable**. Three conformance profiles define what "conforming" means at each
+scale — requirements that need capabilities a profile lacks have named substitutes:
+
+| Profile | Tiers | Audit/second-opinion requirement |
+|-|-|-|
+| solo | L1 | fresh-context subagent audit; second opinion = independent subagent pass (cross-runtime not required with one runtime) |
+| fleet | L1+L2 | fresh-context audits + cross-seat review; cross-runtime second opinion when a second runtime is configured |
+| isolated-fleet | L1+L2+L3 | as fleet, plus isolation-adapter conformance |
 
 ## 3. Where the v1 layers went
 
@@ -86,8 +101,16 @@ hereby resolved: **L2 means the orchestration tier.** The state-file chain is an
   there). The ecosystem (Cursor, Windsurf, Cline) reads root AGENTS.md natively; this contract
   is CLI-first but IDE-compatible.
 - **Delivery tiers**: global (user-level, both runtimes) → repo root → nested. Content at each
-  tier is layer-tagged (A or B). The worst-case concatenation per working directory is
-  budget-checked in CI (law 4) — the ceiling applies to the *payload*, not the root file.
+  tier is layer-tagged (A or B). The CI budget check (law 4) covers the **deterministic,
+  repo-owned** worst-case concatenation per working directory — the ceiling applies to the
+  payload, not the root file; uncontrolled user-level/global context is reported separately
+  with reserved headroom, since CI cannot see it.
+- **Resolution is runtime-specific and must be compiled, not assumed.** Codex discovers
+  nested AGENTS.md natively; Claude Code does not — nested delivery to Claude requires
+  per-directory `CLAUDE.md` shims (`@AGENTS.md`) or a context compiler that emits each
+  runtime's native entry files from the canonical hierarchy, with an exact precedence
+  algorithm and per-runtime compatibility tests. Native-discovery claims are pinned to
+  tested runtime versions, not taken on faith.
 - **Two-axis organization**: tier (global/root/nested) × layer (A agentic / B project). Layer A
   content is forge-marked and framework-owned; Layer B content is project-owned. Nested
   AGENTS.md files are the bridge: they reference Layer B domain indexes so project knowledge
@@ -107,16 +130,20 @@ three levers share the orient → equip → act skeleton; iteration-counter owne
 ladders, stall detection, and relay mechanics are defined once, in the chain skill, and
 referenced — never restated — by the levers (law 2 applies to skill content too).
 
-The development loop, end to end (mandatory stages bolded):
-**scope** (design + SPEC) → **spec-audit** (fresh-context adversarial ×2 + cross-runtime
-second opinion) → **RED** → **GREEN** → **review** (cross-review) → **integrate** →
-**document** (doc delta or explicit no-doc-impact declaration, gated like tests) →
-**capture** (durable parking of discoveries). Details: `DEV_LOOP.md`.
+The development loop, end to end (mandatory stages bolded; audit/second-opinion mechanics
+scale by conformance profile per §2):
+**scope** (design + SPEC) → **spec-audit** (fresh-context adversarial; ×2 + cross-runtime
+second opinion at fleet profile) → **RED** → **GREEN** → **review** (cross-review) →
+**integrate** → **document** (doc delta or explicit no-doc-impact declaration, gated like
+tests) → **capture** (durable parking of discoveries). Details: `DEV_LOOP.md`.
 
 ## 6. Seats, runtimes, and models (L2 — full specs: `SEAT_PROTOCOL.md`, `MODEL_MATRIX.md`)
 
 A **seat** is `{letter, runtime: claude|codex, model, effort, workdir, session-handle}` —
-a persistent, addressable, revivable terminal session. Seats coordinate through the hub and
+a persistent, addressable, revivable terminal session. Revival is governed by a seat state
+machine with leases/fencing so watchdog, pacemaker, and doorbell can never revive the same
+seat twice (split-brain); runtimes that cannot be externally re-invoked are a declared,
+supported capability level, not an assumption violation (spec: `SEAT_PROTOCOL.md`). Seats coordinate through the hub and
 mailboxes; they never read another seat's mailbox. In-session subagents are for judgment work
 that correctly inherits the seat's tier, and for read-only exploration; **hands work goes to
 a seat, and Codex participates only as seats, never as subagents.**
@@ -136,12 +163,21 @@ with pluggable backends: `postgrest` (shared Postgres/Supabase), `sqlite` (porta
 `jsonl` (degraded file-drop). One append = record + transport (law 6). Every verb the
 protocol needs exists as a verb; raw SQL against hub tables is repair-only.
 
+Backends are NOT assumed interchangeable: the hub spec defines a semantic contract — stable
+client-minted event IDs, idempotent writes, per-stream ordering, at-least-once delivery with
+consumer cursors, and crash-recovery behavior — and every backend must pass one shared
+conformance suite, with degraded-mode guarantees (jsonl) stated, not implied. Tenant
+isolation is part of the same contract (immutable project IDs, compound keys,
+backend-enforced authorization), not a namespace column bolted on.
+
 ## 8. Enforcement doctrine (L1)
 
 - Gates read **machine-readable, schema-validated state** — never prose formats that drift
   silently. Absent-state semantics per law 1.
 - The evidence ledger records what *ran* (build, tests, RED/GREEN phases) from inside the
-  actual runners — an agent's claim that a test ran is not evidence. Overrides exist but are
+  actual runners — an agent's claim that a test ran is not evidence. Evidence carries
+  **provenance**: bound to the commit/tree hash, worktree, and command it came from, with
+  freshness rules — stale or unrelated results cannot satisfy a gate. Overrides exist but are
   named, logged tokens, never silent bypasses.
 - Every check is a file, independently testable against shipped fixtures; the hook test
   harness is part of the framework and runs in the framework's own CI *and* in generated
@@ -161,3 +197,11 @@ protocol needs exists as a verb; raw SQL against hub tables is repair-only.
 | `DEV_LOOP.md` | loop stages, role→seat mapping, mandatory gates | Phase 1 |
 | `TDD_GATE.md` | fail-loud gate rebuild, evidence ledger, state contract | Phase 1 |
 | `REVIVAL_SCOPING.md` | strategic memo this v2 ratifies (its §3 lens, its §7 rulings) | historical |
+
+A cross-runtime adversarial review of this document (GPT-5.6 Sol @ xhigh via `codex exec
+--output-schema`, 2026-07-26) is archived at `docs/reviews/2026-07-26-codex-architecture-v2.json`.
+Its architecture-level findings are incorporated above; its spec-level findings (hub delivery
+semantics, seat leases, isolation-adapter lifecycle, evidence provenance details, mailbox
+authorization, doorbell races, framework versioning/threat model, CI gate contract) are
+routed to the owning sibling specs and MUST be dispositioned there before each spec is
+considered complete.
