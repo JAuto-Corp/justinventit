@@ -22,7 +22,7 @@ auditor-1's findings for the R3 round.
 ## Findings (auditor's text, verbatim below)
 B1 — Codex tier selection silently no-ops. Generated per-project profile paths + unqualified --profile boot cell; every Codex seat can boot default tier while reporting success. Fix: launcher verifies RESOLVED model/effort post-boot.
 B2 — dirty-RED deadlock: dirty:true never satisfies CI + Standard+ requires ledger red + same-change blocks ⇒ ordinary RED on uncommitted tree is inadmissible; spec never states commit-the-red workflow.
-B3 — RED ancestry unbounded: any historical red for the scenario (incl. другой PR's) satisfies merge-base ancestry; needs >= merge-base-with-target. Converse: rotation at N runs can evict red before green → false block. No fixtures either direction.
+B3 — RED ancestry unbounded: any historical red for the scenario (incl. another PR's) satisfies merge-base ancestry; needs >= merge-base-with-target. Converse: rotation at N runs can evict red before green → false block. No fixtures either direction.
 B4 — lease arithmetic: initial {holder:null,epoch:0,expires_at:null} vs dead predicate ⇒ healthy never-revived seat is always-dead or never-dead; reviver-held lease vs revived-seat token validation vs release-nulls-holder mid-turn; handoff unspecified.
 M1 — epoch resets on registry recreate/re-adopt; fixture list omits registry recreation.
 M2 — jsonl offset cursors invalidated by repair-by-rewrite; cursors must be hub_id-valued; "O(log size)" scan claim wrong (O(n)).
