@@ -40,7 +40,7 @@ only by its own cadence loop or a human, and the watchdog reports rather than re
 ```
 booted → active ⇄ standby (armed wake) → dormant (deliberate, next_wake=none)
 active/standby → STALLED (heartbeat age > grace)  → revived → active
-any → dead (lease expired + process gone)          ↘ report-only if not revivable
+any → dead (lease expired, unrenewed past grace)   ↘ report-only if not revivable
 ```
 
 - **Heartbeat**: written by a turn-end hook on BOTH runtimes (Codex hooks support Stop; the
@@ -56,14 +56,21 @@ any → dead (lease expired + process gone)          ↘ report-only if not revi
   `{epoch: n+1, holder: <unique token>, expires_at}`. Two racers reading epoch n cannot both
   win — exactly one CAS succeeds; the loser observes the changed epoch and stands down.
   CAS implementation per registry backend: hub-backed registry = transactional
-  conditional update; file-backed registry = `O_CREAT|O_EXCL` lock-take on
-  `<letter>.lease.<n+1>` followed by rename-commit (both steps fail visibly on collision).
+  conditional update; file-backed registry = a **per-seat mutex** (`flock` on
+  `<letter>.lock`, held for the whole operation) inside which the acquirer re-reads the
+  lease record, re-verifies the full predicate (epoch AND holder AND expiry), and commits
+  the new record via temp+rename — versioned claim-file tricks are explicitly rejected
+  (a freed pathname readmits delayed racers). Renewal and acquisition run under the SAME
+  mutex with the same full-predicate re-read; they differ only in the predicate
+  (renewal: holder == self).
   The revived seat **validates its fencing token (holder + epoch) before its first
   side-effect** and re-validates before irreversible actions; a stale token = stop
   immediately. Renewal extends `expires_at` under the same holder; release nulls holder
-  without bumping epoch. Lease expiry, not process guesswork, defines `dead`.
+  without bumping epoch. **The one normative dead predicate: lease expired and unrenewed
+  past grace.** Process liveness checks are diagnostics for the report, never the trigger.
   Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
-  crash-mid-acquire) run against every registry backend.
+  crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race**) run
+  against every registry backend.
 
 ## 3. Launch and resume
 
@@ -94,8 +101,11 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   doorbells — the harness re-invokes the parent natively.
 - **Cadence (fallback)**: self-armed wake at matrix-defined interval; "arm LAST" discipline.
 - **Pacemaker/watchdog (external)**: versioned in-repo, fixture-tested, notify-adapter for
-  escalation (desktop/SMS/none). Reads heartbeat files; acts only through leases; skips
-  `dormant`; covers EVERY registered seat by construction (roster = registry glob, never a
+  escalation (desktop/SMS/none). All of its reads and writes — heartbeat, roster
+  enumeration, lease ops, watcher state — go through the **backend-dispatched seat-control
+  interface** (§1): file operations on single-host registries, hub queries on postgrest
+  fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
+  covers EVERY registered seat by construction (roster = seat-control enumeration, never a
   hardcoded list — the source system's hardcoded roster silently dropped two live seats).
 
 ## 5. Mailboxes

@@ -67,18 +67,20 @@ no `phase:` variant exists):
 **Ledger storage and lifecycle**: the ledger is **runtime state — never git-tracked** (a
 tracked ledger would self-reference the commit hash it must bind to). It lives beside the
 worktree (`<state-dir>/evidence.jsonl`, rotated at N runs). It reaches the authoritative
-gate as a **SHA-keyed attestation**: pushed as a CI artifact alongside the branch (or
-regenerated in CI by running the same runners), and the merge gate consumes only
-attestations whose `provenance.commit` equals the candidate head. Local gates read the
-local ledger; CI trusts only what it can attest.
+gate as an **attestation bundle keyed to the candidate head**: pushed as a CI artifact (or
+regenerated in CI by running the same runners). Within the bundle, per-kind provenance
+rules apply: `green`/`test-run`/`build` events must carry `provenance.commit == candidate
+head`; `red` events are valid when their commit is an **ancestor of the head** (verified
+via merge-base) — RED necessarily predates the fix. Local gates read the local ledger; CI
+trusts only what it can attest.
 
 ## 4. RED-before-GREEN, correctly classified
 
 The unit of classification is the **scenario/behavior, not the file**. For each behavior
 touched by a PR:
 
-1. From the ledger: a `red-phase` event for its scenarios at some ancestor commit, then a
-   `green-phase` at a descendant → **RED-observed** (the ideal).
+1. From the ledger: a `kind: red` event for its scenarios at some ancestor commit, then a
+   `kind: green` at a descendant → **RED-observed** (the ideal).
 2. No red event but tests for the behavior were added/modified in the PR and pass →
    **same-change**: satisfies the gate for Quick scope ONLY (the declared exemption,
    restated in ARCHITECTURE §5 and DEV_LOOP §1). For Standard+ it is a **block**, not a

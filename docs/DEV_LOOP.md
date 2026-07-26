@@ -50,8 +50,10 @@ mid-artifact (ownership = dispatch row).
 
 ## 4. Profiles
 
-- **solo**: one session holds all responsibilities; audits = fresh-context subagents;
-  stage 6 = the session with the merge checklist; loop unchanged otherwise.
+- **solo**: one session holds all responsibilities; audits = fresh-context passes per THE
+  normative profile table (`ARCHITECTURE.md` §2 — runtime-neutral: subagent on Claude,
+  fresh `exec` thread on Codex); stage 6 = the session with the merge checklist; loop
+  unchanged otherwise.
 - **fleet**: as mapped above.
 - Stage mechanics (which verbs fire, which files update) are identical across profiles —
   only the actor cardinality changes.

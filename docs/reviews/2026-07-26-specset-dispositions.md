@@ -31,3 +31,16 @@ archived beside this file; residual R2 findings, if any, tracked below it.
 R1 exit: every row dispositioned in its owner spec, ledger updated to point at the
 disposition, then the fresh-context spec-auditor ×2 pass runs on the revised set (Phase-1
 gate).
+
+## R2 confirmation pass (same day)
+
+Verdict: `2026-07-26-codex-r2-confirmation.json` — 8 residuals (1 blocker, 7 majors),
+including 3 contradictions introduced by R1 itself. All 8 dispositioned in revision R2
+(this commit): file-backed lease = per-seat flock mutex + full-predicate re-read (versioned
+claim files rejected; delayed-racer + renewal-race fixtures added); watchdog routed through
+the backend-dispatched seat-control interface; DEV_LOOP solo audits made runtime-neutral;
+`red-phase`/`green-phase` naming purged from TDD §4; attestation bundle split per-kind
+provenance (green = head, red = ancestor via merge-base); matrix recast as four named
+authored inputs → generated `matrix.resolved.yaml`; authoring tier resolvable on every
+runtime with fallback chains; single dead-state predicate (lease expiry, process checks
+diagnostic-only). Remaining verification: the fresh-context spec-auditor ×2 phase gate.
