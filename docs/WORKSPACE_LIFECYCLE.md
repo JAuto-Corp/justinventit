@@ -30,12 +30,17 @@ Rules:
   beside two full agent worktrees.*
 - **Multi-resident workspaces are read-mostly.** When more than one seat shares a working
   tree (the main checkout typically hosts director + orchestrate + integrate), destructive
-  or tree-shifting git operations there — branch switches, resets, rebases, clean —
-  require prior coordination (mail the co-residents; for contested cases, a workspace
-  lease). Remote-side operations (gh/API merges, pushes of already-committed refs) are
-  always safe. A seat needing a local tree for conflict work uses a temporary worktree,
-  never the shared checkout. *Origin: integrator branch-switches under co-resident
-  sessions, and a seat nearly booted into another seat's authoring checkout.*
+  or tree-shifting git operations there require prior coordination (mail the co-residents;
+  for contested cases, a workspace lease). The hazard class is **any tree-wide operation,
+  not just branch ops**: a shared checkout legitimately carries modified tracked state
+  files and untracked strays belonging to several residents, so `git stash`,
+  `git checkout .`, `clean -fd`, resets, rebases, and branch switches can all destroy live
+  state that isn't yours. Remote-side operations (gh/API merges, pushes of already-committed
+  refs) are always safe. A seat needing a local tree for conflict work uses a temporary
+  worktree, never the shared checkout. *Origins: integrator branch-switches under
+  co-resident sessions; a seat nearly booted into another seat's authoring checkout; a sync
+  fix that left 19 staged files in six worktrees where any bare `git commit` would have
+  silently swept them onto live PR branches.*
 
 ## 2. Database classes
 
