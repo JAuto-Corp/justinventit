@@ -64,6 +64,15 @@ source system rot in specific, diagnosable ways:
    dying CI on the integration branch itself. Checked the artifact's state; never priced
    the action.* Corollary for incident procedure: distinguish merge-READY (a state) from
    merge-PERMITTED (an action authorization); readiness is never permission.
+9. **STOP must have a route to the actor.** Every gate and every authority pattern answers
+   explicitly: *how does STOP reach the party who can proceed?* A system that makes GO easy
+   and STOP hard ships things it already knew were wrong. Two corollaries: a verdict/gate
+   tool must be able to EXPRESS a block (gate-lifecycle rule d); and **standing authority
+   costs deliberate countermand** — where standing authority exists, a hold is an explicit
+   revocation delivered TO THE HOLDER, never silence and never a message to someone else
+   (telling the fixer to hurry is not telling the merger to wait). *Origin: a contradiction
+   merged to main sixty seconds before its pause-confirm — the hold had been addressed to
+   the fixer while the merger held standing GO.*
 
 ## 2. The three layers
 
@@ -211,7 +220,10 @@ backend-enforced authorization), not a namespace column bolted on.
   explicit sequencing over flags; (d) *a well-formedness tool supports the full disposition
   space* — a gate tool that can only emit PASS applies its structural guarantee precisely
   where the stakes are lowest, forcing every blocking verdict back into the hand-authored
-  path the tool was built to eliminate.
+  path the tool was built to eliminate; (e) *grounding-at-authoring-time beats intent* —
+  the author who RULED an enforcement is the person most likely to describe it as already
+  live ("I made the ruling, so it felt true"); guidance describes the runtime as it IS and
+  states obligations on actors, gaining tool-enforced halves when they actually land.
 - **The aggregate gate is not a formality.** Units that each pass their own review can
   create a contradiction ONLY on merge — a defect class invisible to per-unit review by
   construction. The integration-level gate (cascade review) exists precisely for this, and

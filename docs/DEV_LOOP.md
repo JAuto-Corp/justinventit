@@ -29,7 +29,16 @@ Named practices (ratified from independent convergent field use):
 - **Standing-trigger-is-authorization**: a dispatch trigger stated with explicit CONDITIONS
   and INVALIDATIONS (what voids it: head moved, new red class, freeze declared) IS the
   authorization — re-asking converts it back into per-instance approval and reinstates the
-  dependency it removed. "Hold for my word" is the explicit opt-out.
+  dependency it removed. "Hold for my word" is the explicit opt-out. **The pattern's cost
+  (law 9): a later hold is a deliberate countermand delivered to the HOLDER**, never an
+  instruction to a third party.
+- **Doc-reality-fix PR bodies**: when a PR fixes a documentation-reality gap, its body
+  states which ADJACENT claims are aspirational and where their implementation is tracked
+  (else the fix creates the next gap — corrected text beside uncorrected text is
+  indistinguishable from all-true); every citation inside the fix is resolved against the
+  target branch before commit ("never cite a line in a fix for a miscited line without
+  checking it"); and **attribution belongs in the coordination record, state belongs in the
+  artifact** — a PR body states what is true about the tree and never litigates fault.
 
 ## 2. Responsibilities → seats (overlap by design)
 
