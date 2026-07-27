@@ -149,6 +149,27 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   doorbell its only signal; boundary caught in review: the replacement predicate would have
   inherited the same blind spot for unmailed seats.*
 
+## 4a. Intentional conclusion (loop-end) protocol
+
+Ending a wake loop at a natural checkpoint is a legitimate, first-class outcome — but only
+through this ceremony; a silent non-rearm without it remains a STALL the watchdog treats as
+an accident. Required steps, in order:
+1. **Durable handoff brief** (the F-brief pattern): task state, branch+SHA, rulings that
+   must not be re-litigated, exact next step — written to the durable brief location (never
+   a rewrite-per-wake file), referenced from the hub.
+2. **State marker**: cadence/registry set to `dormant` with a conclusion reason — the
+   watchdog goes silent on it BECAUSE the ceremony ran, not because it lost track.
+3. **SMS to the human with a COPY-PASTE BOOT PROMPT** — not a watchdog alert: a short
+   message naming the seat, the checkpoint reached, and a paste-ready prompt for the
+   SUCCESSOR session (pointing at the brief + dispatch id). The human boots fresh and
+   pastes — one move, no archaeology.
+4. **Successor is a FRESH session** (terminate-and-fresh): fresh boots hit no modal, carry
+   no context rot, and the brief is the contract. Resuming the concluded session is the
+   exception and follows modal economics (§3).
+The watchdog's job narrows to what it should be: catching ACCIDENTS. Intentional endings
+never reach it. *Origin: seats concluding work without re-arming looked identical to
+stalls, burning watchdog attention and human ambiguity on deliberate checkpoints.*
+
 ## 5. Mailboxes
 
 - **A mailbox is a recipient-filtered view over hub events** — never an independent
