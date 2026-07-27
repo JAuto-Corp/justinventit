@@ -28,8 +28,13 @@ why, what shape it has, and **where to dig**.
   structural class — classifies the queue: structural-fingerprint change = mandatory full
   re-verification; fingerprint-unchanged (cosmetic AND body-only edits — the trigger
   cannot distinguish them, so both take the stronger path available to them) = lighter
-  grounded re-check. The fingerprint prioritizes; it never exempts. Build the extractor tree-sitter-based in-house; the
-  trial's verdict was ADAPT the primitive, never adopt the dependency.
+  grounded re-check. The fingerprint prioritizes; it never exempts. Build the extractor in-house
+  on the parsers the repo already carries — TypeScript compiler API for TS/TSX, python
+  stdlib `ast` for Python (ruling 2026-07-27, seat-p fork: strictly more precise than a
+  CST on exactly the fingerprinted fields — re-exports, type-only exports, overloads —
+  and zero new dependencies; tree-sitter was U-A's implementation detail, not the
+  primitive; a future non-TS/Python surface picks its own native parser the same way).
+  The trial's verdict stands: ADAPT the primitive, never adopt the dependency.
 - **Generated everything-else** — navigation, indexes, counts, links, coverage inventory:
   generated from section metadata + the filesystem, freshness-gated, never hand-edited.
   *Origin: the predecessor map hand-maintained its counts and links; every count was wrong
