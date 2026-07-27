@@ -238,8 +238,12 @@ stalls, burning watchdog attention and human ambiguity on deliberate checkpoints
   harness task-record per spawn: {task id, agent name, completion receipt, result digest,
   delivery state, parent claim}. An expected agent that never reports and does not answer
   a nudge is disclosed as **NOT RUN — never as ran-and-clean**. Recovery: nudge BY NAME,
-  framing that an honest "I did not actually do this" beats a reconstruction; provenance
-  upgrades after a posted verdict are disclosed in a supplement, never silent.
+  **and nudge PROMPTLY — verify delivery at fan-out completion, not at end-of-session**:
+  observed recovery rates fell monotonically with idle-to-nudge age (minutes → all;
+  ~20 min → 4/4; hours → 1/8; candidate mechanism under test, but the prompt-verify
+  discipline is free either way). Frame that an honest "I did not actually do this" beats
+  a reconstruction; provenance upgrades after a posted verdict are disclosed in a
+  supplement, never silent.
   **Reorientation loses subagents**: redirecting a session mid-fan-out silently orphans its
   agents while it believes the fan-out ran — reorientation is BLOCKED while spawned tasks
   are outstanding (finish, or explicitly cancel/snapshot with the orphan list disclosed);

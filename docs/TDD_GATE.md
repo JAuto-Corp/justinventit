@@ -119,6 +119,18 @@ filename addition.
 | CI | the same checks run against pushed ledger + candidate SHA; fail closed on missing inputs | authoritative signal |
 | Merge | integrator protocol (or branch protection where the plan allows): red = no-merge, SHA-bound | authoritative action |
 
+**Outage-artifact signature (quota/billing-limit kills)** — a CI red class that is
+completely false while looking completely real, landing on your own PR where you are most
+primed to believe it. Four markers: (1) ALL jobs in one run fail, not a subset; (2) they
+start within seconds and die at start; (3) **the failure set is incoherent with the diff**
+— jobs the change cannot possibly affect fail alongside ones it could (this marker stands
+alone and works before the outage is known); (4) timestamp coincides with a limit/outage
+event. Handling: report and class it, never diagnose or "fix" it — and never rerun-to-check:
+a rerun consumes the exhausted resource AND reproduces the failure identically, which reads
+as confirmation. During any CI freeze the no-push rule protects more than budget: **a push
+destroys a pre-outage green that cannot currently be regenerated** — merge-ready state is
+irreplaceable until capacity returns.
+
 The framework ships the checks as provider-neutral commands (stdin/env in, exit code +
 message out) plus tested adapters (GitHub Actions skeleton). Where required status checks
 are unavailable (the source project's plan), the merge-protocol row is the binding one — the
