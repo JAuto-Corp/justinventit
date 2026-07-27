@@ -42,6 +42,29 @@ Rules:
   fix that left 19 staged files in six worktrees where any bare `git commit` would have
   silently swept them onto live PR branches.*
 
+## 1a. Worktrees are NOT sandboxes (two axes, never conflated)
+
+| | Git worktree (collision isolation) | Runtime sandbox (capability confinement) |
+|-|-|-|
+| Protects against | concurrent WRITE collisions between seats | a process exceeding granted capabilities |
+| Mechanism | separate working tree + index | OS/process-level jail (Codex `sandbox_mode`, Claude permission modes) |
+| Shares with siblings | the ENTIRE repo: objects, refs, config, hooks, credentials, host filesystem, secrets | nothing by default; access is granted per workspace root / `--add-dir` |
+| Is a security boundary | **NO** — a seat in a worktree can read/write anything its process can | yes, to the extent of its policy |
+| Git semantics | a branch checked out in one worktree is LOCKED to it; gc/prune/config act repo-wide | none — sandboxes know nothing about git |
+
+Rules:
+- Never justify running less-trusted work "because it's in its own worktree" — worktree
+  isolation is about merge hygiene, not containment. Containment comes from the runtime
+  sandbox + command policy, and from nothing else.
+- The two compose deliberately for Codex seats: the seat's **workspace root IS its
+  worktree**, so `workspace-write` confinement and worktree collision-isolation coincide —
+  but only because the launcher sets it so; verify at boot, and remember a parent session's
+  live sandbox overrides beat an agent-file `sandbox_mode` (agent-file read-only is not a
+  hard boundary).
+- Shared-`.git` facts every seat must know: branch checkout is exclusive across worktrees;
+  `gc`/`prune`/config edits act on ALL worktrees; deleting a worktree directory without
+  `git worktree remove` leaves repo-level metadata behind (registry sweep catches it).
+
 ## 2. Database classes
 
 | Class | Persistence | Writes from | Notes |
