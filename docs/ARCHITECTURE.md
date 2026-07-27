@@ -218,7 +218,13 @@ backend-enforced authorization), not a namespace column bolted on.
   projects.
 - **Gate lifecycle rules**: (a) *a requirement for a guard specifies how its negative case
   will be demonstrated* — "hard-fail if X" is unobservable as stated; "and show it fires
-  when X is forced" makes it provable; (b) *emit before enforce* — a gate judging state
+  when X is forced" makes it provable. **The demonstration runs in BOTH directions with a
+  validity control**: the negative case fires AND a known-good case stays silent under the
+  same fixture shape — a fixture malformed identically for every case proves the wrong
+  thing in both directions (two same-author instances in two days: one masked a real bug
+  as passing, one made working code appear broken), and for detector-style checks the
+  false-positive fixture (correctly-armed transcript must NOT fire) matters as much as the
+  negative one; (b) *emit before enforce* — a gate judging state
   other parties write emits its evidence fields before enforcing them, so enforcement day
   is never migration day; (c) *no off-by-default enforcement* — a gate defaulting to
   not-gating tends to stay that way (a toll nobody collects); prefer strict code behind
