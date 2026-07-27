@@ -161,6 +161,20 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   remains the protocol rule everywhere because a read advances the processing cursor —
   reading another seat's mail destroys their delivery.
 - Drain on boot and at phase boundaries; drain files are read whole.
+- **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
+  observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
+  sender-shell `$()` execution, subject/body collapse, flag-eaten-as-positional). Rules:
+  message bodies never pass through interpolating strings; every send that matters is read
+  back from the log before relying on it; CLI arg-parsers reject flag-shaped positionals
+  loudly instead of absorbing them.
+- **Subagent results are claimed, not assumed.** A silent return, empty task list, or idle
+  notification is NOT evidence an agent produced nothing — completed work can sit
+  undelivered (parked sessions, reorientation, delivery drops). Verify delivery before
+  using any fan-out result; recover by nudging the agent BY NAME, framing that an honest
+  "I did not actually do this" beats a reconstruction; provenance upgrades after a posted
+  verdict are disclosed in a supplement, never silent. **Reorientation loses subagents**:
+  a session redirected mid-fan-out silently orphans its agents while believing the fan-out
+  ran — never reorient a seat mid-review, and re-verify delivery after any reorientation.
 
 ## 6. Codex-seat specifics (first-generation constraints)
 
