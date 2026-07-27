@@ -212,6 +212,21 @@ an accident. Required steps, in order:
 4. **Successor is a FRESH session** (terminate-and-fresh): fresh boots hit no modal, carry
    no context rot, and the brief is the contract. Resuming the concluded session is the
    exception and follows modal economics (§3).
+**Turn-end continuity check (Stop hook — the synchronous half of the enforcement).** A
+commissioned seat ending a turn must hold exactly one of: an armed wake (a wake-arm call
+visible in this turn's transcript, or helper-written `next_wake_at` in the future), an
+armed doorbell (standby seats: watcher marker present), or a completed conclusion ceremony
+(`dormant` + reason + brief). The Stop hook checks this and **blocks once** with a
+self-correcting message ("arm one or run the ceremony") — the seat still has a turn in
+which to fix it, which is the whole point: the lapse is caught at the only moment the
+lapser can still act. A named, logged override exists for legitimate hand-to-human waits
+(`awaiting-user-tap`). Rollout follows emit-before-enforce (warn-only first) and ships its
+negative-case fixture (a transcript with no arm → the check demonstrably fires). Scope
+honesty: this catches CONSCIOUS lapses — the majority class in the observed fleet
+wind-down; parked sessions and killed processes produce no Stop event, so the watchdog
+remains the asynchronous net for those. The two are complementary layers, not
+alternatives.
+
 The watchdog's job narrows to what it should be: catching ACCIDENTS. Intentional endings
 never reach it. *Origin: seats concluding work without re-arming looked identical to
 stalls, burning watchdog attention and human ambiguity on deliberate checkpoints.*
