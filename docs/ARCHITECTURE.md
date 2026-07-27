@@ -66,7 +66,12 @@ source system rot in specific, diagnosable ways:
    merge-PERMITTED (an action authorization); readiness is never permission.
 9. **STOP must have a route to the actor.** Every gate and every authority pattern answers
    explicitly: *how does STOP reach the party who can proceed?* A system that makes GO easy
-   and STOP hard ships things it already knew were wrong. Two corollaries: a verdict/gate
+   and STOP hard ships things it already knew were wrong. The check applies to the WHOLE
+   channel: not "can the protocol express STOP" but "**can the thing people actually use to
+   speak the protocol express it**" — a gate that can say no through a composer that cannot
+   is, in practice, a gate that cannot say no (two same-day instances: a verdict poster
+   hard-coding PASS with its own FAIL path as dead code; a cadence helper unable to write
+   the fields that make dormancy legitimate). Two corollaries: a verdict/gate
    tool must be able to EXPRESS a block (gate-lifecycle rule d); and **standing authority
    costs deliberate countermand** — where standing authority exists, a hold is an explicit
    revocation delivered TO THE HOLDER, never silence and never a message to someone else
