@@ -72,3 +72,15 @@ confirmed by g). All 22 distinct findings dispositioned in this commit:
 
 PHASE-1 GATE: both auditors + two Codex passes complete, all findings dispositioned →
 **gate CLOSED**. Residual verification rides the implementation PRs' normal review flow.
+
+## R4 — under-fire additions review (07-27, Sol one-shot; verdict: 2026-07-27-codex-delta-underfire.json)
+
+The six incident-driven additions (predicates, heartbeat floor, modal economics, transport,
+subagent delivery, multi-resident/sandbox) took 9 majors + 1 minor. **Status: ALL OPEN**,
+owner SEAT_PROTOCOL (7) + WORKSPACE_LIFECYCLE (2) + formatting (1). Sharpest: oldest-vs-
+newest undrained-mail formula (time-sensitive — checked against D's in-flight P0-3);
+heartbeat-floor writer must be a leased canary-wake, never watchdog-authored (false
+liveness); parked-revival lease deadlock needs quarantine/supersession + human-unpark;
+worktree-rooted sandbox cannot write the common git dir (grant required — Phase-4 gating).
+R4 revision = next director work item. Lesson ratified: under-fire spec additions get their
+own review round before the next consumer reads them.
