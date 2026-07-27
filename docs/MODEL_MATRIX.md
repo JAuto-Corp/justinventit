@@ -74,9 +74,9 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 | orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain |
 | design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule |
 | implement, explore, capture | claude opus-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
-| diagnostic | opus-5 @ xhigh (thinking tier) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
+| diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
-| cross-review | opus-5 @ xhigh + codex sol @ xhigh second opinion | standing cross-runtime lane |
+| cross-review | fable-5 @ xhigh + codex sol @ xhigh second opinion (thinking tier) | standing cross-runtime lane |
 | codex seats (pilot) | gpt-5.6-sol @ xhigh (review) / low (mechanical) | Sol default LOW is official; ultra excluded (auto-delegation) |
 
 Rules that ride along: hold effort constant within a session (prompt cache); raise effort on
@@ -121,9 +121,9 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   so a relaunch cannot truncate a prior attempt's evidence (one SIGKILLed foreground run +
   path reuse cost ten minutes of reading with zero evidence captured). **Resume mechanics (07-27, learned by three failed launches)**: `codex exec resume`
   rejects `-s` and `-C`; sandbox rides `-c sandbox_mode="read-only"`, cwd rides the
-  invocation directory (UUID session ids bypass cwd-filtering). The wrapper needs its own
-  resume mode before disposition-confirmations are seat-self-serve; until then they route
-  through the dispatcher. **A pinned path is not a working invocation** (the node-shim
+  invocation directory (UUID session ids bypass cwd-filtering). The wrapper — `scripts/sol-review.sh` in the consuming project (a forge-marked template
+  artifact once ported) — needs its own resume mode before disposition-confirmations are
+  seat-self-serve; until then they route through the dispatcher. **A pinned path is not a working invocation** (the node-shim
   lesson): pinning fixes WHICH binary, not whether it runs — the runtime that must
   accompany a shim lives next to it, so wrappers prepend the shim's own directory to PATH
   and prove invocation with a `--version` run, not by reading the file. Dependability watch

@@ -214,8 +214,10 @@ an accident. Required steps, in order:
    exception and follows modal economics (§3).
 **Turn-end continuity check (Stop hook — the synchronous half of the enforcement).** A
 commissioned seat ending a turn must hold exactly one of: an armed wake (a wake-arm
-detected STRUCTURALLY — a `tool_use` content block naming the wake-arm tool in this
-turn's transcript; NEVER a text match, which was measured unsound: 66% false-mention
+detected STRUCTURALLY — a `tool_use` content block whose `name` is a wake-arm tool — on the Claude runtime:
+`ScheduleWakeup` or `CronCreate`; Codex seats have no in-session arm and use the doorbell/
+pacemaker path — in this turn's transcript (turn = entries since the last REAL user/wake
+boundary; `tool_result` carriers arrive typed as user entries and are turn-INTERNAL); NEVER a text match, which was measured unsound: 66% false-mention
 rate on one live seat, dominated by the stall-revival directive — i.e. the text is
 densest exactly where the fault is, so a text match is blindest where it matters. Turn
 scoping must treat `tool_result` carriers as turn-internal, not turn boundaries, or an

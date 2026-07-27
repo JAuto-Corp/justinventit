@@ -17,13 +17,18 @@ why, what shape it has, and **where to dig**.
   synthesis tier, dated, and each declares its **source inputs** (globs, specs, canonical
   examples) plus a `verified_at_sha`; a CI check invalidates the section (loudly, to a
   re-verification queue) when its declared inputs change. Semantic claims cannot silently
-  stale — they visibly expire. **Invalidation is SEMANTIC, not byte-level (07-27, measured
-  in the Understand-Anything trial before rejecting the dependency)**: the trigger is a
-  structural fingerprint over each source file's {functions, classes, imports, exports} —
-  measured stable under meaning-preserving edits and precise (name-level) on
-  meaning-changing ones. Byte/whole-record hashes (contentHash, totalLines) fire on
-  cosmetics and are excluded from the trigger. Build the extractor tree-sitter-based
-  in-house; the trial's verdict was ADAPT the primitive, never adopt the dependency.
+  stale — they visibly expire. **Invalidation is TWO-LEVEL (07-27; measured in the Understand-Anything dependency
+  trial — repo Egonex-AI/Understand-Anything @ 2cda14e89, tested edit classes:
+  comment-append vs exported-function-add; trial record in the seat-p dispatch report)**:
+  ANY content change to a declared input still enqueues the section for re-verification —
+  that loud floor is what keeps "semantic claims cannot silently stale" true, since a
+  function-BODY edit can change behavior while preserving every structural signature. On
+  top of it, a STRUCTURAL/API-level fingerprint over each file's {functions, classes,
+  imports, exports} — measured stable under the cosmetic class and name-precise on the
+  structural class — classifies the queue: structural change = mandatory full
+  re-verification; body-only change = lighter grounded re-check. The fingerprint
+  prioritizes; it never exempts. Build the extractor tree-sitter-based in-house; the
+  trial's verdict was ADAPT the primitive, never adopt the dependency.
 - **Generated everything-else** — navigation, indexes, counts, links, coverage inventory:
   generated from section metadata + the filesystem, freshness-gated, never hand-edited.
   *Origin: the predecessor map hand-maintained its counts and links; every count was wrong
@@ -74,9 +79,14 @@ Each leaf carries exactly:
    (300-400k) get one probe before batching; unbounded subsystems wait for decomposition.
    Collection/tool runs = doing tier. General law: cost dominated by READING large
    corpora → Sol; cost dominated by judgment on small inputs → Claude thinking tier.
-3. **Per-leaf review = Sol review protocol v2, normatively** (MODEL_MATRIX): distinct
-   charters (grounded fact-check: map-vs-repo; NYI bidirectional check), independent
-   refutation pass on surviving findings, schema verdicts, full-SHA citations. Runtime-
+3. **Per-leaf review splits by cost shape, method = review protocol v2** (MODEL_MATRIX):
+   the GROUNDED lenses (fact-check map-vs-repo; NYI bidirectional check) are corpus-reading
+   work and run as **Sol xhigh one-shots** on FRESH threads (never the drafting thread —
+   drafter/reviewer independence holds across Sol sessions); the ACCEPTANCE judgment and
+   cross-leaf coherence read only drafts + verdicts and run on the **Claude thinking
+   tier** — this is the same split as item 2, applied to review. Protocol v2 mechanics
+   (distinct charters, independent refutation pass on surviving findings, schema verdicts,
+   full-SHA citations) govern regardless of runtime. Runtime-
    behaviour claims require runner-backed evidence or are marked static-verified-only.
 4. **Coherence passes** at map milestones (cross-section, spec-set-pass pattern) +
    director review.
