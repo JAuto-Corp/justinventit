@@ -139,7 +139,13 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   blemish. **Ruling red-team lane (pilot)**: on orchestrator/director wakes that issue
   policy-shaping, irreversible, or batch rulings, the drafted rulings go through one Sol
   xhigh adversarial pass BEFORE sending — best-reasoning adversarial pairing at the top of
-  the stack, complementing the incremental reviews near the details.: "structurally more reliable" is about
+  the stack, complementing the incremental reviews near the details.
+  **Rollout law (learned by violating it): a protocol is not live until its invocation tool
+  exists and is reachable from every seat it binds** — announcing a funnel whose
+  speaking-tool is absent at the bound seats is law 9's composer clause violated by the
+  rollout itself (two seats blocked honestly rather than approximating; the funnel ran
+  interim through the dispatcher until the wrapper shipped).
+  **Coverage caveat riding every promotion claim**: "structurally more reliable" is about
   DELIVERY, not coverage — all samples to date are static analysis (no runtime in the
   review environment; the instrument declares this itself in not_checked, which is a
   dependability credit). A one-shot review cannot tell you a test passes; runtime-backed
