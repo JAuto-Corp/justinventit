@@ -94,6 +94,20 @@ durable brief) rather than idle/resume, once one-shot external gates make long-l
 reviewer context unnecessary. Cross-provider usage pools are part of matrix input: shift
 load toward the pool with headroom.
 
+**Fresh vs continued threads (cache-aware, 07-27)**: grounded one-shots self-cache heavily
+WITHIN a run (observed ≈90% cached input on repo-exploring reviews — real cost far below
+raw tokens), and `exec resume` turns a thread's whole grounding into a cached prefix. Rules:
+- **Fresh thread = the independence instrument** (audits, second opinions, gate passes) —
+  default, non-negotiable where anchoring matters.
+- **Continued thread = the iteration instrument**: disposition-confirmation ("are my fixes
+  faithful to YOUR findings?") returns to the SAME reviewer thread — cheap, already
+  grounded, and the right witness for that question; multi-stage work on one material
+  (review → prioritize → suggest) stays in-thread; Codex seats are continuation by nature.
+- The two questions never share a thread: same-thread confirms dispositions, a FRESH thread
+  hunts new blind spots. Never continue across unrelated subjects.
+- Scorecard tracks cached/uncached split; whether provider quotas discount cached input is
+  an open probe, not an assumption.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
