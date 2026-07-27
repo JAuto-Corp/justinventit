@@ -91,6 +91,20 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
 | Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <project_id>-<tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
 | **Tier verification (both runtimes, mandatory)** | launcher confirms the booted session reports the intended model+effort | **empirically required**: a nonexistent Codex profile boots the DEFAULT tier with exit 0, and config errors are non-fatal — the launcher runs a post-boot probe asserting the RESOLVED model/effort and fails loudly on mismatch; tier selection is never trusted |
 | **Modal-parking detection (mandatory on resume)** | the post-boot probe doubles as liveness proof: a probe unanswered past timeout = seat PARKED, reported for human action | **booted ≠ live**: a resumed session can sit on an interactive resume-mode modal (summary-vs-verbatim); while parked, its main loop takes no turns and in-session subagent deliveries BLOCK (they complete but cannot land — the empty-report signature). Revival protocol treats "answer the modal" as part of the tap; launchers prefer non-interactive resume modes where the runtime offers one |
+
+**Modal economics (origin: a fleet held hostage to a human's physical presence — modals were
+answerable only at the machine, invisible to remote taps):**
+- **Fresh-boot-with-durable-brief is the default revival path** wherever seat context is
+  recoverable from briefs/hub/memory — fresh boots hit no modal. Resume is reserved for
+  genuinely irreplaceable in-context state, scheduled for when a human is AT the machine.
+  (Durable state exists precisely so resume-context is optional; a fleet that must resume
+  has under-invested in briefs.)
+- **Notify adapters distinguish attention classes**: "remote tap sufficient" vs "physical
+  interaction required (modal)" — an alert that can't say which sends the human to the
+  wrong device.
+- **Remote-answerability is a launcher selection criterion**: pane hosts whose interactive
+  surface can be driven remotely (tmux send-keys class) strictly dominate ones that cannot,
+  for any seat that may ever be resumed unattended.
 | Resume | `--resume <uuid>` / remote-control push | interactive `codex resume <name>`; headless poke: `codex exec resume <letter> "<drain prompt>" < /dev/null` |
 | Tier | model+effort args from matrix | **project-qualified** profile (`~/.codex/<project_id>-<tier>.config.toml`), selected by the launcher from the seat record's `project_id` — two consuming projects never collide; per-poke override `-c model_reasoning_effort=...` |
 | Effort constancy | hold constant per session (prompt-cache) | same rule |
