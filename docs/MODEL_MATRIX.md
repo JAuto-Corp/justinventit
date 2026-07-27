@@ -83,6 +83,17 @@ Rules that ride along: hold effort constant within a session (prompt cache); rai
 demonstrated shallow reasoning rather than prompting around it; `max`/`ultra` are not in the
 matrix (xhigh>max data; ultra self-delegates).
 
+**One-shot review lane (experiment, 07-27)**: Codex Sol one-shot `exec` reviews (read-only,
+output-schema, xhigh judgment / low mechanical) are the preferred INDEPENDENT-review
+substrate while capacity favors it — independence holds by construction (never the authoring
+session), and the one-return shape matches verdict gates. A dependability scorecard
+(schema-validity, findings survival under adversarial spot-check, ungrounded-claim rate)
+gates two promotions: substituting the second fresh-context audit at fleet profile, and the
+**terminate-and-fresh session pattern** — clean-dispatch seats END and fresh-boot (with
+durable brief) rather than idle/resume, once one-shot external gates make long-lived
+reviewer context unnecessary. Cross-provider usage pools are part of matrix input: shift
+load toward the pool with headroom.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
