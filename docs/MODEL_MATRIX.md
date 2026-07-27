@@ -122,7 +122,7 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   path reuse cost ten minutes of reading with zero evidence captured). **Resume mechanics (07-27, learned by three failed launches)**: `codex exec resume`
   rejects `-s` and `-C`; sandbox rides `-c sandbox_mode="read-only"`, cwd rides the
   invocation directory (UUID session ids bypass cwd-filtering). The wrapper — `scripts/sol-review.sh` in the consuming project (a forge-marked template
-  artifact once ported) — needs its own resume mode before disposition-confirmations are
+  artifact; ported in Phase 3 of the separation program, the template rebuild) — needs its own resume mode before disposition-confirmations are
   seat-self-serve; until then they route through the dispatcher. **A pinned path is not a working invocation** (the node-shim
   lesson): pinning fixes WHICH binary, not whether it runs — the runtime that must
   accompany a shim lives next to it, so wrappers prepend the shim's own directory to PATH

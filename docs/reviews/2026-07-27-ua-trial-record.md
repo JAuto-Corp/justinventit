@@ -1,6 +1,11 @@
 # Understand-Anything dependency trial — record (2026-07-27)
 
-Executed by seat p under a hardened option-(b) ruling; verdict **ADAPT, not adopt**. Archived
+Executed by seat p under a hardened option-(b) ruling (of skip / source-only-trial /
+full-trial; hardenings: SHA-pin, no hook registration, frozen lockfile, ignore-scripts,
+cleaned env — ruling issued by g 2026-07-27 ~18:56Z+19:02Z, recorded in the JAuto hub,
+thread implementer-register). Evaluation rubric (the five criteria, from the founding
+dispatch): 1 feed-the-generated-layer, 2 incremental re-analysis fidelity, 3 dashboard
+utility, 4 query-surface utility, 5 cost/worth-the-dependency. Verdict **ADAPT, not adopt**. Archived
 here because ORIENTATION_MAPS §1 cites it as the grounding for the two-level invalidation design.
 
 - Subject: Egonex-AI/Understand-Anything @ `2cda14e89535049e49120198886bc0b82e9e630f` (v2.9.4,
