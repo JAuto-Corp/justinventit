@@ -100,6 +100,23 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
 - Anything stated twice is a defect; the freshness/coherence CI greps for known-duplicated
   headings as a tripwire.
 
+### 5a. Section-move law (Wave-1 lessons, 2026-07-27 — both learned the expensive way)
+
+- **A section move is not complete until every live consumer is retargeted.** The sweep
+  that finds consumers greps ALL file types — workflow YAML comments, shell-script error
+  text, and code comments point at doc sections too; an `--include="*.md"` sweep missed
+  three of them and a fourth class (the post-compaction recovery command) failed SILENTLY
+  at exactly the moment its session couldn't notice. Retarget what is broken, not what is
+  merely old; leave historical records unrewritten. The move-PR carries the sweep as
+  evidence (the grep + its zero-hit re-run).
+- **Doc claims about surfaces are verified at authoring time, in both tenses.** A
+  present-tense claim ("skills resolve on both runtimes", "checked by CI") must name its
+  existing referent; a planned surface is written future-tense with the wave that lands
+  it. And a pointer's TARGET existing in history is checked before any "restore" — one
+  pointer proved BORN dangling (four months old, target never existed), so a
+  restore-from-history instruction would have fabricated content under a provenance
+  claim. Retrieval claims cite the retrieved SHA.
+
 ## 6. Runtime-delta channels
 
 | Channel | Claude | Codex | Rule |

@@ -44,7 +44,7 @@ schema_version: 1
 tiers:                      # named launchable tiers; every tier resolves on every runtime
   thinking:  { effort: xhigh }
   authoring: { effort: xhigh, note: "preferred runtime claude/fable-class; resolves to the available runtime's thinking model otherwise" }
-  doing:     { effort: low }
+  doing:     { effort: medium }   # raised from low 2026-07-27: low doers over-reasoned without the capability to back it; the EXECUTE register (below) is the boundary, not starved effort
   maint:     { effort: medium }
 seat_classes:               # role → tier (+ rationale, fallback CHAIN — never runtime-dead-ends)
   direct:           { tier: authoring, fallback: thinking, note: "user-interaction + program direction; user-driven turns (dormant cadence); optional seat" }
@@ -60,7 +60,7 @@ seat_classes:               # role → tier (+ rationale, fallback CHAIN — nev
   cross_review:     { tier: thinking, second_opinion: { when: "second-runtime-configured", runtime: other, effort: xhigh, else: "same-runtime fresh-context pass" } }
   frontend:         { tier: doing, escalate_to: thinking, note: "escalation raises the TIER (judgment-heavy UI work); tiers order thinking > authoring-adjacent > doing > maint on capability — a tier change is never a model downgrade dressed as a raise" }
 models:                     # per-runtime model ids per TIER — complete on every runtime
-  claude: { thinking: opus-5, authoring: fable-5, doing: opus-5, maint: sonnet-5 }
+  claude: { thinking: fable-5, authoring: fable-5, doing: opus-5, maint: sonnet-5 }   # 2026-07-27 correction: FABLE THINKS, OPUS DOES — opus-as-thinker caused over-engineering-through-misunderstanding; thinking seats consult Sol xhigh frequently (funnel, red-team, escalated judgment)
   codex:  { thinking: gpt-5.6-sol, authoring: gpt-5.6-sol, doing: gpt-5.6-sol, maint: gpt-5.6-terra }
 ```
 
@@ -71,9 +71,9 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 
 | Seat class | Runtime/model/effort | Grounding |
 |-|-|-|
-| orchestrate (O), integrate (I) | claude opus-5 @ xhigh | official "xhigh for demanding agentic work"; FrontierBench xhigh>max |
+| orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain |
 | design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule |
-| implement, explore, capture | claude opus-5 @ low | official: low "scopes work to what was asked"; cheapest sanctioned Claude tier |
+| implement, explore, capture | claude opus-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
 | diagnostic | opus-5 @ xhigh (thinking tier) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
 | cross-review | opus-5 @ xhigh + codex sol @ xhigh second opinion | standing cross-runtime lane |
@@ -119,7 +119,14 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   **Invocation mechanics (from field friction)**: grounded xhigh repo-reads exceed
   foreground shell ceilings — always BACKGROUND the run, and use PER-ATTEMPT output paths
   so a relaunch cannot truncate a prior attempt's evidence (one SIGKILLed foreground run +
-  path reuse cost ten minutes of reading with zero evidence captured). Dependability watch
+  path reuse cost ten minutes of reading with zero evidence captured). **Resume mechanics (07-27, learned by three failed launches)**: `codex exec resume`
+  rejects `-s` and `-C`; sandbox rides `-c sandbox_mode="read-only"`, cwd rides the
+  invocation directory (UUID session ids bypass cwd-filtering). The wrapper needs its own
+  resume mode before disposition-confirmations are seat-self-serve; until then they route
+  through the dispatcher. **A pinned path is not a working invocation** (the node-shim
+  lesson): pinning fixes WHICH binary, not whether it runs — the runtime that must
+  accompany a shim lives next to it, so wrappers prepend the shim's own directory to PATH
+  and prove invocation with a `--version` run, not by reading the file. Dependability watch
   list: self-tracking lag (sample 8, not recurred) and **disposition-vs-severity
   inconsistency** (sample 9: verdict BLOCK with no blocker-severity finding — the
   instrument may reach for the strongest disposition its own taxonomy doesn't support).

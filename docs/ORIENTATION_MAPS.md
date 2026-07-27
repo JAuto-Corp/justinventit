@@ -17,7 +17,13 @@ why, what shape it has, and **where to dig**.
   synthesis tier, dated, and each declares its **source inputs** (globs, specs, canonical
   examples) plus a `verified_at_sha`; a CI check invalidates the section (loudly, to a
   re-verification queue) when its declared inputs change. Semantic claims cannot silently
-  stale — they visibly expire.
+  stale — they visibly expire. **Invalidation is SEMANTIC, not byte-level (07-27, measured
+  in the Understand-Anything trial before rejecting the dependency)**: the trigger is a
+  structural fingerprint over each source file's {functions, classes, imports, exports} —
+  measured stable under meaning-preserving edits and precise (name-level) on
+  meaning-changing ones. Byte/whole-record hashes (contentHash, totalLines) fire on
+  cosmetics and are excluded from the trigger. Build the extractor tree-sitter-based
+  in-house; the trial's verdict was ADAPT the primitive, never adopt the dependency.
 - **Generated everything-else** — navigation, indexes, counts, links, coverage inventory:
   generated from section metadata + the filesystem, freshness-gated, never hand-edited.
   *Origin: the predecessor map hand-maintained its counts and links; every count was wrong
@@ -59,10 +65,15 @@ Each leaf carries exactly:
    pack + project implementation pack — .claude/, .agents/, scripts/ are the implemented
    surface) and per-subsystem for Layer B **including** edge functions, tooling/simulation,
    and deployment surfaces (the predecessor map's omission class).
-2. **Bite-size synthesis**: one or few leaves per dispatch. Executable tier mapping
-   (interim manual until the resolved matrix ships): synthesis = docs_baseline/authoring
-   tier; coherence + adversarial review = cross_review/thinking tier; collection/tool runs
-   = doing tier.
+2. **Bite-size synthesis — INVERTED tier mapping (user ruling 2026-07-27: token-heavy
+   analysis runs on the deep-quota runtime)**: leaf-DRAFT synthesis = **Sol xhigh
+   one-shots** reading the pack (pack piped in, per-attempt output dirs, backgrounded —
+   the corpus tokens land on the deep pool); REVIEW/coherence = Claude thinking tier
+   reading the DRAFT, never the pack. The reviewer judges the distillate; only the
+   drafter pays the corpus cost. Bounded packs fit one-shots today; marginal packs
+   (300-400k) get one probe before batching; unbounded subsystems wait for decomposition.
+   Collection/tool runs = doing tier. General law: cost dominated by READING large
+   corpora → Sol; cost dominated by judgment on small inputs → Claude thinking tier.
 3. **Per-leaf review = Sol review protocol v2, normatively** (MODEL_MATRIX): distinct
    charters (grounded fact-check: map-vs-repo; NYI bidirectional check), independent
    refutation pass on surviving findings, schema verdicts, full-SHA citations. Runtime-
