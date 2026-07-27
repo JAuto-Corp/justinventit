@@ -107,6 +107,15 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   hunts new blind spots. Never continue across unrelated subjects.
 - Scorecard tracks cached/uncached split; whether provider quotas discount cached input is
   an open probe, not an assumption.
+- **Provisional promotion (07-27, 8 samples, usage: Sol-xhigh 2% vs Claude 25%)**: Sol
+  one-shot is DEFAULT for second spec-audits, disposition-confirmations/gate re-passes,
+  wave-PR reviews, workstream SPEC audits, and doc-verification sweeps — Claude in those
+  lanes needs a stated reason. **Reliability inversion while the subagent delivery defect
+  stands**: a synchronous one-shot has no agent→parent channel to lose, so Sol reviews are
+  structurally more reliable than in-session team reviews; for PR code reviews Sol is
+  primary and the pinned same-runtime reviewer is the cross-check (revisit on upstream fix).
+  Target band: shift review/audit load until the lean pool sits at 10-15% with the
+  conserved pool's growth flattened; usage deltas reported at phase boundaries.
 
 ## 4. Supersession
 
