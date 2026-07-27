@@ -42,10 +42,14 @@ Rules:
   Remote-side operations (gh/API merges, pushes of already-committed refs) are exempt from
   the working-tree coordination ONLY — ref and merge policy (integrator authority, cascade
   rules) still fully applies to them. A seat needing a local tree for conflict work uses a
-  temporary worktree, never the shared checkout. *Origins: integrator branch-switches under
-  co-resident sessions; a seat nearly booted into another seat's authoring checkout; a sync
-  fix that left 19 staged files in six worktrees where any bare `git commit` would have
-  silently swept them onto live PR branches.*
+  temporary worktree, never the shared checkout. **Activity in a multi-resident workspace
+  is not attributable to a seat by observation** — transcript mtimes, process lists, and
+  file activity there cannot distinguish co-residents; attribution comes only from the
+  session registry / seat records. *Origins: integrator branch-switches under co-resident
+  sessions; a seat nearly booted into another seat's authoring checkout; a sync fix that
+  left 19 staged files in six worktrees where any bare `git commit` would have silently
+  swept them onto live PR branches; a status report attributing the director's activity to
+  the integrator from a shared-checkout transcript.*
 
 ## 1a. Worktrees are NOT sandboxes (two axes, never conflated)
 
