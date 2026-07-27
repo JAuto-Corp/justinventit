@@ -213,8 +213,15 @@ an accident. Required steps, in order:
    no context rot, and the brief is the contract. Resuming the concluded session is the
    exception and follows modal economics (§3).
 **Turn-end continuity check (Stop hook — the synchronous half of the enforcement).** A
-commissioned seat ending a turn must hold exactly one of: an armed wake (a wake-arm call
-visible in this turn's transcript, or helper-written `next_wake_at` in the future), an
+commissioned seat ending a turn must hold exactly one of: an armed wake (a wake-arm
+detected STRUCTURALLY — a `tool_use` content block whose `name` is a wake-arm tool — on the Claude runtime:
+`ScheduleWakeup` or `CronCreate`; Codex seats have no in-session arm and use the doorbell/
+pacemaker path — in this turn's transcript (turn = entries since the last REAL user/wake
+boundary; `tool_result` carriers arrive typed as user entries and are turn-INTERNAL); NEVER a text match, which was measured unsound: 66% false-mention
+rate on one live seat, dominated by the stall-revival directive — i.e. the text is
+densest exactly where the fault is, so a text match is blindest where it matters. Turn
+scoping must treat `tool_result` carriers as turn-internal, not turn boundaries, or an
+early-turn arm goes invisible. Or: helper-written `next_wake_at` in the future), an
 armed doorbell (standby seats: watcher marker present), or a completed conclusion ceremony
 (`dormant` + reason + brief). The Stop hook checks this and **blocks once** with a
 self-correcting message ("arm one or run the ceremony") — the seat still has a turn in
