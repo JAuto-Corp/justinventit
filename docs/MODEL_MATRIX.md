@@ -123,7 +123,23 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   list: self-tracking lag (sample 8, not recurred) and **disposition-vs-severity
   inconsistency** (sample 9: verdict BLOCK with no blocker-severity finding — the
   instrument may reach for the strongest disposition its own taxonomy doesn't support).
-  **Coverage caveat riding every promotion claim**: "structurally more reliable" is about
+  **Sol review protocol v2 (07-27, adapted from the harness /code-review method)** — the
+  funnel shape for ALL judgment-review families (in-session teams, pinned reviewers, scoped
+  audits' judgment halves → Sol xhigh; runtime attestation, authoring, and chain equip
+  feedback stay native): (1) cheap PRE-FLIGHT triage (skip closed/draft/trivial/already-
+  reviewed); (2) scoped-guidance collection (only the entry-contract files governing the
+  changed paths); (3) DISTINCT-CHARTER lenses as separate one-shots (guidance-compliance
+  with exact-quote citations; diff-scoped bugs; introduced-logic/security), few-concurrent;
+  (4) **independent VALIDATION pass** — every finding re-examined by a fresh thread charged
+  to refute it; unvalidated findings are filtered, not hedged; (5) verdict via schema with
+  full-SHA citations. **High-signal doctrine riding every lens prompt**: objective defects
+  and unambiguous quoted-rule violations only; explicit false-positive list (pre-existing,
+  linter-catchable, pedantic, silenced, unverifiable-without-outside-context); *if not
+  certain, do not flag* — this is also the standing treatment for the disposition-overreach
+  blemish. **Ruling red-team lane (pilot)**: on orchestrator/director wakes that issue
+  policy-shaping, irreversible, or batch rulings, the drafted rulings go through one Sol
+  xhigh adversarial pass BEFORE sending — best-reasoning adversarial pairing at the top of
+  the stack, complementing the incremental reviews near the details.: "structurally more reliable" is about
   DELIVERY, not coverage — all samples to date are static analysis (no runtime in the
   review environment; the instrument declares this itself in not_checked, which is a
   dependability credit). A one-shot review cannot tell you a test passes; runtime-backed
