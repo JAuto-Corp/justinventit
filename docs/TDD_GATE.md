@@ -59,6 +59,11 @@ no `phase:` variant exists):
 - **RED classification**: an expected failure is an *assertion* failure of the named
   scenarios; infra errors (connection refused, missing env) record `expected_fail: "infra"`
   and do NOT count as RED.
+- **The vacuous-guard class**: an assertion must fail when its SUBJECT IS ABSENT —
+  `row?.field ?? null === null` passes when the row does not exist, which is the trust-test
+  failure inside a test (it was found living inside a test whose entire job was catching
+  silent absence). Assert existence separately before comparing fields; a guard that
+  passes on absence protects nothing.
 - Recorders live inside the runner path every developer/agent actually uses (`pnpm test:*`
   via a reporter, build via the guarded wrapper) — not a parallel path nobody invokes.
 - Overrides are events too — `kind: "override"` with `{token, check, reason, actor,

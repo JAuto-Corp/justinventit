@@ -236,14 +236,21 @@ stalls, burning watchdog attention and human ambiguity on deliberate checkpoints
   the failure mode it would be verifying (a baseline consulted from a possibly-broken
   instrument is recorded before the instrument is needed). The portable mechanism is a
   harness task-record per spawn: {task id, agent name, completion receipt, result digest,
-  delivery state, parent claim}. An expected agent that never reports and does not answer
-  a nudge is disclosed as **NOT RUN — never as ran-and-clean**. Recovery: nudge BY NAME,
-  **and nudge PROMPTLY — verify delivery at fan-out completion, not at end-of-session**:
-  observed recovery rates fell monotonically with idle-to-nudge age (minutes → all;
-  ~20 min → 4/4; hours → 1/8; candidate mechanism under test, but the prompt-verify
-  discipline is free either way). Frame that an honest "I did not actually do this" beats
-  a reconstruction; provenance upgrades after a posted verdict are disclosed in a
-  supplement, never silent.
+  delivery state, parent claim}. **The agent→parent channel is lossy downstream of a
+  successful send**: a send that returns success (even with a message id) is NOT evidence
+  of arrival — an agent reporting that it reported is not receipt. Loss is
+  non-deterministic and independent of session state, tier, idle age, and agent type
+  (time-based recovery hypotheses were falsified from both ends). Therefore:
+  **the authoritative recovery is READING THE AGENT'S RAW TRANSCRIPT** — the only method
+  that recovered reports in every observed session. A nudge is cheap and permitted as a
+  first attempt, but its failure concludes NOTHING (0/4 at the shortest tested interval)
+  and its success is a bonus, not the mechanism. Verify delivery at fan-out completion
+  against the roster-at-spawn; an expected lens that never reached your context is
+  **NOT RUN** unless transcript-recovered — and transcript-recovered findings are LABELED
+  as such in the verdict, never presented as normally-delivered review. Provenance
+  upgrades after a posted verdict are disclosed in a supplement, never silent. (A pinned
+  agent definition fixes tier inheritance, NOT delivery — the two fixes are independent
+  and must not be read as one.)
   **Reorientation loses subagents**: redirecting a session mid-fan-out silently orphans its
   agents while it believes the fan-out ran — reorientation is BLOCKED while spawned tasks
   are outstanding (finish, or explicitly cancel/snapshot with the orphan list disclosed);
