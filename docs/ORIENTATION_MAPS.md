@@ -19,15 +19,16 @@ why, what shape it has, and **where to dig**.
   re-verification queue) when its declared inputs change. Semantic claims cannot silently
   stale — they visibly expire. **Invalidation is TWO-LEVEL (07-27; measured in the Understand-Anything dependency
   trial — repo Egonex-AI/Understand-Anything @ 2cda14e89, tested edit classes:
-  comment-append vs exported-function-add; trial record in the seat-p dispatch report)**:
+  comment-append vs exported-function-add; trial record archived at docs/reviews/2026-07-27-ua-trial-record.md in this repo)**:
   ANY content change to a declared input still enqueues the section for re-verification —
   that loud floor is what keeps "semantic claims cannot silently stale" true, since a
   function-BODY edit can change behavior while preserving every structural signature. On
   top of it, a STRUCTURAL/API-level fingerprint over each file's {functions, classes,
   imports, exports} — measured stable under the cosmetic class and name-precise on the
-  structural class — classifies the queue: structural change = mandatory full
-  re-verification; body-only change = lighter grounded re-check. The fingerprint
-  prioritizes; it never exempts. Build the extractor tree-sitter-based in-house; the
+  structural class — classifies the queue: structural-fingerprint change = mandatory full
+  re-verification; fingerprint-unchanged (cosmetic AND body-only edits — the trigger
+  cannot distinguish them, so both take the stronger path available to them) = lighter
+  grounded re-check. The fingerprint prioritizes; it never exempts. Build the extractor tree-sitter-based in-house; the
   trial's verdict was ADAPT the primitive, never adopt the dependency.
 - **Generated everything-else** — navigation, indexes, counts, links, coverage inventory:
   generated from section metadata + the filesystem, freshness-gated, never hand-edited.
@@ -73,9 +74,11 @@ Each leaf carries exactly:
 2. **Bite-size synthesis — INVERTED tier mapping (user ruling 2026-07-27: token-heavy
    analysis runs on the deep-quota runtime)**: leaf-DRAFT synthesis = **Sol xhigh
    one-shots** reading the pack (pack piped in, per-attempt output dirs, backgrounded —
-   the corpus tokens land on the deep pool); REVIEW/coherence = Claude thinking tier
-   reading the DRAFT, never the pack. The reviewer judges the distillate; only the
-   drafter pays the corpus cost. Bounded packs fit one-shots today; marginal packs
+   the corpus tokens land on the deep pool); review splits (item 3): GROUNDED
+   lenses re-read the corpus and run on Sol (fresh threads — grounded review is
+   corpus-priced, and that cost also lands on the deep pool); ACCEPTANCE/coherence runs
+   on the Claude thinking tier reading drafts + verdicts only, never the pack. Claude
+   never pays corpus cost; Sol pays it twice (draft + grounded review), by design. Bounded packs fit one-shots today; marginal packs
    (300-400k) get one probe before batching; unbounded subsystems wait for decomposition.
    Collection/tool runs = doing tier. General law: cost dominated by READING large
    corpora → Sol; cost dominated by judgment on small inputs → Claude thinking tier.
