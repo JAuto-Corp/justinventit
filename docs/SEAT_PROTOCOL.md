@@ -120,6 +120,14 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
   covers EVERY registered seat by construction (roster = seat-control enumeration, never a
   hardcoded list — the source system's hardcoded roster silently dropped two live seats).
+- **Per-state stall predicates — the doorbell is never the only signal.** Cadenced seats
+  (`awake`/`sleeping`): heartbeat/`next_wake_at` age vs grace. Event-driven seats
+  (`standby`, no `next_wake_at`): **undrained-mail age** — newest mailbox arrival vs the
+  seat's processing cursor; a quiet doorbell seat is silent, a DEAF one is loud. `dormant`:
+  never alarmed. Every registered seat matches exactly one predicate; a seat whose state
+  matches none is itself a loud finding. *Origin: an event-driven orchestrator whose
+  doorbell loop died undetectably — its heartbeat was legitimately quiet by design, and the
+  broken doorbell was its only liveness signal.*
 
 ## 5. Mailboxes
 
