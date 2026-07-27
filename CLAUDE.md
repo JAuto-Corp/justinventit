@@ -5,15 +5,13 @@
 ```
 template/                  Copier template (what gets scaffolded into projects)
   .claude/
-    skills/orchestrators/  Framework skills (work, verify, capture, team-lead, etc.)
-    skills/domain/         Project-specific skill stubs
+    commands/              Slash-command wrappers (bare front doors + namespaced sub-verbs)
+    skills/orchestrators/  Framework skills (work, verify, capture, scope, check, team-lead, etc.)
     hooks/                 Hook scripts (session-start, stop pipeline, guards)
-    rules/                 Path-scoped rule files
-    agents/                Agent definitions
+    settings.json.jinja    Generated .claude/settings.json (hook wiring, matchers)
   context/                 State file templates
   docs/                    Doc templates (PLAYBOOK, CURRENT_WORK, etc.)
   scripts/                 Utility script templates
-  test-data/               TDS structure templates
   CLAUDE.md.jinja          Main CLAUDE.md template
 
 docs/                      Framework documentation
@@ -54,6 +52,7 @@ copier copy . /tmp/test-project --defaults
 # Test with specific answers
 copier copy . /tmp/test-project -d stack=nextjs -d database=supabase
 
-# Validate all hook scripts
-bash scripts/validate-hooks.sh
+# Generate + coherence gate across the answer matrix (also runs the generated
+# project's hook harness and the real Stop runner — this is the hook validation)
+scripts/ci/generate-matrix-check.sh [path/to/copier]
 ```

@@ -11,7 +11,7 @@ Adding justinventit to an existing codebase is the hardest adoption path — but
 Understand what you have:
 - **Existing CLAUDE.md?** Copier will merge, not overwrite. But review the merge.
 - **Existing hooks?** Back them up. justinventit's hooks can coexist if they use different event matchers.
-- **Existing skills?** Move to `.claude/skills/domain/` — framework won't touch that directory.
+- **Existing skills?** Move to `.claude/skills/domain/` — you create that directory yourself (the template does not generate it) and the framework will never touch it.
 - **Existing CI/CD?** justinventit doesn't override CI. It provides templates you can adopt.
 
 ## Step-by-Step
@@ -33,7 +33,7 @@ Review every generated file before committing. Key files to check:
 If you have an existing CLAUDE.md, merge the best of both:
 - Keep your codebase map and project-specific routing
 - Adopt the framework's TDD gate and before-working checklist
-- Move domain knowledge to path-scoped rules (`.claude/rules/`)
+- Move domain knowledge to path-scoped rules (`.claude/rules/` — a directory you create; it is not scaffolded)
 
 If you have existing skills:
 ```bash
