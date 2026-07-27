@@ -19,6 +19,18 @@
 Stages 3-5 iterate via the chain (`go ⇄ check` relay, convergence math in the chain skill).
 Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test gate fails.
 
+Named practices (ratified from independent convergent field use):
+- **Verify the consequence, not the cause**: confirm the file is on the target branch and
+  the gate passed on the target's own run — never that "the PR merged" (four seats
+  converged on this unprompted; it caught real gaps every time).
+- **Recorded-not-fixed**: a real adjacent defect you deliberately do not fix (to protect a
+  valid green, to stay in scope) goes IN THE VERDICT, never only in your head — that is
+  what separates a judgment call from an omission.
+- **Standing-trigger-is-authorization**: a dispatch trigger stated with explicit CONDITIONS
+  and INVALIDATIONS (what voids it: head moved, new red class, freeze declared) IS the
+  authorization — re-asking converts it back into per-instance approval and reinstates the
+  dependency it removed. "Hold for my word" is the explicit opt-out.
+
 ## 2. Responsibilities → seats (overlap by design)
 
 | Responsibility | Seat mapping |
@@ -55,7 +67,12 @@ mid-artifact (ownership = dispatch row).
    Composes with gate integrity: a gate you keep re-running is either right, or a defect to
    file — never a toll; and rerun-to-check on an exhausted/flaky resource is
    confirmation-shaped waste.
-7. **Constraint-vs-mechanism collision** (a seat cannot satisfy both a standing constraint
+7. **Route past the evidence node**: when the node you would normally escalate through is
+   itself part of the evidence (a stall report about a possibly-stalled orchestrator), go
+   around it — "a report that depends on the suspect reading it is a hope, not a report."
+   Named expected behavior, never insubordination; the bypassed node is informed once it is
+   demonstrably live.
+8. **Constraint-vs-mechanism collision** (a seat cannot satisfy both a standing constraint
    and a dispatched gate without degrading one) → DIRECTOR-lane finding; the seat HOLDS and
    routes, never resolves by fiat in either direction. Ratified principle: a constraint
    satisfiable only by degrading the work it governs is a design bug, not a discipline

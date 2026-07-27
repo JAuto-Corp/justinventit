@@ -202,6 +202,13 @@ backend-enforced authorization), not a namespace column bolted on.
 - Every check is a file, independently testable against shipped fixtures; the hook test
   harness is part of the framework and runs in the framework's own CI *and* in generated
   projects.
+- **Gate lifecycle rules**: (a) *a requirement for a guard specifies how its negative case
+  will be demonstrated* — "hard-fail if X" is unobservable as stated; "and show it fires
+  when X is forced" makes it provable; (b) *emit before enforce* — a gate judging state
+  other parties write emits its evidence fields before enforcing them, so enforcement day
+  is never migration day; (c) *no off-by-default enforcement* — a gate defaulting to
+  not-gating tends to stay that way (a toll nobody collects); prefer strict code behind
+  explicit sequencing over flags.
 - Documentation is a gated stage (law: doc delta or explicit no-doc-impact), and generated
   indexes are freshness-gated — the two mechanisms that keep the delivery layer current-by
   construction rather than current-by-diligence.

@@ -116,6 +116,11 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   primary and the pinned same-runtime reviewer is the cross-check (revisit on upstream fix).
   Target band: shift review/audit load until the lean pool sits at 10-15% with the
   conserved pool's growth flattened; usage deltas reported at phase boundaries.
+  **Coverage caveat riding every promotion claim**: "structurally more reliable" is about
+  DELIVERY, not coverage — all samples to date are static analysis (no runtime in the
+  review environment; the instrument declares this itself in not_checked, which is a
+  dependability credit). A one-shot review cannot tell you a test passes; runtime-backed
+  claims still require a runner.
 
 ## 4. Supersession
 

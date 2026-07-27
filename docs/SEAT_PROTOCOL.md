@@ -157,6 +157,16 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   grace window; every wake goes through the lease (§2). Conformance fixtures crash the
   consumer both before and after side-effect/cursor-advance. In-session subagents NEVER use
   doorbells — the harness re-invokes the parent natively.
+  **Two doorbell shapes, chosen deliberately per seat class**: *own-mailbox* (doing seats —
+  waking on another seat's conversation mid-build is pure interruption) vs *total-inbound*
+  (coordination seats: baseline = total bytes of inbound fleet mail across all streams,
+  **excluding the seat's own outbound** — the naive total self-triggers on every send,
+  degrading the doorbell into noise nobody reads). Total-inbound buys two properties: an
+  unexpected message cannot hide behind an expected one (the wake you predicted otherwise
+  consumes the look), and it yields a per-seat undrained-backlog table on every wake —
+  live "receiving-but-not-draining" detection without polling, distinguishing "not drained
+  in 9h" from "arrived 2 min ago". Both shapes stay BOUNDED (dead watcher degrades to slow
+  polling, never silence).
 - **Cadence (fallback)**: self-armed wake at matrix-defined interval; "arm LAST" discipline.
 - **Pacemaker/watchdog (external)**: versioned in-repo, fixture-tested, notify-adapter for
   escalation (desktop/SMS/none). All of its reads and writes — heartbeat, roster
@@ -206,6 +216,19 @@ The watchdog's job narrows to what it should be: catching ACCIDENTS. Intentional
 never reach it. *Origin: seats concluding work without re-arming looked identical to
 stalls, burning watchdog attention and human ambiguity on deliberate checkpoints.*
 
+Briefs carry a machine-readable `authored_by` (seat letter, or `orchestrator-reconstructed`
+when O writes one on behalf of a seat that never ran the ceremony — the honesty lives in
+the artifact; enforcement may key on it).
+
+**Fleet-level wind-down** (the ceremony generalized; origin: an overnight fleet wind-down
+without ceremony, benign only because nothing was in flight, costing five morning taps for
+one cause): on a single triggering event ("the human is going to sleep"), O broadcasts
+WIND-DOWN; every seat runs the per-seat ceremony but does NOT notify individually — a
+wind-down that pages the human N times is worse than the silence it replaces; O sends ONE
+consolidated resume packet naming every seat, its brief, and its dispatch id. Morning is
+one broadcast. **The real property is diagnostic, not convenience**: after a ceremonial
+wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
+
 ## 5. Mailboxes
 
 - **A mailbox is a recipient-filtered view over hub events** — never an independent
@@ -217,6 +240,10 @@ stalls, burning watchdog attention and human ambiguity on deliberate checkpoints
   assumption: **seats within one project are mutually trusted** (hub spec §4); own-letter-only
   remains the protocol rule everywhere because a read advances the processing cursor —
   reading another seat's mail destroys their delivery.
+- **Inspecting another seat's mail** (a legitimate operator request) is done
+  NON-DESTRUCTIVELY: read the stream from their stored cursor offset WITHOUT writing the
+  cursor — never via the consuming read verb, whose obvious use silently eats messages the
+  seat is holding.
 - Drain on boot and at phase boundaries; drain files are read whole.
 - **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
   observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
