@@ -125,9 +125,14 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   (`standby`, no `next_wake_at`): **undrained-mail age** — newest mailbox arrival vs the
   seat's processing cursor; a quiet doorbell seat is silent, a DEAF one is loud. `dormant`:
   never alarmed. Every registered seat matches exactly one predicate; a seat whose state
-  matches none is itself a loud finding. *Origin: an event-driven orchestrator whose
-  doorbell loop died undetectably — its heartbeat was legitimately quiet by design, and the
-  broken doorbell was its only liveness signal.*
+  matches none is itself a loud finding. **Undrained-mail age detects deafness only when
+  mail exists** — a seat nobody wrote to looks healthy under it — so event-driven seats
+  ALSO keep a slow heartbeat floor (a mandatory minimum-cadence heartbeat write, e.g.
+  hourly, independent of any initiator); floor-age is the second predicate, and the pair is
+  tested against the quiet-period case explicitly. *Origins: an event-driven orchestrator
+  whose doorbell loop died undetectably — heartbeat legitimately quiet by design, broken
+  doorbell its only signal; boundary caught in review: the replacement predicate would have
+  inherited the same blind spot for unmailed seats.*
 
 ## 5. Mailboxes
 
