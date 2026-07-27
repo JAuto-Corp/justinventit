@@ -278,21 +278,20 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
   the failure mode it would be verifying (a baseline consulted from a possibly-broken
   instrument is recorded before the instrument is needed). The portable mechanism is a
   harness task-record per spawn: {task id, agent name, completion receipt, result digest,
-  delivery state, parent claim}. **The agent→parent channel is lossy downstream of a
-  successful send**: a send that returns success (even with a message id) is NOT evidence
-  of arrival — an agent reporting that it reported is not receipt. Loss is
-  non-deterministic and independent of session state, tier, idle age, and agent type
-  (time-based recovery hypotheses were falsified from both ends). Therefore:
-  **the authoritative recovery is READING THE AGENT'S RAW TRANSCRIPT** — the only method
-  that recovered reports in every observed session. A nudge is cheap and permitted as a
-  first attempt, but its failure concludes NOTHING (0/4 at the shortest tested interval)
-  and its success is a bonus, not the mechanism. Verify delivery at fan-out completion
-  against the roster-at-spawn; an expected lens that never reached your context is
-  **NOT RUN** unless transcript-recovered — and transcript-recovered findings are LABELED
-  as such in the verdict, never presented as normally-delivered review. Provenance
-  upgrades after a posted verdict are disclosed in a supplement, never silent. (A pinned
-  agent definition fixes tier inheritance, NOT delivery — the two fixes are independent
-  and must not be read as one.)
+  delivery state, parent claim}. **The agent→parent channel is DELAYED AND BATCHED, not
+  lossy** (third revision of this guidance, each on new evidence — kept honest by three
+  seat self-retractions): sends that return success DO arrive, but delivery can flush
+  late, batched at session boundaries (turn events, compaction), with **no signal
+  distinguishing "not yet arrived" from "never arriving" — that observability gap is the
+  actual defect.** Consequences: a send-success is still not *receipt-yet*; nudging
+  remains a valid, cheap prompt for the pipe to flush; and **declaring a lens NOT RUN
+  requires a transcript check first** — if the transcript shows the work produced and
+  sent, the report is IN FLIGHT: wait or transcript-recover, never declare a produced
+  report dead (a false NOT-RUN is its own false claim). Transcript-reading is thus both
+  the recovery path and the way to SEE produced-but-unsurfaced work. Transcript-recovered
+  findings are labeled as such; provenance upgrades after a posted verdict are disclosed
+  in a supplement, never silent. (A pinned agent definition fixes tier inheritance, NOT
+  delivery — independent fixes, never read as one.)
   **Reorientation loses subagents**: redirecting a session mid-fan-out silently orphans its
   agents while it believes the fan-out ran — reorientation is BLOCKED while spawned tasks
   are outstanding (finish, or explicitly cancel/snapshot with the orphan list disclosed);
