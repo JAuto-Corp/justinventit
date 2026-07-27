@@ -28,6 +28,16 @@
 #       postgres => generic-SQL (Bash) matcher+guard; none => no migration hook.
 #       (e) is what catches the SILENT form of the dict-choice bug — a project
 #       that passes (a)-(d) but has its machinery quietly stripped.
+#   (f) SLASH-COMMAND RESOLUTION — every `/command` the generated skills and
+#       CLAUDE.md reference resolves to something real under .claude/commands/:
+#       a BARE token /x resolves to commands/x.md OR to the namespace dir
+#       commands/x/ (skills say "hand to /work" meaning the namespace); a
+#       NAMESPACED token /x:y must resolve to commands/x/y.md. Regression class:
+#       the skills documented /scope and /check as bare front doors for a full
+#       release while no wrapper existed — nothing at runtime errored, the docs
+#       simply described a door that was not there, and no assertion could see it.
+#       Commands provided by the Claude Code harness itself (not by this
+#       template) are allowlisted in HARNESS_COMMANDS below.
 #
 # USAGE:
 #   scripts/ci/generate-matrix-check.sh [COPIER_BIN]
@@ -101,6 +111,43 @@ scan_unrendered() {
     rel="${f#"$dir"/}"
     sed 's/{{SANDBOX}}//g' "$f" | grep -nE '\{\{|\{%' | sed "s#^#  ${rel}:#"
   done
+}
+
+# ---------------------------------------------------------------------------
+# Slash commands that come from the Claude Code harness, not from this template.
+# A reference to one of these is NOT a dangling command. Keep this list short and
+# justified — every entry is an assertion that the harness provides it.
+# ---------------------------------------------------------------------------
+HARNESS_COMMANDS="loop"
+
+# ---------------------------------------------------------------------------
+# scan_commands <dir> — echo each UNRESOLVED slash-command reference as
+# "  <token>  (referenced in: file:line, ...)". Scans the generated project's
+# skills, commands and CLAUDE.md for backticked `/tokens`.
+# ---------------------------------------------------------------------------
+scan_commands() {
+  local dir="$1" tok base sub refs h
+  local -a roots=()
+  [ -d "$dir/.claude/skills" ]   && roots+=("$dir/.claude/skills")
+  [ -d "$dir/.claude/commands" ] && roots+=("$dir/.claude/commands")
+  [ -f "$dir/CLAUDE.md" ]        && roots+=("$dir/CLAUDE.md")
+  [ "${#roots[@]}" -eq 0 ] && { echo "  (no skills/commands/CLAUDE.md to scan)"; return; }
+
+  while IFS= read -r tok; do
+    [ -n "$tok" ] || continue
+    for h in $HARNESS_COMMANDS; do [ "$tok" = "$h" ] && continue 2; done
+    if [[ "$tok" == *:* ]]; then
+      base="${tok%%:*}"; sub="${tok#*:}"
+      [ -f "$dir/.claude/commands/$base/$sub.md" ] && continue
+    else
+      # bare: a wrapper file OR a namespace directory both count as resolved
+      { [ -f "$dir/.claude/commands/$tok.md" ] || [ -d "$dir/.claude/commands/$tok" ]; } && continue
+    fi
+    refs="$(grep -rn -- "\`/$tok\`" "${roots[@]}" 2>/dev/null \
+             | sed "s#^$dir/##" | cut -d: -f1,2 | head -3 | tr '\n' ' ')"
+    printf '  /%s  (referenced in: %s)\n' "$tok" "$refs"
+  done < <(grep -rhoE '`/[a-z][a-z0-9-]*(:[a-z0-9-]+)?`' "${roots[@]}" 2>/dev/null \
+             | tr -d '`/' | sort -u)
 }
 
 # ---------------------------------------------------------------------------
@@ -222,6 +269,11 @@ check_set() {
           errs+=("(e) migration guard is not the disabled no-op variant") ;;
     esac
   fi
+
+  # --- (f) every referenced slash command resolves to a real command ---
+  local dangling
+  dangling="$(scan_commands "$out")"
+  [ -n "$dangling" ] && { errs+=("(f) dangling slash-command reference(s) — documented but no .claude/commands entry:"); while IFS= read -r l; do errs+=("  $l"); done <<<"$dangling"; }
 
   _report "$name" errs
 }

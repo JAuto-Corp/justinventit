@@ -4,11 +4,11 @@
 
 ## Milestones
 
-### M0: Foundation (current)
+### M0: Foundation — done
 The initial scaffold — enough structure to demonstrate the architecture and start dogfooding.
 
-### M1: Dogfood-Ready
-Complete enough to scaffold a real project and run a full ATDD cycle. First external test: re-scaffold customer-portal with justinventit and validate nothing breaks.
+### M1: Dogfood-Ready (current)
+Complete enough to scaffold a real project and run a full ATDD cycle. First external test: re-scaffold customer-portal with justinventit and validate nothing breaks. The dogfood gate passed (`docs/DOGFOOD_M1.md` §7); the templates/state/copier-robustness items below are still open.
 
 ### M2: Brownfield-Ready
 Complete enough for the staged bootstrap path. Someone can `copier copy` into an existing codebase and get value from session one.
@@ -32,47 +32,54 @@ Documentation, examples, and polish for public use. First public announcement.
 
 ## M1: Dogfood-Ready
 
+> **Checkbox provenance (2026-07-27).** Every box below was flipped against a named artifact
+> in the tree or a named section of `docs/DOGFOOD_M1.md` — the evidence is on the line. Items
+> with no such artifact are left **unchecked** even where the milestone reads as "done";
+> `docs/DOGFOOD_M1.md` §7 verdicts the *dogfood gate*, not all 26 items, so M1 is
+> **substantially but not fully complete**. Do not flip a box here without naming what makes
+> it true.
+
 ### Skills — Complete the orchestrator set
-- [ ] `e2e` skill — testing modes (conductor, direct, SQL), browser coordination
-- [ ] `workflow` skill — meta-skill for editing the system itself (skills, hooks, rules, CLAUDE.md)
-- [ ] `work` sub-skills — start.md, continue.md, pause.md, handoff.md, done.md, epic-plan.md, sprint.md
-- [ ] `verify` sub-skills — complete.md, phase.md, sprint.md, file.md, feature.md, audit.md, recent.md
-- [ ] `capture` sub-skills — block.md, audit.md, findings.md, triage.md, epic.md
+- [x] `e2e` skill — testing modes (conductor, direct, SQL), browser coordination · `skills/orchestrators/e2e/{SKILL,modes}.md`
+- [x] `workflow` skill — meta-skill for editing the system itself (skills, hooks, rules, CLAUDE.md) · `skills/orchestrators/workflow/` (SKILL + skill/command/hook/rule/claude-md/validate)
+- [x] `work` sub-skills — start.md, continue.md, pause.md, handoff.md, done.md, epic-plan.md, sprint.md · all 7 present
+- [x] `verify` sub-skills — complete.md, phase.md, sprint.md, file.md, feature.md, audit.md, recent.md · all 7 present
+- [x] `capture` sub-skills — block.md, audit.md, findings.md, triage.md, epic.md · all 5 present
 
 ### Hooks — Complete the pipeline
-- [ ] Stop check: scenario execution evidence (03)
-- [ ] Stop check: TDD cycle validation — RED before GREEN (04)
-- [ ] Stop check: PROGRESS.md evidence — commits match checked items (05)
-- [ ] Stop action: landmark checkoff — commit trailers → PROGRESS.md auto-update
-- [ ] Guard: write isolation (worktree boundaries)
-- [ ] Guard: migration safety (DB-system-aware, Jinja2 templated)
-- [ ] Hook test harness — mock transcript + state → run check → assert result
+- [x] Stop check: scenario execution evidence (03) · `hooks/stop/checks/03-scenario-evidence.sh`
+- [x] Stop check: TDD cycle validation — RED before GREEN (04) · `hooks/stop/checks/04-tdd-cycle.sh`
+- [x] Stop check: PROGRESS.md evidence — commits match checked items (05) · `hooks/stop/checks/05-progress-evidence.sh`
+- [x] Stop action: landmark checkoff — commit trailers → PROGRESS.md auto-update · `hooks/stop/actions/landmark-checkoff.sh`
+- [x] Guard: write isolation (worktree boundaries) · `hooks/guards/write-isolation.sh`
+- [x] Guard: migration safety (DB-system-aware, Jinja2 templated) · `hooks/guards/migration-safety.sh.jinja`
+- [x] Hook test harness — mock transcript + state → run check → assert result · `hooks/tests/{harness,run-all}.sh` + 7 suites; green in a generated project per DOGFOOD_M1 §3(e)
 
 ### Templates — Stack-aware generation
-- [ ] `.gitattributes.jinja` — merge strategies for state files, auto-generated files
-- [ ] `.gitignore.jinja` — stack-appropriate ignores
-- [ ] Domain skill stubs per stack (nextjs, rails, django, fastapi, go)
-- [ ] Worktree scripts (conditional on `use_worktrees` answer)
-- [ ] CI workflow templates (GitHub Actions, per stack)
+- [ ] `.gitattributes.jinja` — merge strategies for state files, auto-generated files — **not present**
+- [ ] `.gitignore.jinja` — stack-appropriate ignores — **not present**
+- [ ] Domain skill stubs per stack (nextjs, rails, django, fastapi, go) — **not present**; `skills/domain/` is user-created, not generated
+- [ ] Worktree scripts (conditional on `use_worktrees` answer) — **not present**, and `copier.yml` has no `use_worktrees` question, so this item needs restating before it can be built
+- [ ] CI workflow templates (GitHub Actions, per stack) — **not present**
 
 ### State — Full lifecycle support
-- [ ] Epic folder structure template (INDEX, SPEC, SCENARIOS, PROGRESS per phase)
-- [ ] SPEC.md template with entry/exit landmarks
-- [ ] SCENARIOS.md template with Gherkin examples
-- [ ] PROGRESS.md template with checkbox protocol
+- [ ] Epic folder structure template (INDEX, SPEC, SCENARIOS, PROGRESS per phase) — **not present**
+- [ ] SPEC.md template with entry/exit landmarks — **not present**
+- [ ] SCENARIOS.md template with Gherkin examples — **not present**
+- [ ] PROGRESS.md template with checkbox protocol — **not present**
 
 ### Copier — Robustness
-- [ ] End-to-end test: `copier copy` with each stack → validate output
-- [ ] `copier update` test: modify template → update project → verify three-way merge
-- [ ] Forge markers (`<!-- forge:start/end -->`) validated in CLAUDE.md output
-- [ ] Empty directory handling (Git doesn't track empty dirs — use .gitkeep)
+- [x] End-to-end test: `copier copy` with each stack → validate output · `scripts/ci/generate-matrix-check.sh` — 4 answer sets (go/nextjs/fastapi/rust) with coherence assertions (a)–(f)
+- [ ] `copier update` test: modify template → update project → verify three-way merge — **no such test exists**
+- [ ] Forge markers (`<!-- forge:start/end -->`) validated in CLAUDE.md output — markers are emitted (`template/CLAUDE.md.jinja:17`) but **nothing asserts them**; the validation is the deliverable, not the markers
+- [ ] Empty directory handling (Git doesn't track empty dirs — use .gitkeep) — **no `.gitkeep` anywhere in `template/`**
 
 ### Dogfood — Validate against customer-portal
-- [ ] Generate justinventit scaffold for customer-portal's stack answers
-- [ ] Diff generated output against customer-portal's actual `.claude/` structure
-- [ ] Identify gaps — what does customer-portal have that justinventit doesn't generate?
-- [ ] Backport missing patterns into the template
-- [ ] Run one full ATDD cycle using the generated scaffold
+- [x] Generate justinventit scaffold for customer-portal's stack answers · DOGFOOD_M1 §1 (110 files, cp-matching answer set)
+- [x] Diff generated output against customer-portal's actual `.claude/` structure · DOGFOOD_M1 §4
+- [x] Identify gaps — what does customer-portal have that justinventit doesn't generate? · DOGFOOD_M1 §4 (portable-gap vs. domain split)
+- [x] Backport missing patterns into the template · DOGFOOD_M1 §5
+- [x] Run one full ATDD cycle using the generated scaffold · DOGFOOD_M1 §6 (block-then-pass on checks 03/04/05, harness 7/7)
 
 ## M2: Brownfield-Ready
 

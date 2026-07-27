@@ -26,6 +26,8 @@ Hook check scripts in `stop/checks/01-*` through `stop/checks/50-*` are framewor
 
 ### Project Content (never touched by updates)
 
+> **These directories are yours to create — the template does not generate them.** `copier copy` produces `.claude/commands/`, `.claude/skills/orchestrators/`, `.claude/hooks/` and `.claude/settings.json`; `skills/domain/` and `rules/` come into existence the first time you add one, and nothing breaks while they are absent.
+
 - Domain skills (`.claude/skills/domain/*`)
 - Path-scoped rules (`.claude/rules/*`)
 - Project-specific hook checks (`stop/checks/51-*` and above)
@@ -58,7 +60,7 @@ covers:
 ...
 ```
 
-The `covers` metadata enables drift detection — the framework's `/verify:skill-health` can compare your assertions against actual code.
+The `covers` metadata is the hook for drift detection — a future skill-health check compares your assertions against actual code. No command implements that check yet; the metadata is forward-looking, and writing it costs nothing today.
 
 ## Adding Path-Scoped Rules
 
