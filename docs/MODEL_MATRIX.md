@@ -116,6 +116,13 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   primary and the pinned same-runtime reviewer is the cross-check (revisit on upstream fix).
   Target band: shift review/audit load until the lean pool sits at 10-15% with the
   conserved pool's growth flattened; usage deltas reported at phase boundaries.
+  **Invocation mechanics (from field friction)**: grounded xhigh repo-reads exceed
+  foreground shell ceilings — always BACKGROUND the run, and use PER-ATTEMPT output paths
+  so a relaunch cannot truncate a prior attempt's evidence (one SIGKILLed foreground run +
+  path reuse cost ten minutes of reading with zero evidence captured). Dependability watch
+  list: self-tracking lag (sample 8, not recurred) and **disposition-vs-severity
+  inconsistency** (sample 9: verdict BLOCK with no blocker-severity finding — the
+  instrument may reach for the strongest disposition its own taxonomy doesn't support).
   **Coverage caveat riding every promotion claim**: "structurally more reliable" is about
   DELIVERY, not coverage — all samples to date are static analysis (no runtime in the
   review environment; the instrument declares this itself in not_checked, which is a

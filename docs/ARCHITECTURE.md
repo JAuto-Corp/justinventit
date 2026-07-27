@@ -208,7 +208,20 @@ backend-enforced authorization), not a namespace column bolted on.
   other parties write emits its evidence fields before enforcing them, so enforcement day
   is never migration day; (c) *no off-by-default enforcement* — a gate defaulting to
   not-gating tends to stay that way (a toll nobody collects); prefer strict code behind
-  explicit sequencing over flags.
+  explicit sequencing over flags; (d) *a well-formedness tool supports the full disposition
+  space* — a gate tool that can only emit PASS applies its structural guarantee precisely
+  where the stakes are lowest, forcing every blocking verdict back into the hand-authored
+  path the tool was built to eliminate.
+- **The aggregate gate is not a formality.** Units that each pass their own review can
+  create a contradiction ONLY on merge — a defect class invisible to per-unit review by
+  construction. The integration-level gate (cascade review) exists precisely for this, and
+  "everything in it was already reviewed" is exactly the wrong argument against it. When an
+  aggregate contradiction is found pre-merge, the fix precedes the merge: the target is
+  consistent NOW; the merge is what would create the defect.
+- **Schema'd files humans write under pressure get helpers that refuse invalid input** —
+  hand-authoring is how `state: active` and prose-in-numeric-fields enter production state;
+  the helper IS the schema enforcement (two independent instances in one day, one of them
+  the orchestrator's own file, one the director's habit).
 - Documentation is a gated stage (law: doc delta or explicit no-doc-impact), and generated
   indexes are freshness-gated — the two mechanisms that keep the delivery layer current-by
   construction rather than current-by-diligence.
