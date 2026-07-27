@@ -165,6 +165,13 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
   covers EVERY registered seat by construction (roster = seat-control enumeration, never a
   hardcoded list — the source system's hardcoded roster silently dropped two live seats).
+  **Alert dedup must not key on the frozen state it deduplicates**: a dedup key derived
+  from the stall's reference epoch degrades "one alert per window" into ONE ALERT EVER for
+  a never-recovering seat — the more broken the seat, the more silent its watchdog.
+  Re-alert on a continued-stall schedule (interval/backoff), and the sweep always emits a
+  completion line so exit-0-with-no-output is impossible (its absence is itself the death
+  signal). *Origin: a seat invisible for 69 hours at 278× its cadence behind a
+  frozen-epoch dedup key.*
 - **Stall predicates live in the §2 table — one source.** The doorbell is never a seat's
   only signal: `standby` pairs oldest-undrained-mail age (first event past the processing
   cursor; arrivals never reset it) with the **heartbeat floor**. The floor is

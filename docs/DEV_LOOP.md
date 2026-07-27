@@ -48,6 +48,15 @@ mid-artifact (ownership = dispatch row).
    notification; decisions pre-locked before known absences.
 5. Memory/guidance revision → proposed by any seat as a diff, ratified by O (or the
    designated highest-reasoning seat); never self-applied ad-hoc.
+6. **Constraint-vs-mechanism collision** (a seat cannot satisfy both a standing constraint
+   and a dispatched gate without degrading one) → DIRECTOR-lane finding; the seat HOLDS and
+   routes, never resolves by fiat in either direction. Ratified principle: a constraint
+   satisfiable only by degrading the work it governs is a design bug, not a discipline
+   problem. Standing resolution for the spawn case: **dispatch-carried spawn
+   authorization** — a dispatch naming subagent work (pinned reviewers, auditors) carries
+   Agent-tool authorization within its scope; per-instance human approval remains for
+   undispatched or beyond-scope fan-outs and implementation-by-subagent. Seat constraints
+   yield to dispatch authorization only via this rule, never by self-generalization.
 
 ## 4. Profiles
 
