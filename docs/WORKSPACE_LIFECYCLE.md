@@ -29,15 +29,20 @@ Rules:
   provider and report drift loudly. *Origin: a live registry file reporting `active: []`
   beside two full agent worktrees.*
 - **Multi-resident workspaces are read-mostly.** When more than one seat shares a working
-  tree (the main checkout typically hosts director + orchestrate + integrate), destructive
-  or tree-shifting git operations there require prior coordination (mail the co-residents;
-  for contested cases, a workspace lease). The hazard class is **any tree-wide operation,
-  not just branch ops**: a shared checkout legitimately carries modified tracked state
-  files and untracked strays belonging to several residents, so `git stash`,
-  `git checkout .`, `clean -fd`, resets, rebases, and branch switches can all destroy live
-  state that isn't yours. Remote-side operations (gh/API merges, pushes of already-committed
-  refs) are always safe. A seat needing a local tree for conflict work uses a temporary
-  worktree, never the shared checkout. *Origins: integrator branch-switches under
+  tree (the main checkout typically hosts director + orchestrate + integrate), the
+  **guarded command set** — `checkout`/`switch`, `reset`, `rebase`, local `merge`, `stash`,
+  `clean`, `gc`/`prune`, repo-config edits, and deleting branches a co-resident may occupy —
+  requires the coordination protocol: mail every co-resident (roster = the workspace
+  record's resident list) and proceed on **positive acks or a `coord_timeout` with no
+  objection**; for contested or long operations take the **workspace lease** (same CAS/TTL
+  mechanics as seat leases; mandatory for `clean`, `reset --hard`, and history rewrites);
+  no response past timeout escalates to O, never proceeds silently. The hazard class is
+  **any tree-wide operation, not just branch ops** — a shared checkout legitimately carries
+  modified tracked state files and untracked strays belonging to several residents.
+  Remote-side operations (gh/API merges, pushes of already-committed refs) are exempt from
+  the working-tree coordination ONLY — ref and merge policy (integrator authority, cascade
+  rules) still fully applies to them. A seat needing a local tree for conflict work uses a
+  temporary worktree, never the shared checkout. *Origins: integrator branch-switches under
   co-resident sessions; a seat nearly booted into another seat's authoring checkout; a sync
   fix that left 19 staged files in six worktrees where any bare `git commit` would have
   silently swept them onto live PR branches.*
@@ -56,11 +61,16 @@ Rules:
 - Never justify running less-trusted work "because it's in its own worktree" — worktree
   isolation is about merge hygiene, not containment. Containment comes from the runtime
   sandbox + command policy, and from nothing else.
-- The two compose deliberately for Codex seats: the seat's **workspace root IS its
-  worktree**, so `workspace-write` confinement and worktree collision-isolation coincide —
-  but only because the launcher sets it so; verify at boot, and remember a parent session's
-  live sandbox overrides beat an agent-file `sandbox_mode` (agent-file read-only is not a
-  hard boundary).
+- The two compose deliberately for Codex seats, with a precise limit: rooting the sandbox
+  at the worktree confines **working-tree files and the per-worktree index** — but normal
+  git writes also touch the **common git dir**, which lives OUTSIDE a linked worktree's
+  root, so the launcher must grant it explicitly (`--add-dir <git-common-dir>`) or every
+  commit fails; that grant necessarily exposes repo-wide metadata (refs, config, hooks),
+  whose protection therefore comes from **command policy** (`.rules` ban classes), never
+  from the sandbox root. Verify the pairing at boot; remember a parent session's live
+  sandbox overrides beat an agent-file `sandbox_mode` (agent-file read-only is not a hard
+  boundary); and host-filesystem/secret visibility is a property of the sandbox's grants,
+  not of git.
 - Shared-`.git` facts every seat must know: branch checkout is exclusive across worktrees;
   `gc`/`prune`/config edits act on ALL worktrees; deleting a worktree directory without
   `git worktree remove` leaves repo-level metadata behind (registry sweep catches it).

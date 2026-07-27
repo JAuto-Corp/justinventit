@@ -37,18 +37,33 @@ only by its own cadence loop or a human, and the watchdog reports rather than re
 
 ## 2. Lifecycle state machine
 
+**Canonical states** (the only ones any file may carry): `booted` (pre-first-turn) ·
+`active` (cadenced wake loop) · `standby` (event-driven, no scheduled wake) · `dormant`
+(deliberate sleep / concluded) · `parked` (booted-not-live: unanswered modal or equivalent;
+launcher-diagnosed, §3) · `stalled` / `dead` (derived verdicts, never self-written).
+
 ```
-booted → active ⇄ standby (armed wake) → dormant (deliberate, next_wake=none)
-active/standby → STALLED (heartbeat age > grace)  → revived → active
+booted → active ⇄ standby → dormant        booted → parked (probe unanswered, §3)
+active/standby → stalled (per predicate table) → revived → active
 any → dead (stalled + revival budget exhausted, or operator-declared) ↘ report-only if not revivable
 ```
 
-- **Heartbeat**: written by a turn-end hook on BOTH runtimes (Codex hooks support Stop; the
-  writer is the same portable script). Fields: state, role, heartbeat_at, wake_count,
+**THE normative stall-predicate table** (single source; §4's prose defers here):
+
+| State | Predicate (STALLED when…) | Terms |
+|-|-|-|
+| `active` | `now − max(heartbeat_at, next_wake_at) > grace` | `grace = max(grace_floor, 2 × cadence_seconds)` |
+| `standby` | `first_undrained_age > mail_grace` **OR** `now − heartbeat_at > 2 × floor_seconds` (the pair is OR — two independent detectors) | `first_undrained_age` = now − ts of the OLDEST event strictly after the processing cursor; **new arrivals never reset it**. `floor_seconds` = the mandatory slow-heartbeat interval (§4) |
+| `booted` | probe unanswered past `probe_timeout` → classify per §3 (parked vs unknown) | launcher-owned |
+| `dormant` | never | — |
+| (no match) | a seat whose state matches no row is itself a LOUD finding | — |
+
+- **Heartbeat**: written ONLY by the seat's own turn-end hook, on both runtimes (Codex Stop
+  hook; same portable script). Fields: state, role, heartbeat_at, wake_count,
   cadence_seconds, next_wake_at, context. Schema-validated on write AND read — prose in a
-  numeric field is a loud error, not a watchdog crash.
-- **Grace**: `max(floor, 2 × cadence_seconds)`. `dormant` + `next_wake_at: none` is
-  deliberate sleep, never a stall.
+  numeric field is a loud error, not a watchdog crash. **No external process ever writes
+  heartbeat fields** — a watchdog-authored heartbeat certifies false liveness (§4 canary).
+- `dormant` + a conclusion reason (§4a ceremony) is deliberate sleep, never a stall.
 - **Leases exist only for revival windows — liveness is heartbeats.** A healthy seat runs
   **unleased** (`holder: null` is the normal state); staleness is judged by heartbeat age,
   never by lease state. Every revival path (pacemaker, doorbell, human script) must acquire
@@ -74,11 +89,20 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   revived seat validates token-equality against the CURRENT lease record before its first
   side-effect and re-validates before irreversible actions; the reviver releases (nulls
   holder) only AFTER observing the revived seat's first heartbeat — never mid-turn — after
-  which the seat runs unleased again. **The normative state predicates**: STALLED =
-  heartbeat age > grace (and state not `dormant`); DEAD = stalled AND the configured
-  revival budget is exhausted (N failed/unclaimed revival windows) or an operator declares
-  it. Lease state never defines liveness; process checks are diagnostics for reports, never
-  triggers.
+  which the seat runs unleased again. STALLED is defined solely by the predicate table
+  above; DEAD = stalled AND the configured revival budget is exhausted (N failed/unclaimed
+  revival windows) or an operator declares it. Lease state never defines liveness; process
+  checks are diagnostics for reports, never triggers.
+  **Parked-revival outcome** (closes the lease/heartbeat deadlock): a revival that lands on
+  a PARKED session produces no first heartbeat, so the reviver cannot complete the normal
+  handoff. Rule: the reviver renews its lease up to `park_ttl`; at TTL it runs the
+  conclusion ceremony (§4a) ON BEHALF of the parked seat — marks the lease record
+  `superseded_by: <new token>`, boots a FRESH successor off the durable brief, and notifies
+  with attention class "physical (modal)". The old handle is QUARANTINED, not trusted-dead:
+  if it ever un-parks, its first mandatory act is token validation — it observes
+  `superseded_by`, performs NO side effects, and self-concludes. Human-unpark of a
+  not-yet-superseded seat re-acquires the lease and injects a fresh validated token before
+  any turn.
   Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
   crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race, registry
   recreation mid-lease** — token fencing must hold across a recreated registry) run
@@ -90,7 +114,16 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
 |-|-|-|
 | Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <project_id>-<tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
 | **Tier verification (both runtimes, mandatory)** | launcher confirms the booted session reports the intended model+effort | **empirically required**: a nonexistent Codex profile boots the DEFAULT tier with exit 0, and config errors are non-fatal — the launcher runs a post-boot probe asserting the RESOLVED model/effort and fails loudly on mismatch; tier selection is never trusted |
-| **Modal-parking detection (mandatory on resume)** | the post-boot probe doubles as liveness proof: a probe unanswered past timeout = seat PARKED, reported for human action | **booted ≠ live**: a resumed session can sit on an interactive resume-mode modal (summary-vs-verbatim); while parked, its main loop takes no turns and in-session subagent deliveries BLOCK (they complete but cannot land — the empty-report signature). Revival protocol treats "answer the modal" as part of the tap; launchers prefer non-interactive resume modes where the runtime offers one |
+| **Modal-parking detection (mandatory on resume)** | the post-boot probe doubles as liveness proof — but an unanswered probe alone classifies as `unresponsive_unknown`; it upgrades to PARKED only on a modal signature (capability `modal_detectable`) or human confirmation | **booted ≠ live**: a resumed session can sit on an interactive resume-mode modal (summary-vs-verbatim); while parked, its main loop takes no turns and in-session subagent deliveries BLOCK (complete but cannot land — the empty-report signature) |
+| Resume | `--resume <uuid>` / remote-control push | interactive `codex resume <name>`; headless poke: `codex exec resume <letter> "<drain prompt>" < /dev/null` |
+| Tier | model+effort args from matrix | **project-qualified** profile (`~/.codex/<project_id>-<tier>.config.toml`), selected by the launcher from the seat record's `project_id` — two consuming projects never collide; per-poke override `-c model_reasoning_effort=...` |
+| Effort constancy | hold constant per session (prompt-cache) | same rule |
+
+**Modal policy is capability-branched** — seat capabilities gain `resume_modal` (does this
+runtime's resume present one?), `modal_detectable` (can the launcher recognize its
+signature?), `remote_answerable` (can the pane host answer it remotely, tmux-send-keys
+class?). Unattended resume is permitted only when `!resume_modal OR remote_answerable`;
+otherwise resume is scheduled-with-human or replaced by fresh-boot.
 
 **Modal economics (origin: a fleet held hostage to a human's physical presence — modals were
 answerable only at the machine, invisible to remote taps):**
@@ -105,9 +138,6 @@ answerable only at the machine, invisible to remote taps):**
 - **Remote-answerability is a launcher selection criterion**: pane hosts whose interactive
   surface can be driven remotely (tmux send-keys class) strictly dominate ones that cannot,
   for any seat that may ever be resumed unattended.
-| Resume | `--resume <uuid>` / remote-control push | interactive `codex resume <name>`; headless poke: `codex exec resume <letter> "<drain prompt>" < /dev/null` |
-| Tier | model+effort args from matrix | **project-qualified** profile (`~/.codex/<project_id>-<tier>.config.toml`), selected by the launcher from the seat record's `project_id` — two consuming projects never collide; per-poke override `-c model_reasoning_effort=...` |
-| Effort constancy | hold constant per session (prompt-cache) | same rule |
 
 Launcher is one script, runtime-dispatched by the seat record. Boot prompts come from
 role templates; the launcher never injects them as positional args (silent no-op trap on
@@ -135,19 +165,18 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
   covers EVERY registered seat by construction (roster = seat-control enumeration, never a
   hardcoded list — the source system's hardcoded roster silently dropped two live seats).
-- **Per-state stall predicates — the doorbell is never the only signal.** Cadenced seats
-  (`awake`/`sleeping`): heartbeat/`next_wake_at` age vs grace. Event-driven seats
-  (`standby`, no `next_wake_at`): **undrained-mail age** — newest mailbox arrival vs the
-  seat's processing cursor; a quiet doorbell seat is silent, a DEAF one is loud. `dormant`:
-  never alarmed. Every registered seat matches exactly one predicate; a seat whose state
-  matches none is itself a loud finding. **Undrained-mail age detects deafness only when
-  mail exists** — a seat nobody wrote to looks healthy under it — so event-driven seats
-  ALSO keep a slow heartbeat floor (a mandatory minimum-cadence heartbeat write, e.g.
-  hourly, independent of any initiator); floor-age is the second predicate, and the pair is
-  tested against the quiet-period case explicitly. *Origins: an event-driven orchestrator
-  whose doorbell loop died undetectably — heartbeat legitimately quiet by design, broken
-  doorbell its only signal; boundary caught in review: the replacement predicate would have
-  inherited the same blind spot for unmailed seats.*
+- **Stall predicates live in the §2 table — one source.** The doorbell is never a seat's
+  only signal: `standby` pairs oldest-undrained-mail age (first event past the processing
+  cursor; arrivals never reset it) with the **heartbeat floor**. The floor is
+  **seat-authored via a leased canary-wake**: on `floor_seconds` schedule the pacemaker
+  (holding the seat's revival lease) sends a minimal canary poke; the SEAT's own turn-end
+  hook writes the heartbeat as a side effect of answering it. The watchdog/pacemaker NEVER
+  writes heartbeat fields — an externally-authored heartbeat certifies a dead seat as
+  alive. A canary unanswered past `2 × floor_seconds` trips the floor predicate.
+  Conformance includes the quiet-period case (no mail, dead loop → floor catches it) and
+  the stuck-oldest case (continuous new mail must not mask an old undrained message).
+  *Origins: an event-driven orchestrator whose doorbell loop died undetectably; review
+  catches — the unmailed-seat blind spot, and newest-arrival masking.*
 
 ## 4a. Intentional conclusion (loop-end) protocol
 
@@ -185,17 +214,29 @@ stalls, burning watchdog attention and human ambiguity on deliberate checkpoints
 - **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
   observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
   sender-shell `$()` execution, subject/body collapse, flag-eaten-as-positional). Rules:
-  message bodies never pass through interpolating strings; every send that matters is read
-  back from the log before relying on it; CLI arg-parsers reject flag-shaped positionals
-  loudly instead of absorbing them.
+  message bodies never pass through interpolating strings; CLI arg-parsers reject
+  flag-shaped positionals loudly instead of absorbing them. **Read-back contract**: every
+  send that matters is verified by the SENDER via a non-consuming lookup — by `hub_id` in
+  the authoritative log (hub query, or the sender's own outbound file, which no recipient
+  cursor touches) — comparing a payload digest, never a skim; on absence/mismatch, one
+  retry then a loud failure. Recipient-side projections are NEVER read for verification
+  (that would consume another seat's cursor).
 - **Subagent results are claimed, not assumed.** A silent return, empty task list, or idle
   notification is NOT evidence an agent produced nothing — completed work can sit
-  undelivered (parked sessions, reorientation, delivery drops). Verify delivery before
-  using any fan-out result; recover by nudging the agent BY NAME, framing that an honest
-  "I did not actually do this" beats a reconstruction; provenance upgrades after a posted
-  verdict are disclosed in a supplement, never silent. **Reorientation loses subagents**:
-  a session redirected mid-fan-out silently orphans its agents while believing the fan-out
-  ran — never reorient a seat mid-review, and re-verify delivery after any reorientation.
+  undelivered (parked sessions, reorientation, delivery drops). **Roster-at-spawn**: BEFORE
+  spawning, record the expected agent names in your own notes and reconcile delivery
+  against THAT list — never against the runtime's after-the-fact enumeration, which shares
+  the failure mode it would be verifying (a baseline consulted from a possibly-broken
+  instrument is recorded before the instrument is needed). The portable mechanism is a
+  harness task-record per spawn: {task id, agent name, completion receipt, result digest,
+  delivery state, parent claim}. An expected agent that never reports and does not answer
+  a nudge is disclosed as **NOT RUN — never as ran-and-clean**. Recovery: nudge BY NAME,
+  framing that an honest "I did not actually do this" beats a reconstruction; provenance
+  upgrades after a posted verdict are disclosed in a supplement, never silent.
+  **Reorientation loses subagents**: redirecting a session mid-fan-out silently orphans its
+  agents while it believes the fan-out ran — reorientation is BLOCKED while spawned tasks
+  are outstanding (finish, or explicitly cancel/snapshot with the orphan list disclosed);
+  after any reorientation, delivery is re-verified against the roster-at-spawn.
 
 ## 6. Codex-seat specifics (first-generation constraints)
 

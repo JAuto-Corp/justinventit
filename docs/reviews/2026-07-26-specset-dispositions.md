@@ -82,5 +82,14 @@ newest undrained-mail formula (time-sensitive — checked against D's in-flight 
 heartbeat-floor writer must be a leased canary-wake, never watchdog-authored (false
 liveness); parked-revival lease deadlock needs quarantine/supersession + human-unpark;
 worktree-rooted sandbox cannot write the common git dir (grant required — Phase-4 gating).
-R4 revision = next director work item. Lesson ratified: under-fire spec additions get their
-own review round before the next consumer reads them.
+R4 revision LANDED (same day): canonical state enum + THE normative predicate table (§2,
+single source; §4 defers); oldest-undrained formula w/ arrivals-never-reset + stuck-oldest
+fixture; heartbeat floor = seat-authored via leased canary-wake, external writes banned;
+parked-revival outcome (park_ttl, supersede-on-behalf, quarantined old handle,
+human-unpark); capability-branched modal policy (resume_modal/modal_detectable/
+remote_answerable) + unresponsive_unknown classification; launch table restored;
+sender-side hub_id read-back contract (non-consuming, digest-compared); roster-at-spawn +
+portable task-record + reorientation block (incl. O's rule-2 amendment); guarded-command
+enumeration w/ ack/timeout/lease semantics + remote-ops rewording; common-git-dir grant +
+command-policy protection for repo metadata. Lesson ratified: under-fire spec additions get
+their own review round before the next consumer reads them.
