@@ -17,6 +17,13 @@ source system rot in specific, diagnosable ways:
    never brick a seat. Hard-fail is reserved for CI-visible contexts where the input is
    versioned. *Origin: nine enforcement gates in the source system fell through to
    `{"continue": true}` for months after a state-format drift, without one error.*
+   **The trust-test generalization** (one incident night produced ~19 defects sharing a
+   single shape — every instrument degraded toward "looks fine / looks like a normal
+   defect," never toward an obvious error): *for any signal you are about to trust, ask
+   what it would show if it were broken. If the answer is "something plausible," that
+   signal cannot be used alone — verify at a different layer, or record a baseline BEFORE
+   consulting it.* Loud failures get fixed the day they happen; plausible failures
+   accumulate (three ran 69 hours), and several were introduced by fixes to the same class.
 2. **Single source of truth; indexes are generated.** Four content categories, never
    conflated: *authored source* (edited by humans/agents), *generated artifacts* (derived from
    source; never hand-edited; freshness-gated in CI via regenerate + `git diff --quiet`),
@@ -51,6 +58,12 @@ source system rot in specific, diagnosable ways:
    are a cross-session primitive only — in-session subagents already re-invoke their parent.
 7. **Additive migration only.** Every change to a live consuming project ships through its
    normal PR flow, and the old path keeps working until the new one is proven.
+8. **A rule that gates an ACTION must state the action's own side effects**, not only the
+   preconditions on its subject. *Origin: a freeze rule permitting merges of validly-green
+   PRs — every clause individually true — while a merge IS a push that would have fired
+   dying CI on the integration branch itself. Checked the artifact's state; never priced
+   the action.* Corollary for incident procedure: distinguish merge-READY (a state) from
+   merge-PERMITTED (an action authorization); readiness is never permission.
 
 ## 2. The three layers
 
