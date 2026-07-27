@@ -48,7 +48,14 @@ mid-artifact (ownership = dispatch row).
    notification; decisions pre-locked before known absences.
 5. Memory/guidance revision → proposed by any seat as a diff, ratified by O (or the
    designated highest-reasoning seat); never self-applied ad-hoc.
-6. **Constraint-vs-mechanism collision** (a seat cannot satisfy both a standing constraint
+6. **Waste loop** (repeated CI runs without new information, retrigger cycles, redundant
+   suites, token-heavy fan-outs with low yield, own work burning budget without progress) →
+   HOLD the loop and route to the director with evidence. Waste loops look locally
+   justified one iteration at a time — the escalation exists so someone sees the loop.
+   Composes with gate integrity: a gate you keep re-running is either right, or a defect to
+   file — never a toll; and rerun-to-check on an exhausted/flaky resource is
+   confirmation-shaped waste.
+7. **Constraint-vs-mechanism collision** (a seat cannot satisfy both a standing constraint
    and a dispatched gate without degrading one) → DIRECTOR-lane finding; the seat HOLDS and
    routes, never resolves by fiat in either direction. Ratified principle: a constraint
    satisfiable only by degrading the work it governs is a design bug, not a discipline
