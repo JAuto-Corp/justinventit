@@ -370,7 +370,9 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
   (`MODEL_MATRIX.md` §3b). The prior text ("first roles read-heavy; write scope is a Phase-5
   decision on pilot evidence") is retired: a second-runtime thinking seat holds the same
   standing as the first-runtime thinking seat and may hold a seat, take and issue dispatches,
-  and write. Sandbox is sized to the WORK, not the runtime — read-only where reading suffices
+  and write. Reachable tool surface is bounded by sandbox grant, PATH, credentials and runtime
+  config — not by runtime identity; and independence for review purposes means a FRESH CONTEXT
+  that did not author the artifact, never merely a different runtime. Sandbox is sized to the WORK, not the runtime — read-only where reading suffices
   (it is also cheaper and clearer to audit), write scope where the work needs it, no separate
   trust argument. Cluster invariants still bind every seat on every runtime: merge
   serialization (integrator only), guarded paths for shared-environment mutation, ceremonies

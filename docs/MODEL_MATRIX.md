@@ -97,8 +97,10 @@ matrix (xhigh>max data; ultra self-delegates).
 
 **The second-runtime thinking model holds the same standing as the first-runtime thinking
 model.** Concretely on this fleet: Sol @ xhigh is a peer of Fable @ xhigh — it may hold a
-seat, receive and issue dispatches, author and ratify at its tier, and operate the same tool
-surface. It is not a read-only guest whose write scope is earned later. Dispatch hierarchy
+seat, receive and issue dispatches, author and ratify at its tier (subject to the epistemic
+invariants below — authoring and ratifying the SAME artifact remains forbidden on every
+runtime), and reach the same tool surface, bounded in practice by sandbox grant, PATH,
+credential reachability and runtime configuration rather than by runtime identity. It is not a read-only guest whose write scope is earned later. Dispatch hierarchy
 descends from EITHER thinking-tier runtime to the doing tier; a Sol-issued dispatch binds a
 doing seat exactly as a Fable-issued one does.
 
@@ -106,21 +108,47 @@ doing seat exactly as a Fable-issued one does.
 trust is granted to the CLUSTER, and judgment about what is destructive belongs to the
 thinking tier rather than to a permission list that tries to enumerate it.
 
-**What this does NOT relax — and the distinction is the load-bearing part.** The bans that
-survive are **cluster invariants that bind every seat at every tier, including the
-first-runtime thinking model and the director**. They exist for coordination and blast
-radius, never as a statement about any runtime's judgment:
-- **Merge serialization**: only the integrator seat merges. The director does not merge
-  either; this is a serialization invariant, not a trust grade.
+**What this does NOT relax.** The surviving constraints bind **every seat at every tier,
+including the first-runtime thinking model and the director** — but they are TWO DIFFERENT
+KINDS of rule and conflating them was an error in this section's first draft (caught by its
+own stage-0 red-team):
+
+*Coordination / blast-radius invariants* — about serialization and reach, not judgment:
+- **Merge serialization**: only the integrator seat merges. The director does not either.
 - **Shared-environment mutation**: staging/production DDL, migration application, and
-  destructive infrastructure operations follow the project's guarded paths (see the
-  consuming project's git/CI contract) regardless of who is asking.
-- **Irreversible + outward-facing acts** (deploys outside the gated chain, credential
-  rotation, data deletion, anything reaching a customer) carry their existing ceremonies.
-- **Gate integrity**: nobody self-verdicts their own work, on any runtime. Independence
-  comes from being a different context, which Sol satisfies structurally.
-A seat of either runtime that needs one of the above asks the owner of that invariant — the
-same escalation every Claude seat already makes.
+  destructive infrastructure operations follow the project's guarded paths.
+- **Shared-workspace safety** (multi-seat machines): a seat does not destroy another seat's
+  uncommitted work (`reset --hard`, `clean`), mutate shared git state (common refs, hooks,
+  config) out from under a live branch, corrupt another seat's heartbeat/lease/cursor state,
+  or consume another seat's mailbox. None of these require a merge or a DDL, so the earlier
+  four-item list did not cover them.
+- **Self-applied fleet guidance**: a seat does not edit the standing rules or entry contract
+  that governs it without ratification — the loop that closes here is a real one.
+
+*Epistemic invariants* — these DO exist because judgment can be biased, and they apply to
+every runtime for exactly that reason:
+- **No self-verdicting**: nobody reviews their own work. **Independence means a FRESH
+  CONTEXT that did not author the change — not a different runtime**; a continuation-capable
+  session on another runtime is not independent, and the first draft's claim that a second
+  runtime "satisfies independence structurally" was wrong.
+- **Actor reports are not evidence** (`CONTEXT_CONTRACT.md` §5a): a claim about what was done
+  is not verification that it was done, whoever makes it.
+Applying these equally to the director and to both runtimes is consistent and correct;
+denying that they exist because judgment is fallible would not be. Trust parity means the
+same standard for everyone, not the absence of a standard.
+
+**What actually constrains a seat TODAY, stated honestly** (the first draft implied
+generated-policy enforcement that does not exist): launch-time sandbox and approval settings,
+the entry contract and standing rules the seat reads, host-level permissions, and
+provider-side controls. Generated Codex profiles, `.rules` execpolicy, and pinned agent
+definitions are **planned** (Phase 3 generation from this matrix); MCP is unconfigured. Until
+those ship, do not describe seat authority as policy-bounded — it is bounded by sandbox,
+instruction, and host, and the honest gap between those is why the orientation work below is
+load-bearing rather than decorative. The **threat model remains a planned spec**
+(`ARCHITECTURE.md` §9), so "existing ceremonies" covers the merge/deploy/migration paths that
+demonstrably exist and NOT the full irreversible-action surface a credentialed seat can
+reach (force-push, ref deletion, repository settings, package publication, credential
+disclosure) — those are named here as an open gap rather than implied to be covered.
 
 **What actually makes this safe: ORIENTATION, not enumeration.** A permission list tries to
 predict every destructive act in advance and fails at the first unlisted one. A seat that has
@@ -150,14 +178,19 @@ archived probe output — the platform caught what the author's own no-secrets i
 not). A consuming project on shared or multi-tenant infrastructure would need a different
 posture; this section states the local-fleet one honestly rather than generalizing it.
 
-**Sandbox posture follows trust, with one honest caveat.** Trust parity means the sandbox is
-sized to the WORK, not to the runtime: read-heavy work runs read-only because that is
-sufficient, and work requiring writes gets write scope without a separate trust argument.
-Caveat, evidence-grounded (2026-07-28 probes): a sandboxed runtime cannot prove the machine's
-capabilities — two consecutive probes misread sandbox denials as machine/auth defects (a
-network-denied `gh auth status` read as an invalid token; a snap/DBus denial read as a broken
-gcloud that works fine unsandboxed). **A sandboxed negative is never a machine finding until
-an unsandboxed control confirms it.**
+**Sandbox posture follows trust, with two rules that close a loophole.** Trust parity means
+the sandbox is sized to the WORK, not to the runtime: read-heavy work runs read-only because
+that is sufficient, and work requiring writes gets write scope without a separate trust
+argument. **Sizing authority belongs to the DISPATCHER, at launch — never to the seat being
+sandboxed.** A seat may request a wider sandbox with its reason; it does not widen its own,
+and a probe that hits a sandbox denial reports the denial rather than re-running itself
+unsandboxed. (The re-probe is a legitimate act — performed by the dispatcher, which is how
+both 2026-07-28 misdiagnoses were actually corrected.)
+Caveat, evidence-grounded: a sandboxed runtime cannot prove the machine's capabilities — two
+consecutive probes misread sandbox denials as machine/auth defects (a network-denied
+`gh auth status` read as an invalid token; a snap/DBus denial read as a broken gcloud that
+works fine unsandboxed). **A sandboxed negative is never a machine finding until an
+unsandboxed control confirms it** — and that control is run by the dispatcher.
 
 **Verified surface at ruling time** (artifacts: `~/.jauto-orchestration/sol-runs/`
 `2026-07-28-codex-tool-surface-{probe,validity}.json`; both controls passing, tree-verified
