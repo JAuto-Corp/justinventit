@@ -81,7 +81,7 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 
 | Seat class | Runtime/model/effort | Grounding |
 |-|-|-|
-| orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain |
+| orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain. **ROUTING VALUES, not eligibility restrictions** (§3b): any thinking-tier runtime may hold these seats, and a Sol thinking seat issuing dispatches is in-contract |
 | design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule |
 | implement, explore, capture | claude opus-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
 | diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
@@ -150,14 +150,18 @@ demonstrably exist and NOT the full irreversible-action surface a credentialed s
 reach (force-push, ref deletion, repository settings, package publication, credential
 disclosure) — those are named here as an open gap rather than implied to be covered.
 
-**What actually makes this safe: ORIENTATION, not enumeration.** A permission list tries to
+**The intended safety mechanism is ORIENTATION rather than enumeration — a DESIGN GOAL, not a
+current control.** A permission list tries to
 predict every destructive act in advance and fails at the first unlisted one. A seat that has
 been *properly initiated into the project* — guided context exploration, entry contract to
 domain index to leaf, understanding what the system IS and what depends on what — infers
 correctly at the unlisted case, because it understands consequences rather than matching
-patterns. That is why trust parity is coherent rather than reckless here, and it makes the
-CONTEXT-DELIVERY SYSTEM a safety mechanism, not merely an efficiency one: every improvement
-to orientation pathways raises the floor on judgment for every seat on every runtime.
+patterns. **That bet is not yet evidenced**: orientation maps are a Phase-1 design with pilot
+and sequencing work outstanding, and no observable initiation or correctness criterion exists.
+Naming the criterion is part of the work — orientation is demonstrable only when a seat can be
+shown to DERIVE a constraint it was never told, and that test does not exist yet. Until it does,
+this is what the context-delivery system is being built toward; the operative constraints today
+are the ones named above (sandbox, entry contract, host permissions, invariants).
 Design consequence, binding on the orientation work (`ORIENTATION_MAPS.md`,
 `CONTEXT_CONTRACT.md`): the goal is a seat that could DERIVE the invariants, not one that has
 memorized them. Entry contracts therefore route to understanding (what this system is, what
@@ -200,8 +204,9 @@ Open: npm unauthenticated (publishing only); Twilio key-class question; **gcloud
 under the Codex sandbox (snap needs a DBus transient scope) though fine unsandboxed — the one
 concrete capability gap, fix = non-snap install or a sandbox allowance**. Codex-side MCP
 config is empty by default; MCP grants are a deliberate per-profile addition, and because
-seats inherit the user's whole CLI surface, per-profile config is SUBTRACTIVE (what to deny)
-rather than additive.
+a seat launched as this user can REACH much of that surface (bounded by sandbox grant, PATH,
+credential validity and runtime config), per-profile config WILL BE subtractive (what to deny)
+rather than additive once profiles exist — they do not yet.
 
 **One-shot review lane (experiment, 07-27)**: Codex Sol one-shot `exec` reviews (read-only,
 output-schema, xhigh judgment / low mechanical) are the preferred INDEPENDENT-review
