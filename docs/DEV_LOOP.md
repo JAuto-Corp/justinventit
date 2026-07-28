@@ -7,7 +7,8 @@
 
 | # | Stage | Owner (seat class) | Artifact | Gate (exit condition) |
 |-|-|-|-|-|
-| 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations | SPEC self-check: every named API/number/consumer claim cited or refused |
+| 0 | draft red-team | Full pass: the `cross_review` seat class (schema-resolvable today) under the stage-0 charter; a dedicated `review_families.draft_red_team` matrix entry lands with the Phase-3 matrix regeneration. Checklist tier: the artifact's author, confirmed by its ratifier | red-team verdict + dispositions riding the draft | Protocol, scope tiers, and the total exit rule in §1a below |
+| 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations + stage-0 dispositions | SPEC self-check: every named API/number/consumer claim cited or refused; stage-0 exit per §1a satisfied |
 | 2 | spec-audit | cross_review — cardinality, second-opinion, and separation rules per THE normative profile table (`ARCHITECTURE.md` §2) | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted |
 | 3 | RED | implement (or test-execution specialist) | executable failing tests + ledger event `kind: red` (canonical schema: `TDD_GATE.md` §3) | Standard+: runner exit non-zero recorded with provenance. Quick scope: may be satisfied as same-change (`TDD_GATE.md` §4 — the one declared exemption) |
 | 4 | GREEN | implement | code + ledger event `kind: green` | runner exit zero, same provenance chain |
@@ -18,6 +19,59 @@
 
 Stages 3-5 iterate via the chain (`go ⇄ check` relay, convergence math in the chain skill).
 Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test gate fails.
+
+## 1a. Stage-0 protocol (draft red-team — USER RULING 2026-07-28)
+
+Every design artifact gets stage-0 attention BEFORE ratification/dispatch/build; the TIER of
+attention scales with weight. Charter, both tiers: challenge the premise and the diagnosis,
+attack the design, name better alternatives — never a compliance check.
+
+**Scope tiers — decided by the DRAFT-TIME impact classifier** (TDD_GATE's diff heuristic
+cannot classify what has no diff yet). Full-pass TRIGGERS, any one suffices:
+- the artifact changes policy, protocol, or gate behavior;
+- it is consumed by more than one seat or runtime;
+- it is irreversible or migration-bearing;
+- its planned change surface is Standard+ by draft-visible criteria: it plans new
+  tables/routes/pages or 4+ files (the diff-time classifier's authored trigger list,
+  `TDD_GATE.md` §5 — that config is the one canonical owner), plus two CONSERVATIVE
+  DRAFT-TIME-ONLY triggers this lane adds: planned migrations, and planned changes to
+  scenario seeds/factory helpers.
+**The classifier is TOTAL by default rule: an artifact matching NO full-pass trigger takes
+the checklist tier.** (`trivial` survives only as the informal name for the clearest such
+case — single-consumer, reversible, no policy/gate impact, no new surface — it is not a
+third tier and needs no separate boundary.) Checklist tier = the **premise checklist**:
+three questions recorded on the artifact by its author, confirmed by its ratifier — is the
+diagnosis grounded in cited evidence? is there a cheaper or more reversible alternative,
+and why not it? who consumes this, and were they actually read? Escalate to a full pass on
+any uncertainty, either party.
+**Escalation rule**: if the eventual diff crosses into Standard+ despite a checklist-tier
+draft, stage-0 escalates to a full pass BEFORE integration — the classifier's draft-time
+judgment is provisional, never final.
+
+**Mechanics (full pass):** ONE fresh-thread red-team one-shot, grounded in the repo, given
+the draft plus its authorizing context — a documented SINGLE-CHARTER EXCEPTION to review
+protocol v2's steps 3-4 (`MODEL_MATRIX.md` §3): no multi-lens split, no separate validation
+pass; the same-thread confirmation re-pass is this lane's validation. Output uses the
+canonical review verdict schema (`approve` / `approve_with_notes` / `revise`; findings with
+severity/section/issue/suggestion). Every blocker and major is dispositioned — FIXED-IN,
+REFUTED-with-evidence, or ACCEPTED-CLASS. **Exit rule (total):** any `revise` verdict takes
+a same-thread confirmation pass after revision, whatever its severity mix; the TERMINAL
+transition is always the RATIFIER's confirmation of the dispositions (user for rulings; the
+design authority for SPECs) — a reviewer `approve`/`approve_with_notes` is necessary
+evidence for it, never a substitute. Verdict + dispositions ride the artifact (PR body,
+dispatch packet, or spec history) so the pass is auditable like any review.
+
+**Supersessions (explicit, both directions):** this section supersedes the `draft` entry in
+`MODEL_MATRIX.md` §3's PRE-FLIGHT skip list FOR THIS LANE — drafts are precisely stage-0's
+subject (`closed`/`already-reviewed` skips stand; `trivial` routes to the premise
+checklist). It also WIDENS §3's ruling red-team lane from its pilot scope (policy-shaping /
+irreversible / batch rulings) to the full-pass class above.
+
+**Premise honesty:** founding evidence is thin (one converged-in-one vs three-round pair,
+plus one competing-contract draft killed at stage 0 the same week). The full-pass/checklist
+boundary is a cost judgment, revisited with accumulated verdict data when the matrix
+regenerates (Phase 3); stage 0 tests the PREMISE — stage 2 audits the RATIFIED artifact —
+and neither substitutes for the other.
 
 Named practices (ratified from independent convergent field use):
 - **Verify the consequence, not the cause**: confirm the file is on the target branch and

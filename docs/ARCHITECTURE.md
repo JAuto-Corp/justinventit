@@ -165,7 +165,9 @@ ladders, stall detection, and relay mechanics are defined once, in the chain ski
 referenced — never restated — by the levers (law 2 applies to skill content too).
 
 The development loop, end to end (mandatory stages bolded; audit/second-opinion mechanics
-per the §2 profile table): **scope** (design + SPEC) → **spec-audit** → **RED** (Standard+
+per the §2 profile table): **draft red-team** (stage 0 — tests the PREMISE at draft, tiered
+by weight per `DEV_LOOP.md` §1a) → **scope** (design + SPEC) → **spec-audit** (audits the
+RATIFIED artifact; never substitutes for stage 0 nor vice versa) → **RED** (Standard+
 scope; Quick scope may satisfy it as same-change per `TDD_GATE.md` §4 — the one declared
 exemption) → **GREEN** → **review** (cross-review) → **integrate** → **document** (doc delta
 or explicit no-doc-impact declaration, gated like tests) → **capture** (durable parking of

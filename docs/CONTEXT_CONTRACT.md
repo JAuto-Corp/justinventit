@@ -109,6 +109,27 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
   at exactly the moment its session couldn't notice. Retarget what is broken, not what is
   merely old; leave historical records unrewritten. The move-PR carries the sweep as
   evidence (the grep + its zero-hit re-run).
+- **The move is an ORDERED algorithm; each step gates the next.** (1) VERIFY THE TARGET:
+  open the claimed home and confirm the owned content is actually present — by reading it,
+  never by locating the file (six false "already homed" claims in one wave shared exactly
+  this root cause: grep-for-filename instead of read-the-owner). (2) Enumerate live
+  consumers (the all-file-types sweep above). (3) Retarget them. (4) Audit downstream
+  shapes where the rule content changed (the shape-audit rule at `MODEL_MATRIX.md` §1a —
+  pointer two bullets below). (5) VERIFY THE END STATE: target
+  content present, retargeted references resolve live, and the consumer sweep re-runs to
+  zero hits. A mover may not retarget consumers at a target step 1 has not proven — that
+  ordering is what makes step 3 safe.
+- **End-state verification is DIRECT where accessible, provenance-bound otherwise.** Verify
+  the authoritative end state yourself when you can reach it; where you cannot, require
+  provenance-bound evidence from the authoritative surface (a runner or CI attestation
+  carrying its run id). What this rejects is the ungrounded ACTOR REPORT — "I moved it",
+  "clean merge" — never machine attestations (`ARCHITECTURE.md` §8's evidence model is
+  unchanged). Same rule that caught a silent merge-revert the same night it was written.
+- **A rule change audits downstream shapes when it changes what is representable** — the
+  normative rule lives at its owning surface, `MODEL_MATRIX.md` §1a (the policy/generator
+  ownership contract), where permission authors actually work; this bullet is the pointer
+  the section-move context earns, not a second statement of it. Origin: twice in one PR a
+  permission was widened while the output template still demanded the old form.
 - **Doc claims about surfaces are verified at authoring time, in both tenses.** A
   present-tense claim ("skills resolve on both runtimes", "checked by CI") must name its
   existing referent; a planned surface is written future-tense with the wave that lands

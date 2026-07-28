@@ -24,8 +24,9 @@ complain, not pass.**
     themselves (the barrel/registry generator derives it).
   - scope definitions — the classifier config (patterns + thresholds), authored, versioned
     with the framework.
-  Checks `01-05` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
-  progress-complete) consume ONLY these inputs, with a uniform exit contract:
+  Checks `01-06` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
+  progress-complete, harness-sensitivity — `06` defined with the Harness-integrity law
+  below) consume ONLY these inputs, with a uniform exit contract:
   0 = pass, 1 = block (message names the failed rule), 3 = cannot-evaluate (message names the
   missing/malformed input), and **any other exit (2, 127, signals, crashes) = runner-error,
   handled identically to 3** — the contract enumerates the full code space so a crashed
@@ -44,7 +45,7 @@ Canonical schema (every other document references this; `kind` is the discrimina
 no `phase:` variant exists):
 
 ```json
-{ "kind": "test-run | build | red | green | override",
+{ "kind": "test-run | build | red | green | override | sensitivity",
   "status": "pass | fail",
   "provenance": { "commit": "<sha>", "dirty": false, "worktree": "<path>", "command": "<argv>" },
   "scope": { "suite": "...", "scenarios": ["..."] },
@@ -70,6 +71,30 @@ no `phase:` variant exists):
   candidate_sha, expiry, issuer}`; tokens are issued by the orchestrate seat (or the solo
   session, logged identically), bound to one check + one candidate, and expire. Named,
   logged, surfaced in the PR gate summary. No silent bypass exists.
+- **Sensitivity events** (`kind: "sensitivity"` — Harness-integrity rule 2) extend the
+  schema with `sensitivity: { mutation: {operator, site}, digests: { guard: {baseline,
+  mutated, restored}, harness: {baseline, mutated, restored} }, target_green_before: bool,
+  target_green_after: bool, expected_failing: ["..."], observed_failing: ["..."],
+  control: "pass | fail" }`; `scope` names the guard-class suite and assertions; the two
+  digest objects cover the shipped guard and its observing harness/extractor SEPARATELY —
+  never a composite hash (independently built consumers must not invent encodings).
+  VALID only when ALL hold: `digests.guard.mutated != digests.guard.baseline` (a real mutation);
+  `expected_failing` is nonempty; `target_green_before == true` (a red baseline proves
+  nothing about sensitivity); `observed_failing == expected_failing` as SETS (canonical
+  ordering); `control == "pass"`; `restored == baseline` for BOTH digest objects;
+  `target_green_after == true`; event `status == "pass"`. Anything less is a claim, not
+  evidence — the vacuous form (no-op mutation, empty sets, passing control) must be
+  formally INVALID. **Freshness is stricter than `red`**: `provenance.commit == candidate
+  head`, OR an ancestor WITHIN the PR range whose candidate-head guard AND harness digests
+  each equal the event's corresponding baseline digest — sensitivity
+  proven against a guard or harness that has since changed proves nothing about the
+  candidate. Consuming gate: check `06-harness-sensitivity` (uniform exit contract above;
+  runs in the same Stop-hook and CI tables as `01-05`) requires a valid bound sensitivity
+  event whenever the diff touches a guard-class surface, resolved from the authored
+  guard-class inventory (part of the scope-definitions classifier config — patterns for
+  gate logic, harness/fixture machinery, extracted/generated rules, permission predicates;
+  authored, versioned, fail-closed on unclassifiable paths). A sensitivity event can never
+  satisfy a gate that requires `red`.
 
 **Ledger storage and lifecycle**: the ledger is **runtime state — never git-tracked** (a
 tracked ledger would self-reference the commit hash it must bind to). It lives beside the
@@ -120,7 +145,7 @@ filename addition.
 
 | Where | Mechanism | Authority |
 |-|-|-|
-| Session (Stop hook) | checks 01-05 read state contract + ledger; block once, override-token escape | advisory-strong |
+| Session (Stop hook) | checks 01-06 read state contract + ledger; block once, override-token escape | advisory-strong |
 | CI | the same checks run against pushed ledger + candidate SHA; fail closed on missing inputs | authoritative signal |
 | Merge | integrator protocol (or branch protection where the plan allows): red = no-merge, SHA-bound | authoritative action |
 
@@ -165,3 +190,35 @@ suites), classifier patterns' values.
 - Isolation-adapter lifecycle (major): out of this spec's scope — workspace/DB classes and
   registry semantics are normative in `WORKSPACE_LIFECYCLE.md`; the adapter interface is the
   named `ISOLATION_ADAPTERS.md` planned spec in `ARCHITECTURE.md` §9 with acceptance criteria.
+
+## Harness-integrity law (2026-07-28, four independent instances in one week)
+
+A fixture suite proves nothing by passing — it proves something by having been WATCHED TO FAIL
+against the unfixed code. Four seats independently shipped harnesses that reimplemented the
+logic under test (an extractor's field selection, a gate's regexes, a detector's boundary rule,
+a cache writer's guards); every one stayed green while the shipped code was broken, and every
+one was caught only by RED-verification or review, never by inspection. Binding rules:
+1. **Tests invoke the SHIPPED artifact** — the file/function the production path executes,
+   at its production location: an imported function, an executed script, or (only for logic
+   that cannot be imported, e.g. workflow-embedded expressions) a MECHANICALLY-extracted
+   copy guarded by rule 3. Never a hand-restated version of the logic.
+2. **Guard-class tests are SENSITIVITY-VERIFIED.** Guard-class = tests whose purpose is
+   ENFORCEMENT — gate logic, harness/fixture machinery, extracted or generated rules,
+   security/permission predicates. Scoped by enforcement role, never a blanket obligation
+   on ordinary unit suites. Verification is a distinct ledger event `kind: sensitivity`:
+   {targeted syntax-preserving semantic mutation operator; artifact digest before/after;
+   the exact assertions expected to fail; a known-good control expected to stay green;
+   restoration check (digest returns to baseline); provenance}. One targeted mutation per
+   decision boundary, automated where the harness supports it. **A sensitivity event NEVER
+   satisfies behavioral RED-before-GREEN** — §3's admissibility rules (`dirty: true` =
+   local-only) and §4's committed-failing-test contract are unchanged; sensitivity
+   certifies the harness can SEE breakage, not that behavior was test-driven. Quick-scope
+   changes to guard-class surfaces still carry a sensitivity event — Quick's RED exemption
+   is exactly where a blind harness hides longest, so this is the one cost Quick pays.
+3. **Extraction conformance (two directions + host fidelity).** Where rule 1 permits
+   extraction, a mutation of the SOURCE must fail the intended extracted-fixture assertion
+   while known-good controls stay green and restoration reproduces the baseline — an
+   arbitrary parse-breaking mutation proves neither extraction fidelity nor runtime
+   semantics. For extracted workflow logic, at least one host-runner conformance fixture
+   exercises the real workflow path, or the fidelity boundary is documented at the
+   extraction site as an explicit, named gap.
