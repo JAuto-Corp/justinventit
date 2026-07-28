@@ -31,13 +31,18 @@ cannot classify what has no diff yet). Full-pass TRIGGERS, any one suffices:
 - the artifact changes policy, protocol, or gate behavior;
 - it is consumed by more than one seat or runtime;
 - it is irreversible or migration-bearing;
-- its planned change surface reaches Standard+ (judged from named consumers and
-  reversibility at draft time).
-`trivial` is DEFINED, not vibes: single-consumer, reversible, no policy/gate impact, no new
-surface. Trivial/Quick artifacts take the **premise checklist** — three questions recorded
-on the artifact by its author, confirmed by its ratifier: is the diagnosis grounded in
-cited evidence? is there a cheaper or more reversible alternative, and why not it? who
-consumes this, and were they actually read? Escalate to a full pass on any uncertainty.
+- its planned change surface is Standard+ by draft-visible criteria: it plans new
+  tables/routes/pages, migrations, 4+ files, or changes to scenario seeds/factory helpers
+  (the same trigger list the diff-time classifier uses, applied to the PLAN rather than
+  the diff).
+**The classifier is TOTAL by default rule: an artifact matching NO full-pass trigger takes
+the checklist tier.** (`trivial` survives only as the informal name for the clearest such
+case — single-consumer, reversible, no policy/gate impact, no new surface — it is not a
+third tier and needs no separate boundary.) Checklist tier = the **premise checklist**:
+three questions recorded on the artifact by its author, confirmed by its ratifier — is the
+diagnosis grounded in cited evidence? is there a cheaper or more reversible alternative,
+and why not it? who consumes this, and were they actually read? Escalate to a full pass on
+any uncertainty, either party.
 **Escalation rule**: if the eventual diff crosses into Standard+ despite a checklist-tier
 draft, stage-0 escalates to a full pass BEFORE integration — the classifier's draft-time
 judgment is provisional, never final.

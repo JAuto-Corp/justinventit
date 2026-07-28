@@ -24,8 +24,9 @@ complain, not pass.**
     themselves (the barrel/registry generator derives it).
   - scope definitions — the classifier config (patterns + thresholds), authored, versioned
     with the framework.
-  Checks `01-05` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
-  progress-complete) consume ONLY these inputs, with a uniform exit contract:
+  Checks `01-06` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
+  progress-complete, harness-sensitivity — `06` defined with the Harness-integrity law
+  below) consume ONLY these inputs, with a uniform exit contract:
   0 = pass, 1 = block (message names the failed rule), 3 = cannot-evaluate (message names the
   missing/malformed input), and **any other exit (2, 127, signals, crashes) = runner-error,
   handled identically to 3** — the contract enumerates the full code space so a crashed
@@ -72,14 +73,26 @@ no `phase:` variant exists):
   logged, surfaced in the PR gate summary. No silent bypass exists.
 - **Sensitivity events** (`kind: "sensitivity"` — Harness-integrity rule 2) extend the
   schema with `sensitivity: { mutation: {operator, site}, digests: {baseline, mutated,
-  restored}, expected_failing: ["..."], observed_failing: ["..."], control: "pass | fail" }`;
-  `scope` names the guard-class suite and assertions. VALID only when `observed_failing ==
-  expected_failing`, `control == "pass"`, and `digests.restored == digests.baseline` —
-  expected-without-observed is a claim, not evidence. Admissibility mirrors `red`:
-  `dirty: true` satisfies local gates only; in the attestation bundle its commit must be an
-  ancestor of the candidate head. Consuming gate: the review-stage check on any diff
-  touching guard-class surfaces requires a bound sensitivity event; a sensitivity event can
-  never satisfy a gate that requires `red`.
+  restored}, target_green_before: bool, target_green_after: bool, expected_failing: ["..."],
+  observed_failing: ["..."], control: "pass | fail" }`; `scope` names the guard-class suite
+  and assertions; digests cover BOTH the shipped guard and its observing harness/extractor.
+  VALID only when ALL hold: `digests.mutated != digests.baseline` (a real mutation);
+  `expected_failing` is nonempty; `target_green_before == true` (a red baseline proves
+  nothing about sensitivity); `observed_failing == expected_failing` as SETS (canonical
+  ordering); `control == "pass"`; `digests.restored == digests.baseline`;
+  `target_green_after == true`; event `status == "pass"`. Anything less is a claim, not
+  evidence — the vacuous form (no-op mutation, empty sets, passing control) must be
+  formally INVALID. **Freshness is stricter than `red`**: `provenance.commit == candidate
+  head`, OR an ancestor WITHIN the PR range whose candidate-head digests for both the
+  shipped guard and the observing harness equal the event's baseline digests — sensitivity
+  proven against a guard or harness that has since changed proves nothing about the
+  candidate. Consuming gate: check `06-harness-sensitivity` (uniform exit contract above;
+  runs in the same Stop-hook and CI tables as `01-05`) requires a valid bound sensitivity
+  event whenever the diff touches a guard-class surface, resolved from the authored
+  guard-class inventory (part of the scope-definitions classifier config — patterns for
+  gate logic, harness/fixture machinery, extracted/generated rules, permission predicates;
+  authored, versioned, fail-closed on unclassifiable paths). A sensitivity event can never
+  satisfy a gate that requires `red`.
 
 **Ledger storage and lifecycle**: the ledger is **runtime state — never git-tracked** (a
 tracked ledger would self-reference the commit hash it must bind to). It lives beside the
@@ -130,7 +143,7 @@ filename addition.
 
 | Where | Mechanism | Authority |
 |-|-|-|
-| Session (Stop hook) | checks 01-05 read state contract + ledger; block once, override-token escape | advisory-strong |
+| Session (Stop hook) | checks 01-06 read state contract + ledger; block once, override-token escape | advisory-strong |
 | CI | the same checks run against pushed ledger + candidate SHA; fail closed on missing inputs | authoritative signal |
 | Merge | integrator protocol (or branch protection where the plan allows): red = no-merge, SHA-bound | authoritative action |
 

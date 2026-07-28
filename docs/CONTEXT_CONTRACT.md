@@ -114,7 +114,8 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
   never by locating the file (six false "already homed" claims in one wave shared exactly
   this root cause: grep-for-filename instead of read-the-owner). (2) Enumerate live
   consumers (the all-file-types sweep above). (3) Retarget them. (4) Audit downstream
-  shapes where the rule content changed (next bullet). (5) VERIFY THE END STATE: target
+  shapes where the rule content changed (the shape-audit rule at `MODEL_MATRIX.md` §1a —
+  pointer two bullets below). (5) VERIFY THE END STATE: target
   content present, retargeted references resolve live, and the consumer sweep re-runs to
   zero hits. A mover may not retarget consumers at a target step 1 has not proven — that
   ordering is what makes step 3 safe.
