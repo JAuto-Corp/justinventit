@@ -174,6 +174,37 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   dependability credit). A one-shot review cannot tell you a test passes; runtime-backed
   claims still require a runner.
 
+### 3a. Runtime wake/launch adapter facts (2026-07-28, doorbell ratification)
+
+The SEAT_PROTOCOL §4 invariant (actionable async work: supervised + durable terminal
+outcome) is runtime-neutral; the MECHANICS live here per runtime.
+
+**Claude harness — empirical notify table (measured in-fleet, 2026-07-28):**
+| Launch shape | Wakes the seat? |
+|-|-|
+| foreground command exceeding tool timeout | yes — harness rescues + task-notification |
+| tracked background (`run_in_background` class) | yes — notification on exit |
+| subagent completion | yes |
+| scheduled wake (timer) | yes |
+| `nohup … &` detach | **NEVER** (4+ review runs recovered only by manual polling) |
+
+Claude seats therefore launch actionable async work via the tracked-background mechanism
+only; raw detach is forbidden (origin rule 01KYK8TC8P). The tracked notification satisfies
+SUPERVISION for the invoking session only — DURABILITY still requires the completion event
+(`HUB_DATA_MODEL.md` §3a), which is what survives session death. Behavioral evidence: the
+rule's own author reflexively detached a run twenty minutes after ratifying the ban
+(self-caught) — enforcement belongs in the Stop-hook/conformance class, not discipline.
+
+**Codex runtime**: UNVERIFIED — the notify table's Codex column is a Phase-4 pilot probe
+(exec-resume/tmux invocation, modal handling, whether any launch shape notifies at all).
+Until probed, Codex seats treat every async result as doorbell-delivered via completion
+events only.
+
+**Interrupt-filter ownership (SEAT_PROTOCOL §4 filter)**: per-seat-class actionable-class
+mappings and thresholds are matrix values (authored here, resolved like every consumer);
+`max_deferral` is never authored — it is GENERATED under SEAT_PROTOCOL §4's compositional
+constraints from `mail_grace`, poll budget, and the class's cursor-commit SLO.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
