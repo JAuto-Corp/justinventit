@@ -32,6 +32,16 @@ prompts:  # decision: prompt — allowed with approval
 ```
 Each entry carries inline match/not_match test cases (mirroring `.rules` fixtures); the
 generator emits both runtime forms and their tests from the same entry.
+
+**Shape-audit rule (normative here; `CONTEXT_CONTRACT.md` §5a points at this).** A policy or
+permission change that alters representable SEMANTICS — actors, actions, values, or
+cardinality — audits the forms, templates, and schemas downstream of it: shapes encoding
+the old restriction are updated; already-compatible shapes get an explicit no-impact
+record. Editorial-only changes that do not alter representable semantics carry no shape
+obligation — the trigger is semantic, and a semantic change made entirely through prose
+still triggers it. A generated consumer list satisfies the audit wherever one exists.
+Origin: two instances in one PR of a widened rule surviving as its output template's old
+mandatory form.
 - **Runtime state** (never freshness-gated): which seats are currently booted at what tier
   (registry), temporary per-session raises.
 
@@ -136,7 +146,9 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   feedback stay native): (1) cheap PRE-FLIGHT triage (skip closed/draft/trivial/already-
   reviewed — SUPERSEDED for the stage-0 lane by `DEV_LOOP.md` §1a: `draft` is never skipped
   there, drafts being that lane's entire subject; `trivial` routes to its premise checklist;
-  `closed`/`already-reviewed` stand); (2) scoped-guidance collection (only the entry-contract files governing the
+  `closed`/`already-reviewed` stand; the stage-0 lane is also a documented SINGLE-CHARTER
+  exception to steps 3-4 below — one red-team one-shot, its same-thread confirmation re-pass
+  serving as validation); (2) scoped-guidance collection (only the entry-contract files governing the
   changed paths); (3) DISTINCT-CHARTER lenses as separate one-shots (guidance-compliance
   with exact-quote citations; diff-scoped bugs; introduced-logic/security), few-concurrent;
   (4) **independent VALIDATION pass** — every finding re-examined by a fresh thread charged

@@ -124,14 +124,11 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
   carrying its run id). What this rejects is the ungrounded ACTOR REPORT — "I moved it",
   "clean merge" — never machine attestations (`ARCHITECTURE.md` §8's evidence model is
   unchanged). Same rule that caught a silent merge-revert the same night it was written.
-- **A rule change audits downstream shapes WHEN it changes what is representable.** Twice
-  in one PR a permission was widened while the output template still demanded the old form
-  — the restriction survived, harder to see. The trigger is semantic, not textual: the
-  change alters representable actors, actions, values, or cardinality → audit the forms /
-  templates / schemas downstream, update those that encode the old restriction, and record
-  no-impact for already-compatible shapes. Prose-only changes carry no shape obligation.
-  (Companion rule lives with the policy/generator ownership contract; a generated consumer
-  list satisfies the audit wherever one exists.)
+- **A rule change audits downstream shapes when it changes what is representable** — the
+  normative rule lives at its owning surface, `MODEL_MATRIX.md` §1a (the policy/generator
+  ownership contract), where permission authors actually work; this bullet is the pointer
+  the section-move context earns, not a second statement of it. Origin: twice in one PR a
+  permission was widened while the output template still demanded the old form.
 - **Doc claims about surfaces are verified at authoring time, in both tenses.** A
   present-tense claim ("skills resolve on both runtimes", "checked by CI") must name its
   existing referent; a planned surface is written future-tense with the wave that lands

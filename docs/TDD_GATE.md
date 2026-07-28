@@ -44,7 +44,7 @@ Canonical schema (every other document references this; `kind` is the discrimina
 no `phase:` variant exists):
 
 ```json
-{ "kind": "test-run | build | red | green | override",
+{ "kind": "test-run | build | red | green | override | sensitivity",
   "status": "pass | fail",
   "provenance": { "commit": "<sha>", "dirty": false, "worktree": "<path>", "command": "<argv>" },
   "scope": { "suite": "...", "scenarios": ["..."] },
@@ -70,6 +70,16 @@ no `phase:` variant exists):
   candidate_sha, expiry, issuer}`; tokens are issued by the orchestrate seat (or the solo
   session, logged identically), bound to one check + one candidate, and expire. Named,
   logged, surfaced in the PR gate summary. No silent bypass exists.
+- **Sensitivity events** (`kind: "sensitivity"` — Harness-integrity rule 2) extend the
+  schema with `sensitivity: { mutation: {operator, site}, digests: {baseline, mutated,
+  restored}, expected_failing: ["..."], observed_failing: ["..."], control: "pass | fail" }`;
+  `scope` names the guard-class suite and assertions. VALID only when `observed_failing ==
+  expected_failing`, `control == "pass"`, and `digests.restored == digests.baseline` —
+  expected-without-observed is a claim, not evidence. Admissibility mirrors `red`:
+  `dirty: true` satisfies local gates only; in the attestation bundle its commit must be an
+  ancestor of the candidate head. Consuming gate: the review-stage check on any diff
+  touching guard-class surfaces requires a bound sensitivity event; a sensitivity event can
+  never satisfy a gate that requires `red`.
 
 **Ledger storage and lifecycle**: the ledger is **runtime state — never git-tracked** (a
 tracked ledger would self-reference the commit hash it must bind to). It lives beside the
