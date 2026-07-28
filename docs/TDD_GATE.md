@@ -165,3 +165,17 @@ suites), classifier patterns' values.
 - Isolation-adapter lifecycle (major): out of this spec's scope — workspace/DB classes and
   registry semantics are normative in `WORKSPACE_LIFECYCLE.md`; the adapter interface is the
   named `ISOLATION_ADAPTERS.md` planned spec in `ARCHITECTURE.md` §9 with acceptance criteria.
+
+## Harness-integrity law (2026-07-28, four independent instances in one week)
+
+A fixture suite proves nothing by passing — it proves something by having been WATCHED TO FAIL
+against the unfixed code. Four seats independently shipped harnesses that reimplemented the
+logic under test (an extractor's field selection, a gate's regexes, a detector's boundary rule,
+a cache writer's guards); every one stayed green while the shipped code was broken, and every
+one was caught only by RED-verification or review, never by inspection. Binding rules:
+1. Tests invoke the SHIPPED artifact (imported function, executed script, extracted expression)
+   — never a local restatement of its logic.
+2. Every guard-class test is RED-VERIFIED: temporarily break the shipped code, watch exactly the
+   guarding assertions fail, restore. The RED run is evidence, recorded with the change.
+3. Where extraction is used (testing a workflow's own regexes), a MUTATION test guards the
+   extraction: mutate the source, require the control fixture to go red.

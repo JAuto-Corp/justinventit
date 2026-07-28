@@ -109,6 +109,15 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
   at exactly the moment its session couldn't notice. Retarget what is broken, not what is
   merely old; leave historical records unrewritten. The move-PR carries the sweep as
   evidence (the grep + its zero-hit re-run).
+- **Ownership claims are verified by READING THE TARGET, not by locating it.** Six false
+  "already homed" claims in one migration wave shared a root cause: the mover grepped for the
+  owner's filename instead of reading the owner and confirming the content is actually there.
+  The sweep step is: open the claimed home, find the moved content in it, or the claim is false.
+  General form (same rule that caught a silent merge-revert the same night): **verify the end
+  state; never accept the report of it.**
+- **Widening a permission requires widening the shape it passes through.** Twice in one PR, a
+  rule was relaxed while the output template still demanded the old form — the restriction
+  survived, harder to see. Any rule change audits the forms/templates/schemas downstream of it.
 - **Doc claims about surfaces are verified at authoring time, in both tenses.** A
   present-tense claim ("skills resolve on both runtimes", "checked by CI") must name its
   existing referent; a planned surface is written future-tense with the wave that lands

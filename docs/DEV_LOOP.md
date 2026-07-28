@@ -7,7 +7,8 @@
 
 | # | Stage | Owner (seat class) | Artifact | Gate (exit condition) |
 |-|-|-|-|-|
-| 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations | SPEC self-check: every named API/number/consumer claim cited or refused |
+| 0 | draft red-team | second-runtime thinking model (Sol xhigh; same-runtime fresh-context if unconfigured) | red-team verdict + dispositions riding the draft | **USER RULING 2026-07-28: mandatory upstream of ratification for every plan/scope/SPEC/design/protocol.** Challenge-the-premise charter — attack the diagnosis, attack the design, name better alternatives. Runs at DRAFT stage, the cheapest moment to change course; additive to stage 2, never a substitute. Evidence pair: a spec with a draft pass converged in one review round; a same-day spec without took three |
+| 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations + stage-0 dispositions | SPEC self-check: every named API/number/consumer claim cited or refused; stage-0 verdict dispositioned |
 | 2 | spec-audit | cross_review — cardinality, second-opinion, and separation rules per THE normative profile table (`ARCHITECTURE.md` §2) | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted |
 | 3 | RED | implement (or test-execution specialist) | executable failing tests + ledger event `kind: red` (canonical schema: `TDD_GATE.md` §3) | Standard+: runner exit non-zero recorded with provenance. Quick scope: may be satisfied as same-change (`TDD_GATE.md` §4 — the one declared exemption) |
 | 4 | GREEN | implement | code + ledger event `kind: green` | runner exit zero, same provenance chain |
