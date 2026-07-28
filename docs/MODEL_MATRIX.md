@@ -122,6 +122,34 @@ radius, never as a statement about any runtime's judgment:
 A seat of either runtime that needs one of the above asks the owner of that invariant — the
 same escalation every Claude seat already makes.
 
+**What actually makes this safe: ORIENTATION, not enumeration.** A permission list tries to
+predict every destructive act in advance and fails at the first unlisted one. A seat that has
+been *properly initiated into the project* — guided context exploration, entry contract to
+domain index to leaf, understanding what the system IS and what depends on what — infers
+correctly at the unlisted case, because it understands consequences rather than matching
+patterns. That is why trust parity is coherent rather than reckless here, and it makes the
+CONTEXT-DELIVERY SYSTEM a safety mechanism, not merely an efficiency one: every improvement
+to orientation pathways raises the floor on judgment for every seat on every runtime.
+Design consequence, binding on the orientation work (`ORIENTATION_MAPS.md`,
+`CONTEXT_CONTRACT.md`): the goal is a seat that could DERIVE the invariants, not one that has
+memorized them. Entry contracts therefore route to understanding (what this system is, what
+is shared, what is irreversible, where the blast radius lives) rather than reciting
+prohibitions; prohibition lists are a fallback for what orientation has not yet covered, and
+each one is a signal that some pathway is missing. This is stated so the specs are *built*
+that way — seats need not be told it explicitly; correct pathways produce correct operation.
+
+**Credential posture on a single-operator local fleet (recorded, deliberate).** This machine
+stores real credentials for the whole toolchain in the operator's own home directory — that
+is the intended arrangement and it is what makes the agentic automation possible at all; a
+fleet that had to re-authenticate per action could not run unattended. The security boundary
+is the MACHINE and its operator, not per-agent credential partitioning. Two obligations
+follow rather than any restriction: (1) agents never PRINT credential values — names and
+paths only, in reports, verdicts, and archives; (2) artifacts get a REDACTION PASS before
+entering any repo (2026-07-28: GitHub push protection caught an account identifier in an
+archived probe output — the platform caught what the author's own no-secrets instruction had
+not). A consuming project on shared or multi-tenant infrastructure would need a different
+posture; this section states the local-fleet one honestly rather than generalizing it.
+
 **Sandbox posture follows trust, with one honest caveat.** Trust parity means the sandbox is
 sized to the WORK, not to the runtime: read-heavy work runs read-only because that is
 sufficient, and work requiring writes gets write scope without a separate trust argument.
