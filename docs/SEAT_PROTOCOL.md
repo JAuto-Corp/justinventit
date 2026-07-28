@@ -114,6 +114,38 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   `superseded_by`, performs NO side effects, and self-concludes. Human-unpark of a
   not-yet-superseded seat re-acquires the lease and injects a fresh validated token before
   any turn.
+
+### 2a. Seat-control primitives (2026-07-28 — four gaps surfaced by implementation review)
+
+The lease above is a REVIVAL-WINDOW primitive. Building it exposed four places where that is
+not sufficient on its own. Each is stated as a requirement on the seat-control backend, not
+on any one migration.
+
+- **Durable incarnation, distinct from the temporary lease.** Fencing that lives only in the
+  lease DISAPPEARS at release (a healthy seat is unleased by design), so nothing protects a
+  revived seat's LATER irreversible actions from a resurrected predecessor. The record
+  therefore carries `active_incarnation` — a durable ULID minted at each successful
+  boot/revival, independent of lease lifecycle. Irreversible actions validate the
+  incarnation, not the lease; a seat whose incarnation is no longer current performs NO side
+  effects and self-concludes (same quarantine rule as `superseded_by`).
+- **Acknowledgement advances heartbeat generation.** Release-after-first-heartbeat is not
+  causally fenced: a DELAYED heartbeat from the OLD session can satisfy the reviver and
+  trigger release of a NEW token. The revival acknowledgement therefore carries
+  `{incarnation, session_handle}` and the heartbeat records the incarnation that wrote it;
+  release requires a heartbeat whose incarnation EQUALS the one the reviver installed.
+  A heartbeat from a superseded incarnation is evidence of a live predecessor, not of
+  successful revival, and is reported rather than accepted.
+- **Registry MEMBERSHIP is ordered by its own lock.** Per-seat mutexes cannot order
+  create/delete/adoption/cutover — yet the watchdog derives the fleet by whole-registry
+  enumeration, so a membership change concurrent with a sweep can produce a roster that
+  never existed. Membership operations take a REGISTRY-level lock; per-seat locks remain for
+  per-seat state. Enumeration under a torn registry is a LOUD finding, never a silent
+  short roster (the zero-roster rule in §4 is the same principle).
+- **Heartbeat is off the hot path.** Heartbeat writes occur every turn on every seat; they
+  must NOT serialize behind a whole-operation seat-control lock. Heartbeat takes the
+  narrowest lock that keeps its own fields consistent, and never blocks on lease or
+  membership operations. (A protocol whose liveness signal is expensive discourages the
+  signal — the failure mode this spec exists to prevent.)
   Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
   crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race, registry
   recreation mid-lease** — token fencing must hold across a recreated registry) run
@@ -312,6 +344,14 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
   cursor — never via the consuming read verb, whose obvious use silently eats messages the
   seat is holding.
 - Drain on boot and at phase boundaries; drain files are read whole.
+- **Commit after acting, not after reading** (2026-07-28). Delivery advances a `delivered`
+  cursor; the `processed` cursor advances only when the seat has ACTED on the message —
+  explicitly, by id. Advance-at-print is at-MOST-once and loses messages silently when a
+  seat dies mid-turn; commit-after-acting is the at-least-once §1 requires, with redelivery
+  made safe by `hub_id` idempotence. Commits are idempotent and never rewind. Any
+  backlog-age consumer (stall detection) reads the PROCESSED cursor — reading `delivered`
+  would show a seat as caught-up while its work is still pending, which is a stall the
+  watchdog structurally cannot see.
 - **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
   observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
   sender-shell `$()` execution, subject/body collapse, flag-eaten-as-positional). Rules:
