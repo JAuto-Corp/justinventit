@@ -134,7 +134,9 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   funnel shape for ALL judgment-review families (in-session teams, pinned reviewers, scoped
   audits' judgment halves → Sol xhigh; runtime attestation, authoring, and chain equip
   feedback stay native): (1) cheap PRE-FLIGHT triage (skip closed/draft/trivial/already-
-  reviewed); (2) scoped-guidance collection (only the entry-contract files governing the
+  reviewed — SUPERSEDED for the stage-0 lane by `DEV_LOOP.md` §1a: `draft` is never skipped
+  there, drafts being that lane's entire subject; `trivial` routes to its premise checklist;
+  `closed`/`already-reviewed` stand); (2) scoped-guidance collection (only the entry-contract files governing the
   changed paths); (3) DISTINCT-CHARTER lenses as separate one-shots (guidance-compliance
   with exact-quote citations; diff-scoped bugs; introduced-logic/security), few-concurrent;
   (4) **independent VALIDATION pass** — every finding re-examined by a fresh thread charged
@@ -143,10 +145,12 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   and unambiguous quoted-rule violations only; explicit false-positive list (pre-existing,
   linter-catchable, pedantic, silenced, unverifiable-without-outside-context); *if not
   certain, do not flag* — this is also the standing treatment for the disposition-overreach
-  blemish. **Ruling red-team lane (pilot)**: on orchestrator/director wakes that issue
+  blemish. **Ruling red-team lane (pilot — WIDENED 2026-07-28)**: on orchestrator/director wakes that issue
   policy-shaping, irreversible, or batch rulings, the drafted rulings go through one Sol
   xhigh adversarial pass BEFORE sending — best-reasoning adversarial pairing at the top of
-  the stack, complementing the incremental reviews near the details.
+  the stack, complementing the incremental reviews near the details. The stage-0 protocol
+  (`DEV_LOOP.md` §1a) extends this lane to every full-pass-class design artifact; the pilot
+  scoping in this paragraph is the historical origin, not the current boundary.
   **Rollout law (learned by violating it): a protocol is not live until its invocation tool
   exists and is reachable from every seat it binds** — announcing a funnel whose
   speaking-tool is absent at the bound seats is law 9's composer clause violated by the

@@ -173,9 +173,27 @@ against the unfixed code. Four seats independently shipped harnesses that reimpl
 logic under test (an extractor's field selection, a gate's regexes, a detector's boundary rule,
 a cache writer's guards); every one stayed green while the shipped code was broken, and every
 one was caught only by RED-verification or review, never by inspection. Binding rules:
-1. Tests invoke the SHIPPED artifact (imported function, executed script, extracted expression)
-   — never a local restatement of its logic.
-2. Every guard-class test is RED-VERIFIED: temporarily break the shipped code, watch exactly the
-   guarding assertions fail, restore. The RED run is evidence, recorded with the change.
-3. Where extraction is used (testing a workflow's own regexes), a MUTATION test guards the
-   extraction: mutate the source, require the control fixture to go red.
+1. **Tests invoke the SHIPPED artifact** — the file/function the production path executes,
+   at its production location: an imported function, an executed script, or (only for logic
+   that cannot be imported, e.g. workflow-embedded expressions) a MECHANICALLY-extracted
+   copy guarded by rule 3. Never a hand-restated version of the logic.
+2. **Guard-class tests are SENSITIVITY-VERIFIED.** Guard-class = tests whose purpose is
+   ENFORCEMENT — gate logic, harness/fixture machinery, extracted or generated rules,
+   security/permission predicates. Scoped by enforcement role, never a blanket obligation
+   on ordinary unit suites. Verification is a distinct ledger event `kind: sensitivity`:
+   {targeted syntax-preserving semantic mutation operator; artifact digest before/after;
+   the exact assertions expected to fail; a known-good control expected to stay green;
+   restoration check (digest returns to baseline); provenance}. One targeted mutation per
+   decision boundary, automated where the harness supports it. **A sensitivity event NEVER
+   satisfies behavioral RED-before-GREEN** — §3's admissibility rules (`dirty: true` =
+   local-only) and §4's committed-failing-test contract are unchanged; sensitivity
+   certifies the harness can SEE breakage, not that behavior was test-driven. Quick-scope
+   changes to guard-class surfaces still carry a sensitivity event — Quick's RED exemption
+   is exactly where a blind harness hides longest, so this is the one cost Quick pays.
+3. **Extraction conformance (two directions + host fidelity).** Where rule 1 permits
+   extraction, a mutation of the SOURCE must fail the intended extracted-fixture assertion
+   while known-good controls stay green and restoration reproduces the baseline — an
+   arbitrary parse-breaking mutation proves neither extraction fidelity nor runtime
+   semantics. For extracted workflow logic, at least one host-runner conformance fixture
+   exercises the real workflow path, or the fidelity boundary is documented at the
+   extraction site as an explicit, named gap.
