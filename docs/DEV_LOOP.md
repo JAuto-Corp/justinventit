@@ -32,9 +32,10 @@ cannot classify what has no diff yet). Full-pass TRIGGERS, any one suffices:
 - it is consumed by more than one seat or runtime;
 - it is irreversible or migration-bearing;
 - its planned change surface is Standard+ by draft-visible criteria: it plans new
-  tables/routes/pages, migrations, 4+ files, or changes to scenario seeds/factory helpers
-  (the same trigger list the diff-time classifier uses, applied to the PLAN rather than
-  the diff).
+  tables/routes/pages or 4+ files (the diff-time classifier's authored trigger list,
+  `TDD_GATE.md` §5 — that config is the one canonical owner), plus two CONSERVATIVE
+  DRAFT-TIME-ONLY triggers this lane adds: planned migrations, and planned changes to
+  scenario seeds/factory helpers.
 **The classifier is TOTAL by default rule: an artifact matching NO full-pass trigger takes
 the checklist tier.** (`trivial` survives only as the informal name for the clearest such
 case — single-consumer, reversible, no policy/gate impact, no new surface — it is not a

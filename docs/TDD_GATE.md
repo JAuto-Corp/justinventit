@@ -72,19 +72,21 @@ no `phase:` variant exists):
   session, logged identically), bound to one check + one candidate, and expire. Named,
   logged, surfaced in the PR gate summary. No silent bypass exists.
 - **Sensitivity events** (`kind: "sensitivity"` — Harness-integrity rule 2) extend the
-  schema with `sensitivity: { mutation: {operator, site}, digests: {baseline, mutated,
-  restored}, target_green_before: bool, target_green_after: bool, expected_failing: ["..."],
-  observed_failing: ["..."], control: "pass | fail" }`; `scope` names the guard-class suite
-  and assertions; digests cover BOTH the shipped guard and its observing harness/extractor.
-  VALID only when ALL hold: `digests.mutated != digests.baseline` (a real mutation);
+  schema with `sensitivity: { mutation: {operator, site}, digests: { guard: {baseline,
+  mutated, restored}, harness: {baseline, mutated, restored} }, target_green_before: bool,
+  target_green_after: bool, expected_failing: ["..."], observed_failing: ["..."],
+  control: "pass | fail" }`; `scope` names the guard-class suite and assertions; the two
+  digest objects cover the shipped guard and its observing harness/extractor SEPARATELY —
+  never a composite hash (independently built consumers must not invent encodings).
+  VALID only when ALL hold: `digests.guard.mutated != digests.guard.baseline` (a real mutation);
   `expected_failing` is nonempty; `target_green_before == true` (a red baseline proves
   nothing about sensitivity); `observed_failing == expected_failing` as SETS (canonical
-  ordering); `control == "pass"`; `digests.restored == digests.baseline`;
+  ordering); `control == "pass"`; `restored == baseline` for BOTH digest objects;
   `target_green_after == true`; event `status == "pass"`. Anything less is a claim, not
   evidence — the vacuous form (no-op mutation, empty sets, passing control) must be
   formally INVALID. **Freshness is stricter than `red`**: `provenance.commit == candidate
-  head`, OR an ancestor WITHIN the PR range whose candidate-head digests for both the
-  shipped guard and the observing harness equal the event's baseline digests — sensitivity
+  head`, OR an ancestor WITHIN the PR range whose candidate-head guard AND harness digests
+  each equal the event's corresponding baseline digest — sensitivity
   proven against a guard or harness that has since changed proves nothing about the
   candidate. Consuming gate: check `06-harness-sensitivity` (uniform exit contract above;
   runs in the same Stop-hook and CI tables as `01-05`) requires a valid bound sensitivity
