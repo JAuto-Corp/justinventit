@@ -372,11 +372,22 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
   standing as the first-runtime thinking seat and may hold a seat, take and issue dispatches,
   and write. Reachable tool surface is bounded by sandbox grant, PATH, credentials and runtime
   config — not by runtime identity; and independence for review purposes means a FRESH CONTEXT
-  that did not author the artifact, never merely a different runtime. Sandbox is sized to the WORK, not the runtime — read-only where reading suffices
-  (it is also cheaper and clearer to audit), write scope where the work needs it, no separate
-  trust argument. Cluster invariants still bind every seat on every runtime: merge
-  serialization (integrator only), guarded paths for shared-environment mutation, ceremonies
-  for irreversible/outward-facing acts, and no self-verdicting.
+  that did not author the artifact, never merely a different runtime. Sandbox is sized to the
+  WORK, not the runtime — read-only where reading suffices, write scope where the work needs
+  it, no separate trust argument — and **sizing is the DISPATCHER's call at launch; a seat
+  never widens its own sandbox** (a seat reports a sandbox denial; the dispatcher runs any
+  unsandboxed control re-probe). Invariants still bind every seat on every runtime, in two
+  classes (`MODEL_MATRIX.md` §3b): COORDINATION — merge serialization (integrator only),
+  guarded paths for shared-environment mutation, shared-workspace safety (never destroy
+  another seat's uncommitted work, mutate shared git state under a live branch, corrupt
+  another seat's heartbeat/lease/cursor, or consume another seat's mailbox), and no
+  self-applied fleet guidance; EPISTEMIC — no self-verdicting and no actor-report-as-evidence,
+  which exist precisely because judgment and self-report can be biased on ANY runtime.
+  What actually constrains a seat today is sandbox + entry contract + host permissions +
+  provider controls; generated profiles/`.rules`/agent-pins are PLANNED, and the threat model
+  is a planned spec — so the irreversible-action surface a credentialed seat can reach
+  (force-push, ref deletion, repo settings, package publication, credential disclosure) is an
+  OPEN GAP, not a covered one.
 - **Capability caveat carried from the trust ruling**: a sandboxed probe proves presence and
   its own sandbox's behavior — never the machine's auth or capability. Two 2026-07-28 probes
   misread sandbox denials as machine defects. Every negative observed from inside a sandbox
