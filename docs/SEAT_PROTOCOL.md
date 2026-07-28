@@ -26,10 +26,21 @@ Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<
   "effort": "from matrix",
   "workdir": "/abs/path",
   "session_handle": "claude conversation UUID | codex thread name/uuid",
-  "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "hooks": true, "memory": false },
-  "lease": { "holder": null, "epoch": 0, "expires_at": null }
+  "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "watcher_locations": ["host", "in-session"], "hooks": true, "memory": false },
+  "lease": { "holder": null, "epoch": 0, "expires_at": null },
+  "watcher": { "location": null, "generation": 0, "session_handle": null, "status": null, "last_poll_at": null, "expires_at": null }
 }
 ```
+
+**Watcher capability vs live watcher state (2026-07-28, doorbell ratification).**
+`capabilities.watcher_locations` names the locations this runtime SUPPORTS; the `watcher`
+record is LIVE state for the armed one. The watcher itself renews `last_poll_at`/`expires_at`
+on every poll via a channel OUTSIDE the seat's turn-end heartbeat (its own liveness field the
+pacemaker reads) — an in-session watcher is conforming ONLY while that externally-readable
+renewal is current, because it shares the session's failure domain and its death must be
+observable from a different one. Record-of-existence alone proves nothing: a dead watcher
+leaves the same record. An EMPTY `watcher_locations` forbids standby/doorbell mode — the seat
+degrades to active cadence or human wake under this section's capability rules.
 
 Capabilities are **negotiated at boot** (probed, not assumed) and re-probed on runtime
 upgrade. A runtime with `external_invoke: none` is a supported capability level: it is woken
@@ -145,7 +156,9 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
 
 ## 4. Wake model
 
-- **Doorbell (preferred, cross-seat only)**: a bounded watcher re-invokes the seat ON an
+- **Doorbell (preferred; cross-seat events + durable actionable completions — the
+  completion event is the one non-cross-seat doorbell source, since it may address its own
+  invoker; in-session subagents remain native-delivery, never doorbells)**: a bounded watcher re-invokes the seat ON an
   event (mailbox append, artifact landing). **Two cursors, never conflated**: the watcher
   reads from its own *notification cursor* (observation only — advancing it acknowledges
   nothing); the seat's *processing cursor* advances only after the message's side effect is
@@ -157,6 +170,15 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   grace window; every wake goes through the lease (§2). Conformance fixtures crash the
   consumer both before and after side-effect/cursor-advance. In-session subagents NEVER use
   doorbells — the harness re-invokes the parent natively.
+  **Doorbell conformance additions (2026-07-28; these fixtures SHIP WITH the conformance
+  wave — the archived doorbell r4 record's B-list — and are normative requirements on it,
+  not yet built)**: the watcher-ALIVE check MUST have its own BOTH-DIRECTIONS fixture —
+  fire on a killed watcher AND stay quiet on a live one (the armed-once-assumed-alive guard
+  class); dual-signal fixtures MUST cover both orderings of task-exit vs completion event;
+  a filter-false-stall fixture MUST prove the deferred ring's bound holds against the §2
+  standby predicate; watcher restart MUST produce a fixture-verified generation
+  supersession; dynamic sender-stream discovery and to-all delivery MUST be covered
+  explicitly.
   **Two doorbell shapes, chosen deliberately per seat class**: *own-mailbox* (doing seats —
   waking on another seat's conversation mid-build is pure interruption) vs *total-inbound*
   (coordination seats: baseline = total bytes of inbound fleet mail across all streams,
@@ -167,6 +189,29 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   live "receiving-but-not-draining" detection without polling, distinguishing "not drained
   in 9h" from "arrived 2 min ago". Both shapes stay BOUNDED (dead watcher degrades to slow
   polling, never silence).
+  **Message-class interrupt filter (2026-07-28)**: the own-mailbox shape gains a
+  matrix-owned filter — doing seats ring immediately on actionable classes (dispatch,
+  attention/alert, direct request, and actionable COMPLETION events) and DEFER info/status
+  behind a **bounded deferred ring**: `max_deferral` is GENERATED under validated
+  compositional constraints — `max_deferral + poll_budget + commit_budget < mail_grace`
+  (the §2 stall clock is never beaten) and `max_deferral + poll_budget ≤ fallback_interval`
+  — never hand-set. The OLDEST deferred event's ring deadline is fixed at its arrival; new
+  arrivals never reset it. Unknown or malformed classes ring immediately
+  (fail-toward-ringing). The total-inbound shape stays unfiltered. Class taxonomy is owned
+  by `HUB_DATA_MODEL.md`; per-seat-class mappings and thresholds by `MODEL_MATRIX.md`.
+- **Own tracked background work (2026-07-28)**: actionable asynchronous work — any side
+  process whose result someone must act on (review one-shots, CI watches, builds) — is
+  SUPERVISED (a component outside the work observes its termination) and produces a
+  **durable terminal outcome**: the hub COMPLETION event (`HUB_DATA_MODEL.md` §3a) on every
+  exit path including failure and cancellation. Unsupervised detachment (`nohup … &` with
+  no supervisor) is forbidden; note that harness tracking alone does not satisfy the
+  durability half (a tracked process can die before publishing), and a supervised host
+  process that detaches CAN satisfy both. Completion events are doorbell sources.
+  **Dual-signal coalescing**: a runtime task-exit notification and the completion event can
+  race into two turns — consumers correlate by run id, a doorbell poke is suppressed when
+  the processing cursor already covers the completion, and the invoker-as-recipient case is
+  deduplicated at the event (one delivery). Runtime launch mechanics and the empirical
+  notify table live in `MODEL_MATRIX.md` §3a — this section owns only the invariant.
 - **Cadence (fallback)**: self-armed wake at matrix-defined interval; "arm LAST" discipline.
 - **Pacemaker/watchdog (external)**: versioned in-repo, fixture-tested, notify-adapter for
   escalation (desktop/SMS/none). All of its reads and writes — heartbeat, roster

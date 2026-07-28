@@ -174,6 +174,43 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   dependability credit). A one-shot review cannot tell you a test passes; runtime-backed
   claims still require a runner.
 
+### 3a. Runtime wake/launch adapter facts (2026-07-28, doorbell ratification)
+
+The SEAT_PROTOCOL §4 invariant (actionable async work: supervised + durable terminal
+outcome) is runtime-neutral; the MECHANICS live here per runtime.
+
+**Claude harness — empirical notify table (measured in-fleet, 2026-07-28):**
+| Launch shape | Wakes the seat? |
+|-|-|
+| foreground command exceeding tool timeout | yes — harness rescues + task-notification |
+| tracked background (`run_in_background` class) | yes — notification on exit |
+| subagent completion | yes |
+| scheduled wake (timer) | yes |
+| `nohup … &` detach | **NEVER** (4+ review runs recovered only by manual polling) |
+
+Claude seats therefore MUST launch actionable EXTERNAL side processes via the
+tracked-background mechanism only; raw detach is forbidden (origin rule 01KYK8TC8P).
+In-session subagents are NOT in this rule's scope — they remain governed by
+`SEAT_PROTOCOL.md` §4/§5 native delivery and appear in the table only as an observed native
+wake source. The tracked notification satisfies SUPERVISION for the invoking session only —
+DURABILITY additionally requires the completion event (`HUB_DATA_MODEL.md` §3a), which is
+what survives session death. Behavioral evidence: the rule's own author reflexively
+detached a run twenty minutes after ratifying the ban (self-caught) — enforcement belongs
+in the Stop-hook/conformance class, not discipline.
+
+**Codex runtime**: UNVERIFIED — the notify table's Codex column is a Phase-4 pilot probe
+(exec-resume/tmux invocation, modal handling, whether any launch shape notifies at all).
+Until the probe runs AND the `complete` verb exists, Codex seats have NO conforming channel
+for async results — a named Phase-4 pilot blocker, not a silent gap.
+
+**Interrupt-filter ownership (SEAT_PROTOCOL §4 filter)**: per-seat-class mappings and the
+wake-policy inputs (`mail_grace`, poll budget, per-class cursor-commit SLOs, fallback
+interval) WILL be authored matrix values — the schema fields land with the Phase-3 matrix
+regeneration (the same wave as `review_families`), written future-tense here per the
+both-tenses rule. `max_deferral` is never authored in any wave: it is derived from those
+inputs under SEAT_PROTOCOL §4's compositional constraints. Until Phase 3, implementations
+take interim per-fleet values; the CONSTRAINTS bind now, the data shape does not exist yet.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The

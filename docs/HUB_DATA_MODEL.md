@@ -43,6 +43,7 @@ All keys are compound with `project_id` (immutable, issued at adoption; never in
 | `attention` | user-facing questions/blocks | severity; one-tap metadata; answer verb |
 | `journal` | rules/decisions/milestones | supersedes chain by hub_id |
 | `docs` | doc registry (spec/scope/plan/memory pointers) | **gets a verb** — no verb-gap tables |
+| `completions` | durable terminal outcomes of actionable async work (§3a) | run/correlation id; outcome incl. failure/cancellation; deduplicated recipients; atomic multi-recipient projection |
 
 Every entity the protocol needs is reachable through a verb (write) or view (read); raw
 backend access is repair-only and logged as such.
@@ -50,7 +51,7 @@ backend access is repair-only and logged as such.
 ## 3. Verb interface
 
 Writes: `dispatch`, `status`, `rule`, `thread --open/--update`, `finding` (+ `--route`,
-`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, and `capture` — the
+`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, `complete` (§3a), and `capture` — the
 loop-stage-8 verb: a routing alias that records a `finding` by default, `journal` with
 `--kind decision`, or a `doc` pointer with `--doc`, and carries external-tracker refs
 (`--issue N`) so "captured" always means "in the hub, linked to wherever else it lives".
@@ -59,6 +60,37 @@ Reads: `seats`, `open`, `mine`, `blocked`, `history <stream>`, `--json` everywhe
 CLI-side validation fails loudly (enum checks, letter checks) — malformed input never reaches
 a backend as a silent reject. Verbs are runtime-agnostic shell (`hub.sh` successor of
 `msg.sh hub`), callable identically from Claude and Codex seats.
+
+### 3a. Completion events (2026-07-28, doorbell ratification — this spec is the normative owner)
+
+A tool completion that others must act on is recorded as a hub event, never only a
+session-local notification (which dies with the session). The `complete` verb appends ONE
+event carrying: `hub_id`; a run/correlation id; terminal `outcome: success | failure |
+cancelled | timeout`; OPTIONAL result reference or digest (cancelled/timed-out work may have
+neither); OPTIONAL verdict + schema-validity (review tools); OPTIONAL originating dispatch
+`hub_id` (undispatched work has none); OPTIONAL diagnostic/error reference; producer;
+recipients, DEDUPLICATED (the invoker-as-recipient case yields one delivery). The single
+append MUST project to all recipient mailbox views atomically per §1 — never N
+separately-failable sends. Completion events are doorbell sources under `SEAT_PROTOCOL.md`
+§4; consumers MUST deduplicate against runtime task-exit notifications by run id.
+Implementation status: the `complete` verb and its projections land with the
+authoritative-transport conformance wave (the archived doorbell r4 record's B0/B6); this
+contract is normative now, its tooling is not yet built. Origin: 4+ review one-shots in one
+night whose finished verdicts reached nobody (detached launches; session-mortal
+notifications) — a completed gate result that reaches nobody is not a gate.
+
+**Message/event class taxonomy (owned HERE; `SEAT_PROTOCOL.md` §4 owns immediate/defer
+behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
+
+| Class id | Source events | Default interrupt class |
+|-|-|-|
+| `dispatch` | dispatch appends | actionable |
+| `attention` | attention appends, alert-kind mail | actionable |
+| `request` | direct request mail addressed to the seat | actionable |
+| `completion` | completion events (§3a) | actionable |
+| `info` | informational mail, findings routed FYI | deferrable |
+| `status` | status events, heartbeat-adjacent traffic | deferrable |
+| (unknown/malformed) | anything that resolves to no class id | treated as actionable — fail-toward-ringing |
 
 ## 4. Tenancy and authorization
 
