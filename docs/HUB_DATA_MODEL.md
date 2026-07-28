@@ -70,12 +70,27 @@ cancelled | timeout`; OPTIONAL result reference or digest (cancelled/timed-out w
 neither); OPTIONAL verdict + schema-validity (review tools); OPTIONAL originating dispatch
 `hub_id` (undispatched work has none); OPTIONAL diagnostic/error reference; producer;
 recipients, DEDUPLICATED (the invoker-as-recipient case yields one delivery). The single
-append projects to all recipient mailbox views atomically per §1 — never N
+append MUST project to all recipient mailbox views atomically per §1 — never N
 separately-failable sends. Completion events are doorbell sources under `SEAT_PROTOCOL.md`
-§4 and classify as ACTIONABLE for its message-class filter; consumers deduplicate against
-runtime task-exit notifications by run id. Origin: 4+ review one-shots in one night whose
-finished verdicts reached nobody (detached launches; session-mortal notifications) — a
-completed gate result that reaches nobody is not a gate.
+§4; consumers MUST deduplicate against runtime task-exit notifications by run id.
+Implementation status: the `complete` verb and its projections land with the
+authoritative-transport conformance wave (the archived doorbell r4 record's B0/B6); this
+contract is normative now, its tooling is not yet built. Origin: 4+ review one-shots in one
+night whose finished verdicts reached nobody (detached launches; session-mortal
+notifications) — a completed gate result that reaches nobody is not a gate.
+
+**Message/event class taxonomy (owned HERE; `SEAT_PROTOCOL.md` §4 owns immediate/defer
+behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
+
+| Class id | Source events | Default interrupt class |
+|-|-|-|
+| `dispatch` | dispatch appends | actionable |
+| `attention` | attention appends, alert-kind mail | actionable |
+| `request` | direct request mail addressed to the seat | actionable |
+| `completion` | completion events (§3a) | actionable |
+| `info` | informational mail, findings routed FYI | deferrable |
+| `status` | status events, heartbeat-adjacent traffic | deferrable |
+| (unknown/malformed) | anything that resolves to no class id | treated as actionable — fail-toward-ringing |
 
 ## 4. Tenancy and authorization
 

@@ -156,7 +156,9 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
 
 ## 4. Wake model
 
-- **Doorbell (preferred, cross-seat only)**: a bounded watcher re-invokes the seat ON an
+- **Doorbell (preferred; cross-seat events + durable actionable completions — the
+  completion event is the one non-cross-seat doorbell source, since it may address its own
+  invoker; in-session subagents remain native-delivery, never doorbells)**: a bounded watcher re-invokes the seat ON an
   event (mailbox append, artifact landing). **Two cursors, never conflated**: the watcher
   reads from its own *notification cursor* (observation only — advancing it acknowledges
   nothing); the seat's *processing cursor* advances only after the message's side effect is
@@ -168,13 +170,15 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   grace window; every wake goes through the lease (§2). Conformance fixtures crash the
   consumer both before and after side-effect/cursor-advance. In-session subagents NEVER use
   doorbells — the harness re-invokes the parent natively.
-  **Doorbell conformance additions (2026-07-28)**: the watcher-ALIVE check gets its own
-  BOTH-DIRECTIONS fixture — it must fire on a killed watcher AND stay quiet on a live one
-  (the armed-once-assumed-alive guard class); dual-signal fixtures cover both orderings of
-  task-exit vs completion event; a filter-false-stall fixture proves the deferred ring's
-  bound holds against the §2 standby predicate; watcher restart produces a generation
-  supersession, fixture-verified; dynamic sender-stream discovery and to-all delivery are
-  covered explicitly.
+  **Doorbell conformance additions (2026-07-28; these fixtures SHIP WITH the conformance
+  wave — the archived doorbell r4 record's B-list — and are normative requirements on it,
+  not yet built)**: the watcher-ALIVE check MUST have its own BOTH-DIRECTIONS fixture —
+  fire on a killed watcher AND stay quiet on a live one (the armed-once-assumed-alive guard
+  class); dual-signal fixtures MUST cover both orderings of task-exit vs completion event;
+  a filter-false-stall fixture MUST prove the deferred ring's bound holds against the §2
+  standby predicate; watcher restart MUST produce a fixture-verified generation
+  supersession; dynamic sender-stream discovery and to-all delivery MUST be covered
+  explicitly.
   **Two doorbell shapes, chosen deliberately per seat class**: *own-mailbox* (doing seats —
   waking on another seat's conversation mid-build is pure interruption) vs *total-inbound*
   (coordination seats: baseline = total bytes of inbound fleet mail across all streams,
