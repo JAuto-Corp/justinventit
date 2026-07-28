@@ -366,8 +366,23 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
 - **Auth**: seats share the ChatGPT-plan `auth.json`. Until the concurrent-refresh race is
   tested (Phase 4 checklist), run FEW long-lived Codex seats, not parallel exec fan-outs.
   CI use requires API-key auth — never plan tokens.
-- **First roles: read-heavy** (review/audit/second-opinion), `sandbox read-only` +
-  `codex apply` for proposed patches. Write scope is a Phase-5 decision on pilot evidence.
+- **Roles and write scope — SUPERSEDED 2026-07-28 by the trust-parity ruling**
+  (`MODEL_MATRIX.md` §3b). The prior text ("first roles read-heavy; write scope is a Phase-5
+  decision on pilot evidence") is retired: a second-runtime thinking seat holds the same
+  standing as the first-runtime thinking seat and may hold a seat, take and issue dispatches,
+  and write. Sandbox is sized to the WORK, not the runtime — read-only where reading suffices
+  (it is also cheaper and clearer to audit), write scope where the work needs it, no separate
+  trust argument. Cluster invariants still bind every seat on every runtime: merge
+  serialization (integrator only), guarded paths for shared-environment mutation, ceremonies
+  for irreversible/outward-facing acts, and no self-verdicting.
+- **Capability caveat carried from the trust ruling**: a sandboxed probe proves presence and
+  its own sandbox's behavior — never the machine's auth or capability. Two 2026-07-28 probes
+  misread sandbox denials as machine defects. Every negative observed from inside a sandbox
+  needs an unsandboxed control before it is recorded as a finding.
+- **Known runtime gap (this fleet, 2026-07-28)**: snap-packaged CLIs can fail under the Codex
+  sandbox before executing (gcloud: `cannot create transient scope` / DBus), while working
+  normally unsandboxed. Launcher/profile design must either provision non-snap equivalents or
+  grant the sandbox allowance; discover this per-machine rather than assuming.
 
 ## 6a. Registry migration (live-path move)
 

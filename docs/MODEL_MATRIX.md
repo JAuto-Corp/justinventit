@@ -87,11 +87,60 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 | diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
 | cross-review | fable-5 @ xhigh + codex sol @ xhigh second opinion (thinking tier) | standing cross-runtime lane |
-| codex seats (pilot) | gpt-5.6-sol @ xhigh (review) / low (mechanical) | Sol default LOW is official; ultra excluded (auto-delegation) |
+| codex seats | gpt-5.6-sol @ xhigh (thinking/judgment/dispatch) / low (mechanical) | **TRUST PARITY, user ruling 2026-07-28 (§3b)**: Sol is a thinking-tier PEER of the Claude thinking model, not a restricted pilot guest; ultra excluded (auto-delegation) |
 
 Rules that ride along: hold effort constant within a session (prompt cache); raise effort on
 demonstrated shallow reasoning rather than prompting around it; `max`/`ultra` are not in the
 matrix (xhigh>max data; ultra self-delegates).
+
+### 3b. Cross-runtime trust parity (USER RULING 2026-07-28)
+
+**The second-runtime thinking model holds the same standing as the first-runtime thinking
+model.** Concretely on this fleet: Sol @ xhigh is a peer of Fable @ xhigh — it may hold a
+seat, receive and issue dispatches, author and ratify at its tier, and operate the same tool
+surface. It is not a read-only guest whose write scope is earned later. Dispatch hierarchy
+descends from EITHER thinking-tier runtime to the doing tier; a Sol-issued dispatch binds a
+doing seat exactly as a Fable-issued one does.
+
+**Why (user, verbatim intent):** the fleet runs on a local development machine as one team;
+trust is granted to the CLUSTER, and judgment about what is destructive belongs to the
+thinking tier rather than to a permission list that tries to enumerate it.
+
+**What this does NOT relax — and the distinction is the load-bearing part.** The bans that
+survive are **cluster invariants that bind every seat at every tier, including the
+first-runtime thinking model and the director**. They exist for coordination and blast
+radius, never as a statement about any runtime's judgment:
+- **Merge serialization**: only the integrator seat merges. The director does not merge
+  either; this is a serialization invariant, not a trust grade.
+- **Shared-environment mutation**: staging/production DDL, migration application, and
+  destructive infrastructure operations follow the project's guarded paths (see the
+  consuming project's git/CI contract) regardless of who is asking.
+- **Irreversible + outward-facing acts** (deploys outside the gated chain, credential
+  rotation, data deletion, anything reaching a customer) carry their existing ceremonies.
+- **Gate integrity**: nobody self-verdicts their own work, on any runtime. Independence
+  comes from being a different context, which Sol satisfies structurally.
+A seat of either runtime that needs one of the above asks the owner of that invariant — the
+same escalation every Claude seat already makes.
+
+**Sandbox posture follows trust, with one honest caveat.** Trust parity means the sandbox is
+sized to the WORK, not to the runtime: read-heavy work runs read-only because that is
+sufficient, and work requiring writes gets write scope without a separate trust argument.
+Caveat, evidence-grounded (2026-07-28 probes): a sandboxed runtime cannot prove the machine's
+capabilities — two consecutive probes misread sandbox denials as machine/auth defects (a
+network-denied `gh auth status` read as an invalid token; a snap/DBus denial read as a broken
+gcloud that works fine unsandboxed). **A sandboxed negative is never a machine finding until
+an unsandboxed control confirms it.**
+
+**Verified surface at ruling time** (artifacts: `~/.jauto-orchestration/sol-runs/`
+`2026-07-28-codex-tool-surface-{probe,validity}.json`; both controls passing, tree-verified
+no writes): authenticated end-to-end from a Codex process — GitHub CLI (push+admin scopes),
+private git transport, Supabase (prod+staging), Vercel (team scope), Codex's own session.
+Open: npm unauthenticated (publishing only); Twilio key-class question; **gcloud unusable
+under the Codex sandbox (snap needs a DBus transient scope) though fine unsandboxed — the one
+concrete capability gap, fix = non-snap install or a sandbox allowance**. Codex-side MCP
+config is empty by default; MCP grants are a deliberate per-profile addition, and because
+seats inherit the user's whole CLI surface, per-profile config is SUBTRACTIVE (what to deny)
+rather than additive.
 
 **One-shot review lane (experiment, 07-27)**: Codex Sol one-shot `exec` reviews (read-only,
 output-schema, xhigh judgment / low mechanical) are the preferred INDEPENDENT-review
