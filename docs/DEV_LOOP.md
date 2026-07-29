@@ -100,11 +100,11 @@ Named practices (ratified from independent convergent field use):
 |-|-|
 | DIRECT | director seat (authoring tier, user-driven turns): the user↔cluster interaction point; program direction, design authority, directs ORCHESTRATE by mail; ratifies program-level direction. Does NOT touch cluster mechanics. Optional — in fleets without a director, the user interfaces with O directly and design authority sits with design_authoring sessions. |
 | ORCHESTRATE | O seat: dispatch, cadence, stall watch, user escalation, queueing. Sole approver of memory/guidance revisions proposed by other seats; takes program directives from DIRECT where present, reports cluster state to it at phase boundaries. |
-| SYSTEM DESIGN & BACKEND | design_authoring sessions (fable-class) for SPECs/architecture; implement seats execute them |
+| SYSTEM DESIGN & BACKEND | design_authoring sessions (authoring tier — either thinking runtime eligible, fable-class the preferred default; `MODEL_MATRIX.md` §3b) for SPECs/architecture; implement seats execute them |
 | TEST EXECUTION | implement seats own their RED/GREEN; suite/e2e sweeps are dispatched doing-work; results land as evidence events |
 | DIAGNOSTIC | an implement seat *escalated* (matrix diagnostic class): hypotheses become durable tests + logging in the SAME PR (diagnostic-in-fix discipline), never prose tracethrough |
 | SYNTHESIS / DOCUMENTATION | baseline = docs_baseline (smart model); maintenance = docs_maintenance once hierarchy exists; stage-7 deltas by the change author |
-| INTEGRATION | I seat exclusively (merge authority enforced by .rules for codex + protocol for claude) |
+| INTEGRATION | I seat exclusively (merge serialization invariant — instruction/protocol-enforced today on BOTH runtimes; `.rules`/policy emission is the Phase-3 enforcement target, `MODEL_MATRIX.md` §1a) |
 | CAPTURE | every seat captures; O triages; periodic label/epic/roadmap reviews are dispatched doing-work |
 | CROSS REVIEW | cross_review class: fresh-context audits + codex second-opinion lane; reviewers are NEVER the authoring session |
 | FRONTEND | implement seats with frontend charter (design-system conventions, i18n/mobile principles from Layer B skills) |

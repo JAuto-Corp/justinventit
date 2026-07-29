@@ -121,6 +121,11 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
 
 ## 3. Launch and resume
 
+> **Status**: this table is the LAUNCH CONTRACT the Phase-3 launcher implements. Live
+> today: Claude seats boot via the consuming project's `role-launch` script; Codex boots
+> are manual, no project-qualified profile exists (`~/.codex/config.toml` carries none),
+> and the post-boot tier probe is unbuilt. Tier-selection rows below are target behavior.
+
 | | Claude seat | Codex seat |
 |-|-|-|
 | Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <project_id>-<tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
@@ -359,7 +364,9 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
 - **`.rules` execpolicy**: generated from the authored command-policy source
   (`policy.yaml`, owned by `MODEL_MATRIX.md` §1a) per seat class — this spec cites policy
   ids (e.g. `ban.merge.non-integrator`, `ban.staging-ddl.all`) and never restates rule
-  content. Unit-tested via `codex execpolicy check`.
+  content. Unit-tested via `codex execpolicy check`. **Status: Phase-3 target — no
+  `policy.yaml`, no generated `.rules`, no such tests exist yet; today these bans are
+  instruction-enforced (roles bullet below + `MODEL_MATRIX.md` §3b).**
 - **Delegation gate**: Codex won't self-spawn subagents unless AGENTS.md grants it — the
   no-subagents ruling is enforced by simply never granting it (and `ultra` effort, which
   auto-delegates, is not in the matrix).

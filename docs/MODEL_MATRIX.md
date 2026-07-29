@@ -2,6 +2,12 @@
 
 > Phase-1 spec (2026-07-26). Companion to `ARCHITECTURE.md` §6. The matrix is DATA, not
 > prose: one authored source, generated consumers, zero hand-edited policy tables.
+>
+> **Implementation status (2026-07-28 confirm-pass): everything §1 describes is the Phase-3
+> GENERATION TARGET, none of it exists yet** — verified at writing: no `matrix*` input or
+> resolved file, no `policy.yaml`, no generated `.rules`, no Codex profile in
+> `~/.codex/config.toml`, in this repo or the consuming project. Until Phase 3 ships, §3b
+> "What actually constrains a seat TODAY" is the honest statement of live bounds.
 
 ## 1. Categories (law 2 applied)
 
@@ -82,7 +88,7 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 | Seat class | Runtime/model/effort | Grounding |
 |-|-|-|
 | orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain. **ROUTING VALUES, not eligibility restrictions** (§3b): any thinking-tier runtime may hold these seats, and a Sol thinking seat issuing dispatches is in-contract |
-| design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule |
+| design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule — same §3b reading as the row above: ROUTING VALUE, not an eligibility restriction; Sol authoring at tier is in-contract, fable-class is the preferred default |
 | implement, explore, capture | claude opus-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
 | diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
@@ -99,8 +105,10 @@ matrix (xhigh>max data; ultra self-delegates).
 model.** Concretely on this fleet: Sol @ xhigh is a peer of Fable @ xhigh — it may hold a
 seat, receive and issue dispatches, author and ratify at its tier (subject to the epistemic
 invariants below — authoring and ratifying the SAME artifact remains forbidden on every
-runtime), and reach the same tool surface, bounded in practice by sandbox grant, PATH,
-credential reachability and runtime configuration rather than by runtime identity. It is not a read-only guest whose write scope is earned later. Dispatch hierarchy
+runtime), and may be granted tool access on the SAME TRUST BASIS as the first runtime —
+the actual reachable surface is runtime- and session-specific (sandbox grant, PATH,
+credential reachability, runtime configuration; the verified-surface record below is the
+current measurement), never a function of runtime identity. It is not a read-only guest whose write scope is earned later. Dispatch hierarchy
 descends from EITHER thinking-tier runtime to the doing tier; a Sol-issued dispatch binds a
 doing seat exactly as a Fable-issued one does.
 
@@ -168,7 +176,9 @@ memorized them. Entry contracts therefore route to understanding (what this syst
 is shared, what is irreversible, where the blast radius lives) rather than reciting
 prohibitions; prohibition lists are a fallback for what orientation has not yet covered, and
 each one is a signal that some pathway is missing. This is stated so the specs are *built*
-that way — seats need not be told it explicitly; correct pathways produce correct operation.
+toward that goal — whether correct pathways in fact produce correct operation is precisely
+what the readiness criterion above must demonstrate; it is the design bet, not an
+established property.
 
 **Credential posture on a single-operator local fleet (recorded, deliberate).** This machine
 stores real credentials for the whole toolchain in the operator's own home directory — that
