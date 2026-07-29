@@ -89,8 +89,9 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   the seat's revival lease via **compare-and-swap**: read `{holder, expires_at}`;
   acquisition succeeds only if the CAS primitive atomically verifies
   `(holder is null OR expires_at < now) AND membership == live` while writing
-  `{holder: <fencing token = fresh ULID>, purpose, subject, expires_at}` — purpose
-  (`revival | action`, §2a) is minted AT acquisition and immutable for the lease's life;
+  `{holder: <fencing token = fresh ULID>, purpose: revival, subject: null, expires_at}` —
+  THIS transition mints REVIVAL leases only; action leases have their own complete §2a
+  acquisition and can never come from this one. Purpose is immutable for a lease's life;
   a tombstoned seat's lease is never acquirable. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
   across registry recreation and re-adoption, so there is no counter to reset (the epoch
   field survives only as a human-readable revival counter with no fencing role). Two racers
@@ -153,7 +154,7 @@ on any one migration.
   | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
   | arriving session (pre-acceptance) | `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
   | reviver (control plane: install / clear / accept) | `membership == live AND lease.purpose == revival AND lease.holder == mine` |
-  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject` — authorizes ONLY that named effect, never a control transition |
+  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND active_session_handle == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject` — authorizes ONLY that named effect, never a control transition |
   | anything else | refused |
 
   A lease's PURPOSE is part of every predicate — an action lease can never install,
@@ -185,16 +186,22 @@ on any one migration.
   `{project, seat, incarnation, action_id}` where the sink supports one; (2) an ACTION
   LEASE — a short-lived seat-control lease spanning validate→effect→record, so a
   superseding revival cannot begin inside the window. Its lifecycle is PURPOSE-SPECIFIC,
-  never the generic revival acquisition: acquisition is its own atomic conditional write
-  requiring `membership == live AND proposed_incarnation == null AND
-  active_incarnation == requester AND active_session_handle == requester's`, minting
-  `{purpose: action, subject: <action id>}`; the effect re-asserts the same terms PLUS
-  `lease.subject == <this action>`; renewal is conditional on
-  `holder == self AND purpose == action`; release conditionally (on holder) clears the
-  COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or a proposal-frozen
-  incumbent therefore cannot self-mint external-effect authority. Fixtures, both
-  directions: stale-incarnation acquisition refused; proposal-pending acquisition
-  refused; wrong-subject effect refused; each with a live-seat control; (3) where neither exists the effect
+  never the generic revival acquisition, and it is a COMPLETE lease CAS of its own:
+  acquisition atomically verifies `(holder is null OR expires_at < now) AND
+  membership == live AND proposed_incarnation == null AND
+  active_incarnation == requester AND active_session_handle == requester's` while
+  writing `{holder: fresh ULID, purpose: action, subject: <action id>, expires_at}` —
+  availability is part of the predicate, so an action acquisition can never overwrite a
+  live revival lease (including the reviver's pre-proposal interval); the effect
+  re-asserts the identical full tuple PLUS `lease.subject == <this action>`; renewal is
+  conditional on `holder == self AND purpose == action`; release conditionally (on
+  holder) clears the COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or
+  a proposal-frozen incumbent therefore cannot self-mint external-effect authority.
+  Fixtures, both directions with live controls: stale-incarnation acquisition refused;
+  proposal-pending acquisition refused; wrong-subject effect refused;
+  revival-held-before-proposal action acquisition refused; concurrent action
+  acquisitions produce exactly one winner; the generic acquisition demonstrably CANNOT
+  mint `purpose: action`; wrong-session-handle acquisition refused; (3) where neither exists the effect
   is classified `unfencable`: the residual stale/duplicate window is DECLARED at the call
   site, the action record carries the acting incarnation for post-hoc COMPROMISED
   detection, and the enforcement class is stated attentional. Silent membership in

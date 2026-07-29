@@ -61,6 +61,26 @@ Records (versioned with the schema; one row per key):
   loudly — commits are idempotent); a greater contiguous position advances; a lower
   position, a same-seq/different-`hub_id` value, or a failed authorization term is
   refused loudly. Fixture: lost-response retry on every backend, per cursor kind.
+
+  **Creation and takeover (position-preserving rebinds; stored-row vs candidate-row
+  terms are explicit).** A cursor's identity fields bind its CURRENT authorized writer;
+  succession REBINDS identity without losing position. Every predicate below tests the
+  STORED row's identity plus the writer's live authority; the CANDIDATE row carries the
+  writer's identity and the new (or preserved) position:
+  - `processed` — active-incarnation ADOPTION: a writer holding the complete
+    steady-state seat predicate whose incarnation differs from `stored.incarnation`
+    performs one atomic rebind `{position preserved, incarnation := writer}`. A stale
+    incarnation cannot adopt — it fails the seat predicate, not a cursor-local check.
+  - `notification` — current-generation adoption: the watcher matching the seat
+    record's CURRENT `watcher.generation`/`watcher.session_handle` rebinds the same
+    way; a superseded generation fails the stored-vs-current comparison.
+  - `delivered` — backend-authenticated projection takeover: `projection_id` is MINTED
+    AND STORED by the backend's projection maintainer (the append path) in the
+    projection's own metadata at creation and rotation — it is reachable through NO
+    consumer verb, which is what makes "never seat-written" mechanically checkable.
+    Rotation mints a fresh `projection_id` and preserves position by rebuild-from-log.
+  Fixtures per backend, per kind, both directions: stale-writer rebind refused AND
+  successor-takeover succeeds with position intact.
 - `ack {project_id, consumer, stream, seq, hub_id, action_kind, target, incarnation, at}`
   — per-event acknowledgement, for acts completed out of order.
 - **Contiguous-prefix rule (per stream)**: `processed.position` is the highest seq S such
