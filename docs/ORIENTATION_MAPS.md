@@ -80,8 +80,36 @@ abstraction; packs are the disposable lens.
 
 ## 5. Sequencing
 
+0. **Scope-first (user directive 2026-07-29)**: Understand-Anything (+ repomix packs) runs
+   as a SCOPING instrument over the codebase BEFORE any synthesis — mapping domains,
+   features, boundaries, hotspots — and its output produces the PLAN for the
+   documentation/context-delivery deliverables (chunk list, order, per-chunk inputs).
+   The tool informs the approach; its output is never the deliverable.
 1. Tooling + pack configs + manifests + first packs + generated coverage inventory
    (doing-tier dispatch; exact workspace/SHA named in the dispatch).
 2. Decomposition pilot on web → template validated → full leaf assignment.
 3. Leaf synthesis batched across authoring-tier sessions (no session holds the whole map).
 4. Review cadence per §3; overlay + composed-view generation once leaves exist.
+
+## 6. Comprehension-rebuild method (Phase 2B — user directive 2026-07-29)
+
+- **Chunks follow product seams**: domains and features sized for context — never
+  file-count or directory batches.
+- **User flows are first-class content**: each domain/feature chunk documents flows from
+  high concept down (concept → journey → surfaces/API → data), not just structure.
+- **Repeated Sol audit loops per chunk — the triage is the point.** High prior, stated
+  before the work starts: the corpus mixes ASPIRATIONAL code with implemented code, and
+  CORRECT documentation with incorrect. Every chunk's draft goes through Sol xhigh audit
+  passes REPEATEDLY (the standing funnel), with the charter explicitly asking: what is
+  implemented vs aspirational; which existing docs are wrong; what was the intent and
+  where does the code deviate from it.
+- **Every documented claim carries a classification**: IMPLEMENTED (grounded ref) /
+  ASPIRATIONAL (no live referent — named as such) / DEVIATES (intent named, actual named)
+  / DOC-WRONG (the superseded doc named and corrected or retired). Unclassified claims
+  are the hallucination vector this method exists to close.
+- **Sol carries the reading load**: reading-dominated passes run on Sol (cross-provider
+  token availability); the Claude thinking tier reviews DISTILLATES and rules on
+  dispositions — never reads the corpus wholesale. (Generalizes the corpus-comprehension
+  routing rule to the entire phase.)
+- Elaboration of per-chunk mechanics (pack manifests, audit charters, classification
+  storage) is OPEN — designed at Phase-2B start via sequencing step 0's scoping output.
