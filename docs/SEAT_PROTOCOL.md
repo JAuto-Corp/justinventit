@@ -28,7 +28,7 @@ Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<
   "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "watcher_locations": ["host", "in-session"], "hooks": true, "memory": false },
   "lease": { "holder": null, "purpose": "revival | action | null", "subject": "action id when purpose == action | null", "epoch": 0, "expires_at": null },
   "active_incarnation": "ULID | null before first activation (§2a — durable, survives lease release)",
-  "active_session_handle": "{id: claude conversation UUID | codex thread name/uuid, resume_generation: launcher-authored int} — the ACTIVE incarnation's handle; a handle is a COMPOUND and every handle comparison in this spec compares BOTH fields (§2a)",
+  "active_session_handle": "{id: claude conversation UUID | codex thread name/uuid, launch_id: launcher-minted ULID, fresh per launch/resume attempt} — the ACTIVE incarnation's handle; a handle is a COMPOUND and every handle comparison in this spec compares BOTH fields (§2a)",
   "proposed_incarnation": "ULID | null (installed under the revival lease, activated only by the §2a accept CAS)",
   "proposed_session_handle": "handle (compound, as above) bound at launch, installed WITH the proposal | null (never overwrites the active pair; failure cleanup clears the proposed pair only)",
   "ack": { "incarnation": null, "session_handle": null, "heartbeat_at": null },
@@ -138,7 +138,7 @@ on any one migration.
   activation. It is minted by the REVIVER (the current lease holder — first boot is the
   revival of an empty seat and takes the same lease, which also serializes initial-boot
   races), bound at launch to the launched session's EXACT compound `session_handle`
-  (§1: `{id, resume_generation}` — never the letter, which names the SEAT across all
+  (§1: `{id, launch_id}` — never the letter, which names the SEAT across all
   incarnations; and never a bare session id, which RECURS across incarnations on
   resume-capable runtimes), installed as
   `proposed_incarnation` under the lease, and becomes ACTIVE only through the
@@ -153,16 +153,23 @@ on any one migration.
   REFUTED by source-fleet evidence: the launcher revives seats by RESUMING the prior
   session id (one seat's single id carried three models across resume generations), so
   a bare id looks freshest exactly when it is stalest — two stale artifacts agreeing is
-  not evidence. `resume_generation` is launcher-authored (§3) — 0 at a session id's
-  first boot, incremented on EVERY resume of that id — and carried in the LAUNCH
-  ENVIRONMENT, never the transcript: a delayed turn from a pre-resume generation
-  computes its fencing terms from its own launch-time environment, and cannot echo its
-  successor's generation even though the successor's transcript is ambient in the
-  shared conversation. Across revivals the generation discriminator remains the
-  incarnation ULID; the compound handle additionally pins the WITHIN-ID generation,
-  closing the resumed-handle hole. Schema note: §2a is pre-build (status above) — the
-  compound lands in seat-record schema v2 as authored; there is no deployed v2 to
-  migrate.
+  not evidence. `launch_id` is a FRESH ULID the launcher mints per launch or resume
+  ATTEMPT (§3) — uniqueness by mint, deliberately NOT a per-id counter: a counter needs
+  a durable, never-cleared high-water mark to survive crash-before-install and
+  failed-proposal cleanup, which re-imports exactly the epoch-reset trap §2 rejects
+  ("there is no counter to reset" is the design rule, and it applies here too). It is
+  carried in the LAUNCH ENVIRONMENT, never the transcript: a delayed turn from a
+  pre-resume attempt computes its fencing terms from its own launch-time environment,
+  and cannot echo its successor's `launch_id` even though the successor's transcript is
+  ambient in the shared conversation. Across revivals the generation discriminator
+  remains the incarnation ULID; the compound handle additionally pins the WITHIN-ID
+  attempt, closing the resumed-handle hole. Crash behavior is stateless by
+  construction: crash-before-launch, crash-after-launch-before-install, and
+  failed-attempt-then-resume each mint a fresh `launch_id` on the next attempt —
+  nothing durable to reserve, nothing cleanup can lose; registry recreation changes
+  nothing (ULIDs are unique across recreation). Schema note: §2a is pre-build (status
+  above) — the compound lands in seat-record schema v2 as authored; there is no
+  deployed v2 to migrate.
 - **THE normative write-authorization predicate table** (single source; §2 defers here —
   every authoritative write, no exceptions):
 
@@ -235,7 +242,8 @@ on any one migration.
   recovery); (3) where neither exists the effect
   is classified `unfencable`: the residual stale/duplicate window is DECLARED at the call
   site, the action record carries the acting incarnation for post-hoc `compromised`
-  detection (`HUB_DATA_MODEL.md` §1a evidence class 3), and the enforcement class is
+  detection (immutable attempt attribution — `HUB_DATA_MODEL.md` §1a evidence class 3),
+  and the enforcement class is
   stated attentional. Silent membership in
   class (3) is forbidden.
 - A seat whose incarnation is no longer current performs NO authoritative or external
@@ -264,7 +272,10 @@ on any one migration.
   The persisted `ack` distinguishes installed-but-unacked from accepted across crashes.
 - Fixtures (both directions, with validity controls): two-reviver race;
   delayed-ack-after-expiry-and-reacquisition; wrong-session-handle ack;
-  stale-resume-generation ack (same session id, pre-resume generation);
+  stale-launch-id ack (same session id, prior launch attempt);
+  crash-before-launch, crash-after-launch-before-install, and
+  failed-attempt-then-resume (each asserts the next attempt carries a FRESH
+  `launch_id` and the prior attempt's ack is refused);
   N-ack-after-N+1-active; stale-release attempt; crash-between-install-and-accept;
   registry-recreation-mid-revival.
 
@@ -382,9 +393,9 @@ answerable only at the machine, invisible to remote taps):**
 Launcher is one script, runtime-dispatched by the seat record. Boot prompts come from
 role templates; the launcher never injects them as positional args (silent no-op trap on
 Claude interactive; unverified on Codex — templates are pasted/poked, not arg-passed).
-The launcher also authors the handle compound's `resume_generation` (§1/§2a): 0 at a
-session id's first boot, incremented on every resume of that id, exported into the
-launch environment — never sourced from the transcript.
+The launcher also authors the handle compound's `launch_id` (§1/§2a): a fresh ULID
+minted per launch or resume attempt, exported into the launch environment — never
+sourced from the transcript, never reused across attempts.
 
 ## 4. Wake model
 

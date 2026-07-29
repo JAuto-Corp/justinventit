@@ -124,8 +124,13 @@ At-least-once delivery therefore requires per-action idempotency:
 
 - Action key: `{consumer, hub_id, action_kind, target}`.
 - **The action record is a versioned outbox** — `action {key, state: prepared |
-  effect_pending | complete | compromised, child_hub_ids[], incarnation, updated_at}` —
-  and EVERY
+  effect_pending | complete | compromised, child_hub_ids[],
+  attempts[{incarnation, handle, at}], resolved_by {incarnation, at} | null,
+  updated_at}`. Attribution is SPLIT and asymmetric: `attempts[]` is APPEND-ONLY
+  effect-attempt identity (the current attempt is the last entry; no transition ever
+  edits an attempt — post-hoc stale-effect evidence reads it immutably), while
+  `resolved_by` names the terminal-transition author (completing verifier or
+  compromise marker) and is set exactly once, at the terminal transition. EVERY
   backend provides the atomic envelope for its transitions (postgrest/sqlite:
   transaction; jsonl: the same length-prefixed-record + truncate-to-last-valid recovery
   as §5 — "where supported" is not a conformance level). Lifecycle: `prepared` (child
@@ -159,14 +164,15 @@ At-least-once delivery therefore requires per-action idempotency:
     record from a prior incarnation whose effect has no verification path (fired and
     not-fired are indistinguishable); (3) *post-hoc stale-effect evidence* (from
     `effect_pending` OR `complete`) — an `at_least_once_visible` or `unfencable` effect
-    is shown by its recorded acting incarnation to have landed stale (the
+    is shown by its attempt's recorded acting incarnation to have landed stale (the
     recorded-incarnation mechanism `SEAT_PROTOCOL.md` §2a class 3 mandates); a
     certification that should never have been issued is downgraded on evidence, never
     preserved for tidiness.
   - **Writers**: the issuing incarnation for its OWN records — allowed even when stale
     or lease-expired; this specific write is on `SEAT_PROTOCOL.md` §2a's
     stale-incarnation allowance list — plus the seat's current active incarnation (at
-    recovery) and the watchdog/operator via named verb. Marking is monotonic:
+    recovery) and the watchdog/operator via the `compromise` verb (§3). The transition
+    sets `resolved_by`; `attempts[]` is never touched by it. Marking is monotonic:
     `compromised` never returns to `complete` by state edit — a later-verified outcome
     lands in the linked event's resolution, not by rewriting certification history.
   - **Linked event, mandatory**: every transition APPENDS a finding-class hub event
@@ -179,15 +185,20 @@ At-least-once delivery therefore requires per-action idempotency:
     the open obligation transfers to the linked event's lifecycle, not the cursor's.
   - **Successor recovery** (the inherited-record branch of the recovery-actor rule):
     for inherited `effect_pending` records, verification decides — verified-absent →
-    retry via pre-minted child ids (normal lifecycle); verified-present → `complete`,
-    recording the recovering incarnation; unverifiable → `compromised` + linked event +
-    ack closed. A maybe-fired effect is NEVER blind-retried — retry is exclusively the
+    the successor APPENDS a new attempt (it becomes the acting incarnation of attempt
+    N+1; the predecessor's attempt attribution is never overwritten) and retries via
+    the pre-minted child ids (normal lifecycle); verified-present → `complete` with
+    `resolved_by` := the recovering incarnation, the effecting attempt untouched;
+    unverifiable → `compromised` + linked event + ack closed, `resolved_by` := the
+    marker. A maybe-fired effect is NEVER blind-retried — retry is exclusively the
     verified-absent branch; blind retry converts uncertainty into duplication by policy.
   - Fixtures (per backend, both directions with live controls): each evidence class
     fires; a commit whose predicate HOLDS does not; verified-absent retries rather than
     compromising; unverifiable compromises rather than retrying; ack closes from
     `compromised` and the stream advances; the linked event exists for every
-    transition; a stale incarnation marks its OWN record and is refused on another's.
+    transition; a stale incarnation marks its OWN record and is refused on another's;
+    predecessor-as-actor vs successor-as-verifier stay distinguishable in the record;
+    a successor retry lands as a NEW attempt, never an attribution overwrite.
 - Conformance: crash-injection before effect, after effect, and during commit, for every
   action class, on every backend.
 
@@ -223,6 +234,7 @@ All keys are compound with `project_id` (immutable, issued at adoption; never in
 | `journal` | rules/decisions/milestones | supersedes chain by hub_id |
 | `docs` | doc registry (spec/scope/plan/memory pointers) | **gets a verb** — no verb-gap tables |
 | `completions` | durable terminal outcomes of actionable async work (§3a) | run/correlation id; outcome incl. failure/cancellation; deduplicated recipients; atomic multi-recipient projection |
+| `stream_start` | subscription-domain boundaries (§6) | per (stream, scope); operator-minted via `stream-start`; monotonic forward; audited |
 
 Every entity the protocol needs is reachable through a verb (write) or view (read); raw
 backend access is repair-only and logged as such.
@@ -231,7 +243,11 @@ backend access is repair-only and logged as such.
 
 Writes: `dispatch`, `status`, `rule`, `thread --open/--update`, `finding` (+ `--route`,
 `--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, `complete` (§3a),
-`dispute-origin` (§1a origin integrity), and `capture` — the
+`dispute-origin` (§1a origin integrity), `stream-start` (§6 boundary mint —
+operator-class authorization; its append IS the audit event), `compromise` (§1a — performs
+the action-state transition, its linked event, and the ack outcome within the action
+transition's atomic envelope; writer authorization per §1a's list, including
+stale-own-record), and `capture` — the
 loop-stage-8 verb: a routing alias that records a `finding` by default, `journal` with
 `--kind decision`, or a `doc` pointer with `--doc`, and carries external-tracker refs
 (`--issue N`) so "captured" always means "in the hub, linked to wherever else it lives".
@@ -316,8 +332,9 @@ recovery, tenancy isolation, partial-write recovery).
   scope: stream-wide | consumer: <letter>, boundary: {seq, hub_id}, basis:
   full_history_retained | snapshot {ref, digest}, minted_by, reason: adoption |
   migration | repair, audit_hub_id, at}`.
-  - **Minting actor: operator-class only** — adopt/migration tooling, or an operator
-    via the named verb, under the same control-plane authority as membership writes. A
+  - **Minting actor: operator-class only** — adopt/migration tooling, or an operator,
+    via the `stream-start` verb (§3), under the same control-plane authority as
+    membership writes. A
     CONSUMER can never mint or move a boundary — self-authorized history-skipping is
     exactly what this record replaces. Every mint APPENDS an audit event
     (`audit_hub_id`) carrying boundary, scope, reason, and minter — operator-visible,
