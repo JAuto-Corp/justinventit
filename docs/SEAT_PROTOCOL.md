@@ -155,7 +155,8 @@ answerable only at the machine, invisible to remote taps):**
   surface can be driven remotely (tmux send-keys class) strictly dominate ones that cannot,
   for any seat that may ever be resumed unattended.
 
-Launcher is one script, runtime-dispatched by the seat record. Boot prompts come from
+The Phase-3 launcher is one script, runtime-dispatched by the seat record (status note
+above governs this whole section). Boot prompts come from
 role templates; the launcher never injects them as positional args (silent no-op trap on
 Claude interactive; unverified on Codex — templates are pasted/poked, not arg-passed).
 
@@ -358,7 +359,8 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
 
 - **Trust**: every workdir (main checkout + each worktree) needs a
   `[projects."<path>"] trust_level = "trusted"` entry, or its `.codex/` layer silently
-  no-ops. The launcher verifies trust at boot and fails loudly if absent.
+  no-ops. The Phase-3 launcher verifies trust at boot and fails loudly if absent; until
+  it ships, trust entries are checked manually at seat setup.
 - **Hooks trust**: interactive seats trust hooks once via `/hooks`; headless pokes use
   `--dangerously-bypass-hook-trust` ONLY for definitions vetted in-repo (hash-pinned list).
 - **`.rules` execpolicy**: generated from the authored command-policy source

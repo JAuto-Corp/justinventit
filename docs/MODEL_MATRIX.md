@@ -162,9 +162,9 @@ disclosure) — those are named here as an open gap rather than implied to be co
 current control.** A permission list tries to
 predict every destructive act in advance and fails at the first unlisted one. A seat that has
 been *properly initiated into the project* — guided context exploration, entry contract to
-domain index to leaf, understanding what the system IS and what depends on what — infers
-correctly at the unlisted case, because it understands consequences rather than matching
-patterns. **That bet is not yet evidenced**: orientation maps are a Phase-1 design with pilot
+domain index to leaf, understanding what the system IS and what depends on what — is
+hypothesized to infer correctly at the unlisted case, because it understands consequences
+rather than matching patterns. **That bet is not yet evidenced**: orientation maps are a Phase-1 design with pilot
 and sequencing work outstanding, and no observable initiation or correctness criterion exists.
 Naming the criterion is part of the work — orientation is demonstrable only when a seat can be
 shown to DERIVE a constraint it was never told, and that test does not exist yet. Until it does,

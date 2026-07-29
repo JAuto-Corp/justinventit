@@ -70,8 +70,9 @@ Rules:
   git writes also touch the **common git dir**, which lives OUTSIDE a linked worktree's
   root, so the launcher must grant it explicitly (`--add-dir <git-common-dir>`) or every
   commit fails; that grant necessarily exposes repo-wide metadata (refs, config, hooks),
-  whose protection therefore comes from **command policy** (`.rules` ban classes), never
-  from the sandbox root. Verify the pairing at boot; remember a parent session's live
+  whose protection therefore comes from **command policy** (`.rules` ban classes — a
+  Phase-3 target per `MODEL_MATRIX.md`'s header status; instruction-only until it ships,
+  which is a known exposure), never from the sandbox root. Verify the pairing at boot; remember a parent session's live
   sandbox overrides beat an agent-file `sandbox_mode` (agent-file read-only is not a hard
   boundary); and host-filesystem/secret visibility is a property of the sandbox's grants,
   not of git.

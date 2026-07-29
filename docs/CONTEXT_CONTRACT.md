@@ -144,7 +144,7 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
 |-|-|-|-|
 | Auto-memory (MEMORY.md) | yes | **no** | durable rules BOTH runtimes need live in AGENTS.md; memory is Claude-side working knowledge only |
 | Skills | `/name`, `.claude/skills/` | `$name`, `.codex/skills/` | one source tree; composer emits/links both roots |
-| Command policy | settings permissions (prose-adjacent) | `.rules` execpolicy (testable) | hard bans authored once in matrix/policy config; generator emits both forms |
+| Command policy | settings permissions (prose-adjacent) | `.rules` execpolicy (testable) | hard bans authored once in matrix/policy config; generator emits both forms (Phase-3 target — `MODEL_MATRIX.md` header status; instruction-enforced today) |
 | Hooks | settings.json wiring | `[hooks]`/hooks.json | one hook source tree, two thin wirings; hook bodies shared |
 | Structured verdicts | text + HTML markers (legacy) | `--output-schema` | schema-verdict is the target form for both (Claude via StructuredOutput-style conventions) |
 
