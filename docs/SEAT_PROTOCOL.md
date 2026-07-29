@@ -26,7 +26,7 @@ Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<
   "effort": "from matrix",
   "workdir": "/abs/path",
   "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "watcher_locations": ["host", "in-session"], "hooks": true, "memory": false },
-  "lease": { "holder": null, "epoch": 0, "expires_at": null },
+  "lease": { "holder": null, "purpose": "revival | action | null", "subject": "action id when purpose == action | null", "epoch": 0, "expires_at": null },
   "active_incarnation": "ULID | null before first activation (§2a — durable, survives lease release)",
   "active_session_handle": "claude conversation UUID | codex thread name/uuid — the ACTIVE incarnation's handle",
   "proposed_incarnation": "ULID | null (installed under the revival lease, activated only by the §2a accept CAS)",
@@ -87,8 +87,10 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   never by lease state. Every revival path (pacemaker, doorbell, human script) must acquire
   the seat's revival lease via **compare-and-swap**: read `{holder, expires_at}`;
   acquisition succeeds only if the CAS primitive atomically verifies
-  `holder is null OR expires_at < now` while writing `{holder: <fencing token = fresh ULID>,
-  expires_at}`. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
+  `(holder is null OR expires_at < now) AND membership == live` while writing
+  `{holder: <fencing token = fresh ULID>, purpose, subject, expires_at}` — purpose
+  (`revival | action`, §2a) is minted AT acquisition and immutable for the lease's life;
+  a tombstoned seat's lease is never acquirable. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
   across registry recreation and re-adoption, so there is no counter to reset (the epoch
   field survives only as a human-readable revival counter with no fencing role). Two racers
   cannot both win — exactly one CAS succeeds; the loser observes a foreign token and stands
@@ -148,9 +150,16 @@ on any one migration.
   | Writer | Predicate |
   |-|-|
   | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
-  | arriving session (pre-acceptance) | `lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
-  | reviver (control plane: install / clear / accept) | `lease.holder == mine` |
+  | arriving session (pre-acceptance) | `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
+  | reviver (control plane: install / clear / accept) | `membership == live AND lease.purpose == revival AND lease.holder == mine` |
+  | action-lease holder | `lease.purpose == action AND lease.holder == mine` — authorizes ONLY the external effect named by `lease.subject`, never a control transition |
   | anything else | refused |
+
+  A lease's PURPOSE is part of every predicate — an action lease can never install,
+  clear, or accept a proposal, and a revival lease never authorizes an external effect
+  outside the revival choreography. Fixtures, both directions: tombstoned-seat lease
+  acquisition refused (with live-seat control); action-lease holder attempting a control
+  transition refused (with revival-lease control).
 
   **Pre-acceptance operations, complete list**: writing its OWN per-incarnation heartbeat
   slot (which IS the acknowledgement) and forensic reads. Hub appends, cursor commits, and
@@ -188,7 +197,8 @@ on any one migration.
 - The revival acknowledgement is DATA the arriving seat writes: its first heartbeat (its
   own per-incarnation slot), carrying `{incarnation, session_handle}`. Acceptance-and-release
   is a SINGLE atomic transition under the registry backend's conditional write, predicate:
-  `lease.holder == reviver_token AND proposed_incarnation == heartbeat.incarnation AND
+  `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND
+  proposed_incarnation == heartbeat.incarnation AND
   heartbeat.session_handle == proposed_session_handle` — every term read from the DURABLE
   record, nothing from reviver memory. Effect, atomically: `{active_incarnation,
   active_session_handle} := {proposed_incarnation, proposed_session_handle}`,
@@ -217,11 +227,16 @@ on any one migration.
   serialization point is the database snapshot, named so nobody substitutes polling.
 - Lock ORDER is registry-before-seat, never inverted; a path needing both acquires the
   registry lock first.
-- **Retirement is a TOMBSTONE, never a hard delete.** A retired record keeps its letter,
-  final incarnation, and `membership: tombstone`; any write arriving for a tombstoned
-  seat (late heartbeat, stale ack) is refused LOUDLY and preserved as evidence — a late
-  write must never be silently re-creatable as a fresh identity (the false-authorship
-  class, `HUB_DATA_MODEL.md` §1a origin integrity).
+- **Retirement is a TOMBSTONE, never a hard delete — and it is ONE atomic transition**:
+  set `membership: tombstone`, invalidate any lease (null holder/purpose/subject), and
+  clear the proposed pair, in a single conditional write under the registry lock. A
+  retired record keeps its letter and final incarnation. Late-write semantics distinguish
+  EVIDENCE from AUTHORITY: a CONTROL write for a tombstoned seat (lease acquisition, ack
+  consumption, registry mutation) is refused LOUDLY; an own-slot heartbeat write LANDS as
+  non-authoritative evidence (per the heartbeat block — no membership check on the hot
+  path) and is ignored for liveness/acceptance and REPORTED. Either way the late writer
+  is preserved as evidence — never silently re-creatable as a fresh identity (the
+  false-authorship class, `HUB_DATA_MODEL.md` §1a origin integrity).
 - **The short-roster rule (named HERE; §4's watchdog coverage claim defers to it):**
   enumeration that observes zero seats, a `membership_revision` change mid-scan, or fewer
   letters than the manifest claims emits a LOUD finding and does NOT act on the partial
@@ -233,9 +248,11 @@ on any one migration.
   `<letter>.heartbeat.<incarnation>.json`, written temp+rename under its own narrow flock;
   postgrest = a `(seat, incarnation)`-keyed row upserted column-scoped. An incarnation
   writes ONLY its own slot, so predecessor and successor never contend for one file and
-  the hot path takes no seat-control or registry lock — the write itself needs NO
-  cross-incarnation refusal check, which is what makes it both uncontended and TOCTOU-free
-  (a refusal check here would need exactly the lock this rule forbids).
+  the hot path takes no seat-control or registry lock — the write itself performs NO
+  cross-incarnation and NO membership refusal check, which is what makes it uncontended
+  and TOCTOU-free (either check here would need exactly the lock this rule forbids).
+  Admission is not authority: a slot landing proves only that a session wrote it —
+  SELECTION (below) is where tombstone and incarnation checks live, atomically.
 - **Fencing lives in SELECTION, not the write.** Heartbeat slots are evidence, not
   authority: acceptance reads the PROPOSED incarnation's slot (the ack predicate above);
   watchdog liveness selects the slot matching the CURRENT `{active | proposed}` tuple and
@@ -555,7 +572,7 @@ uppercase) — the mirror contract names this conversion explicitly.
 
 ## 7. Routed review findings dispositioned here
 
-- Seat lifecycle races / split-brain (major): §2 — leases + fencing epochs on every revival path.
+- Seat lifecycle races / split-brain (major): §§2–2a — revival-token plus phase-specific incarnation/session fencing (epoch has no fencing role).
 - Non-revivable runtimes (major): §1 — capability negotiation; report-only watchdog mode.
 - Doorbell races/bursts/missed events (major): §4 — cursor-based subscribe, coalescing, expiry, lease.
 - Mailbox authorization (major, shared with hub spec): §5 — mechanism where possible, etiquette as last resort.

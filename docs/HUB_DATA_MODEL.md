@@ -36,12 +36,23 @@ Records (versioned with the schema; one row per key):
 - `cursor {project_id, consumer, stream: (stream_kind, stream_key), kind: notification |
   delivered | processed, position: {seq, hub_id}, incarnation, updated_at}`. `seq` is the
   backend-assigned per-stream sequence (total order per §1); `hub_id` cross-checks it.
-  Update predicate: **monotonic incarnation-fenced CAS with three-way commit semantics**
-  (writer's incarnation must equal the seat's `active_incarnation`, `SEAT_PROTOCOL.md`
-  §2a): an IDENTICAL `{seq, hub_id}` is a successful NO-OP (a lost-response retry must not
-  fail loudly — commits are idempotent); a greater contiguous position advances; a lower
-  position, a same-seq/different-`hub_id` value, or a stale incarnation is refused loudly.
-  Fixture: lost-response retry on every backend.
+  Update authorization is PER CURSOR KIND (the seat predicate table is
+  `SEAT_PROTOCOL.md` §2a's; this section applies it, never restates a weaker form):
+  - `processed`: the COMPLETE steady-state seat predicate — `membership == live AND
+    proposed_incarnation == null AND active_incarnation == writer` (an incumbent frozen
+    by an installed proposal cannot commit `processed`; a consumer following this file
+    literally gets the same freeze §2a defines).
+  - `notification`: `active_incarnation == writer AND watcher.generation == current AND
+    watcher.session_handle == writer's` — a superseded watcher generation cannot advance
+    observation state.
+  - `delivered`: backend/projection-owned — advanced ONLY by the append/projection path
+    under its own monotonic predicate, never by a seat incarnation; recipient tombstone
+    HALTS further projection (stream preserved, nothing deleted).
+  Within each writer class, position updates use **three-way commit semantics**: an
+  IDENTICAL `{seq, hub_id}` is a successful NO-OP (a lost-response retry must not fail
+  loudly — commits are idempotent); a greater contiguous position advances; a lower
+  position, a same-seq/different-`hub_id` value, or a failed authorization term is
+  refused loudly. Fixture: lost-response retry on every backend, per cursor kind.
 - `ack {project_id, consumer, stream, seq, hub_id, action_kind, target, incarnation, at}`
   — per-event acknowledgement, for acts completed out of order.
 - **Contiguous-prefix rule (per stream)**: `processed.position` is the highest seq S such
@@ -121,7 +132,8 @@ backend access is repair-only and logged as such.
 ## 3. Verb interface
 
 Writes: `dispatch`, `status`, `rule`, `thread --open/--update`, `finding` (+ `--route`,
-`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, `complete` (§3a), and `capture` — the
+`--resolve`), `attention` (+ `--answer`), `journal`, `role`, `doc`, `complete` (§3a),
+`dispute-origin` (§1a origin integrity), and `capture` — the
 loop-stage-8 verb: a routing alias that records a `finding` by default, `journal` with
 `--kind decision`, or a `doc` pointer with `--doc`, and carries external-tracker refs
 (`--issue N`) so "captured" always means "in the hub, linked to wherever else it lives".
