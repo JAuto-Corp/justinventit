@@ -82,7 +82,8 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   numeric field is a loud error, not a watchdog crash. **No external process ever writes
   heartbeat fields** — a watchdog-authored heartbeat certifies false liveness (§4 canary).
 - `dormant` + a conclusion reason (§4a ceremony) is deliberate sleep, never a stall.
-- **Leases exist only for revival windows — liveness is heartbeats.** A healthy seat runs
+- **Leases exist only for bounded windows — revival choreography and §2a's named-action
+  effects; liveness is heartbeats.** A healthy seat runs
   **unleased** (`holder: null` is the normal state); staleness is judged by heartbeat age,
   never by lease state. Every revival path (pacemaker, doorbell, human script) must acquire
   the seat's revival lease via **compare-and-swap**: read `{holder, expires_at}`;
@@ -152,7 +153,7 @@ on any one migration.
   | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
   | arriving session (pre-acceptance) | `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
   | reviver (control plane: install / clear / accept) | `membership == live AND lease.purpose == revival AND lease.holder == mine` |
-  | action-lease holder | `lease.purpose == action AND lease.holder == mine` — authorizes ONLY the external effect named by `lease.subject`, never a control transition |
+  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject` — authorizes ONLY that named effect, never a control transition |
   | anything else | refused |
 
   A lease's PURPOSE is part of every predicate — an action lease can never install,
@@ -183,7 +184,17 @@ on any one migration.
   preference: (1) sink-enforced fencing/idempotency key
   `{project, seat, incarnation, action_id}` where the sink supports one; (2) an ACTION
   LEASE — a short-lived seat-control lease spanning validate→effect→record, so a
-  superseding revival cannot begin inside the window; (3) where neither exists the effect
+  superseding revival cannot begin inside the window. Its lifecycle is PURPOSE-SPECIFIC,
+  never the generic revival acquisition: acquisition is its own atomic conditional write
+  requiring `membership == live AND proposed_incarnation == null AND
+  active_incarnation == requester AND active_session_handle == requester's`, minting
+  `{purpose: action, subject: <action id>}`; the effect re-asserts the same terms PLUS
+  `lease.subject == <this action>`; renewal is conditional on
+  `holder == self AND purpose == action`; release conditionally (on holder) clears the
+  COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or a proposal-frozen
+  incumbent therefore cannot self-mint external-effect authority. Fixtures, both
+  directions: stale-incarnation acquisition refused; proposal-pending acquisition
+  refused; wrong-subject effect refused; each with a live-seat control; (3) where neither exists the effect
   is classified `unfencable`: the residual stale/duplicate window is DECLARED at the call
   site, the action record carries the acting incarnation for post-hoc COMPROMISED
   detection, and the enforcement class is stated attentional. Silent membership in
@@ -273,10 +284,10 @@ on any one migration.
 **Cursors, acknowledgement records, and effect idempotency — canonical model in
 `HUB_DATA_MODEL.md` §1a.** This spec uses three cursors by name — `notification` (watcher
 observation), `delivered` (transport/projection bookkeeping), `processed` (act-commit) —
-and §1a owns their schema, the per-stream contiguous-prefix rule, per-event ack records
-for out-of-order acts, the monotonic never-rewind predicate (incarnation-fenced CAS),
-backlog-age semantics, and the action-idempotency contract (ingest-dedup is NOT
-effect-dedup).
+and §1a owns their schema (discriminated per kind), the per-stream contiguous-prefix
+rule, per-event ack records for out-of-order acts, the PER-KIND authorization predicates
+with three-way commit semantics, backlog-age semantics, and the action-idempotency
+contract (ingest-dedup is NOT effect-dedup).
 
 **Conformance for this whole section**: every negative claim above ("refused", "LOUD",
 "stands down", "never") ships a BOTH-DIRECTIONS fixture with a validity control, per

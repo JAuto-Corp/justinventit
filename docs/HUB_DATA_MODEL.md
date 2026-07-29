@@ -33,21 +33,29 @@ Semantic contract (every backend MUST pass the shared conformance suite on all o
 
 Records (versioned with the schema; one row per key):
 
-- `cursor {project_id, consumer, stream: (stream_kind, stream_key), kind: notification |
-  delivered | processed, position: {seq, hub_id}, incarnation, updated_at}`. `seq` is the
-  backend-assigned per-stream sequence (total order per §1); `hub_id` cross-checks it.
+- Cursor records are a **DISCRIMINATED PER-KIND schema**. Common fields:
+  `{project_id, consumer, stream: (stream_kind, stream_key), kind, position: {seq, hub_id},
+  updated_at}` — `seq` is the backend-assigned per-stream sequence (total order per §1),
+  `hub_id` cross-checks it. Kind-specific durable fencing fields:
+  - `processed` + `{incarnation}` — the seat's fencing term.
+  - `notification` + `{incarnation, watcher_generation, watcher_session_handle}` — a
+    superseded watcher's identity is representable, so its commit is mechanically
+    refusable.
+  - `delivered` + `{projection_id}` — backend/projection identity; `incarnation` is
+    ABSENT by schema (not nullable-and-ignored): delivered is never seat-written.
   Update authorization is PER CURSOR KIND (the seat predicate table is
   `SEAT_PROTOCOL.md` §2a's; this section applies it, never restates a weaker form):
-  - `processed`: the COMPLETE steady-state seat predicate — `membership == live AND
-    proposed_incarnation == null AND active_incarnation == writer` (an incumbent frozen
-    by an installed proposal cannot commit `processed`; a consumer following this file
-    literally gets the same freeze §2a defines).
-  - `notification`: `active_incarnation == writer AND watcher.generation == current AND
-    watcher.session_handle == writer's` — a superseded watcher generation cannot advance
-    observation state.
-  - `delivered`: backend/projection-owned — advanced ONLY by the append/projection path
-    under its own monotonic predicate, never by a seat incarnation; recipient tombstone
-    HALTS further projection (stream preserved, nothing deleted).
+  - `processed` — complete CAS tuple: `membership == live AND proposed_incarnation ==
+    null AND active_incarnation == record.incarnation == writer` + three-way position (an
+    incumbent frozen by an installed proposal cannot commit `processed`; a consumer
+    following this file literally gets the same freeze §2a defines).
+  - `notification` — complete CAS tuple: `active_incarnation == record.incarnation ==
+    writer AND watcher.generation == record.watcher_generation == current AND
+    watcher.session_handle == record.watcher_session_handle == writer's` + three-way
+    position — a superseded watcher generation cannot advance observation state.
+  - `delivered` — complete CAS tuple: `writer == the append/projection path AND
+    projection_id == record.projection_id` + three-way position; never seat-written;
+    recipient tombstone HALTS further projection (stream preserved, nothing deleted).
   Within each writer class, position updates use **three-way commit semantics**: an
   IDENTICAL `{seq, hub_id}` is a successful NO-OP (a lost-response retry must not fail
   loudly — commits are idempotent); a greater contiguous position advances; a lower
