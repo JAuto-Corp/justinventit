@@ -93,7 +93,7 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 | diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
 | cross-review | fable-5 @ xhigh + codex sol @ xhigh second opinion (thinking tier) | standing cross-runtime lane |
-| codex seats | gpt-5.6-sol @ xhigh (thinking/judgment/dispatch) / low (mechanical) | **TRUST PARITY, user ruling 2026-07-28 (§3b)**: Sol is a thinking-tier PEER of the Claude thinking model, not a restricted pilot guest; ultra excluded (auto-delegation) |
+| codex seats | gpt-5.6-sol @ xhigh (thinking/judgment/dispatch) / **medium** (doing) | **TRUST PARITY, user ruling 2026-07-28 (§3b)**: Sol is a thinking-tier PEER of the Claude thinking model, not a restricted pilot guest. Doing tier corrected 2026-07-29 to track the 07-27 low→medium raise the Claude rows already carry (profiles jauto-thinking/jauto-doing built to this; Sol default LOW is the provider default, never our doing tier); ultra excluded (auto-delegation) |
 
 Rules that ride along: hold effort constant within a session (prompt cache); raise effort on
 demonstrated shallow reasoning rather than prompting around it; `max`/`ultra` are not in the
@@ -323,10 +323,31 @@ what survives session death. Behavioral evidence: the rule's own author reflexiv
 detached a run twenty minutes after ratifying the ban (self-caught) — enforcement belongs
 in the Stop-hook/conformance class, not discipline.
 
-**Codex runtime**: UNVERIFIED — the notify table's Codex column is a Phase-4 pilot probe
-(exec-resume/tmux invocation, modal handling, whether any launch shape notifies at all).
-Until the probe runs AND the `complete` verb exists, Codex seats have NO conforming channel
-for async results — a named Phase-4 pilot blocker, not a silent gap.
+**Codex runtime — empirical notify table (measured in-fleet 2026-07-29, codex-cli 0.145.0;
+probe artifacts `~/.jauto-orchestration/sol-runs/codex-notify-probe-20260729T072309Z/`,
+re-runnable via `scripts/codex-notify-probe.sh`, seat b):**
+
+| Launch shape | Wakes the seat? |
+|-|-|
+| `codex exec` one-shot, `notify` configured | **yes** — notify program runs on turn completion |
+| `codex exec resume <id>` headless poke | **yes** — poke lands in the SAME thread; notify fires on completion |
+| interactive TUI pane + `tmux send-keys` | delivers (an INVOCATION channel, not a notify channel) |
+| interactive TUI, no notify configured | unprobed |
+
+`notify` is a top-level config key taking a program vector (`-c notify='["/path/prog"]'`),
+invoked with one argv holding an `agent-turn-complete` JSON payload carrying `thread-id`,
+`turn-id`, `cwd`, `client`, `input-messages`, and `last-assistant-message` — enough to route
+a completion to a seat AND to record a durable terminal outcome, not merely a ping.
+
+**The named Phase-4 blocker is cleared on the CHANNEL half**: Codex has a completion
+channel. Durability still additionally requires the `complete` verb (`HUB_DATA_MODEL.md`
+§3a), unchanged and outstanding — the blocker narrows, it does not vanish.
+`remote_answerable` = true for tmux-hosted panes (measured: send-keys reached the TUI and
+the model answered) — under `SEAT_PROTOCOL.md` §3's modal policy that permits unattended
+resume for Codex seats launched in a tmux pane, and only there. Profile resolution
+transfers from `codex exec` (where the launcher's pre-boot tier probe measures it) to the
+interactive session where the seat runs — observed (`--profile jauto-doing` TUI header:
+`gpt-5.6-sol medium`), no longer argued.
 
 **Interrupt-filter ownership (SEAT_PROTOCOL §4 filter)**: per-seat-class mappings and the
 wake-policy inputs (`mail_grace`, poll budget, per-class cursor-commit SLOs, fallback
