@@ -28,6 +28,56 @@ Semantic contract (every backend MUST pass the shared conformance suite on all o
 - **Recovery**: a backend restarted mid-append leaves either no event or the whole event;
   never a partial.
 
+### 1a. Cursors, acknowledgement, and effect idempotency (canonical; `SEAT_PROTOCOL.md` §4/§5 defer here)
+
+Records (versioned with the schema; one row per key):
+
+- `cursor {project_id, consumer, stream: (stream_kind, stream_key), kind: notification |
+  delivered | processed, position: {seq, hub_id}, incarnation, updated_at}`. `seq` is the
+  backend-assigned per-stream sequence (total order per §1); `hub_id` cross-checks it.
+  Update predicate: **monotonic incarnation-fenced CAS** — `new.seq > old.seq` AND the
+  writer's incarnation equals the seat's `active_incarnation` (`SEAT_PROTOCOL.md` §2a);
+  a rewind or stale-incarnation commit is refused loudly.
+- `ack {project_id, consumer, stream, seq, hub_id, action_kind, target, incarnation, at}`
+  — per-event acknowledgement, for acts completed out of order.
+- **Contiguous-prefix rule (per stream)**: `processed.position` is the highest seq S such
+  that every event ≤ S is acked; acks beyond a gap stay as `ack` rows until the prefix
+  closes. A recipient VIEW spanning multiple streams computes per stream — nothing is
+  skippable by construction, because `processed` never jumps a gap. Cross-stream ordering
+  is still never promised (§1); consumers needing it sequence via explicit dependencies.
+- **Backlog age** (the stall-detection input): max over the view's streams of
+  (now − ts of the first event past that stream's `processed`). Read PROCESSED — reading
+  `delivered` shows a seat as caught-up while its work is pending, a stall the watchdog
+  structurally cannot see. `delivered` is transport bookkeeping advanced by the
+  append/projection path; `notification` (`SEAT_PROTOCOL.md` §4) acknowledges nothing.
+
+**Effect idempotency — ingest-dedup is not effect-dedup.** `hub_id` dedup (§1) makes
+replayed APPENDS no-ops; it does nothing for a consumer's ACTIONS on delivered events.
+At-least-once delivery therefore requires per-action idempotency:
+
+- Action key: `{consumer, hub_id, action_kind, target}`.
+- Hub-local effects (cursor commits, registry writes, derived appends) compose
+  transactionally with the `processed`/`ack` commit where the backend supports it (inbox
+  pattern). An action that APPENDS new events pre-mints the child event's `hub_id` into
+  the ack/action record BEFORE performing the append (outbox pattern) — crash redelivery
+  re-uses the same id and dedups at write.
+- External effects (API calls, file mutations, notifications): sink-enforced idempotency
+  via the action key where the sink supports one; otherwise the effect is classified
+  **`at_least_once_visible`** — duplicates are possible, and the action must be designed
+  tolerable or gated by `SEAT_PROTOCOL.md` §2a's action lease. The classification is
+  explicit at the call site; an unclassified external effect is non-conforming.
+- Conformance: crash-injection before effect, after effect, and during commit, for every
+  action class, on every backend.
+
+**Origin integrity (2026-07-29; from a live false-authorship incident — hub finding
+01KYN928QZ).** Events record `origin` as CLAIMED by the writer; where the transport can
+bind the writing session (the attested send path), the event carries
+`origin_attested: true`. Append-only means a misattributed event is never edited or
+deleted: the correction is a `dispute_origin` event referencing the disputed `hub_id`,
+and folds MUST surface disputed events AS disputed rather than silently preferring either
+party. The schema anticipates disputes from day one — retrofitting origin disputes onto
+an append-only log is what makes misattribution permanent.
+
 ## 2. Entities
 
 All keys are compound with `project_id` (immutable, issued at adoption; never inferred).
@@ -35,7 +85,7 @@ All keys are compound with `project_id` (immutable, issued at adoption; never in
 | Entity | Purpose | Notes |
 |-|-|-|
 | `projects` | consumer registry | id, name, created; issued by adopt tooling |
-| `roles` | seat registry + liveness — **authority defined by the seat-control contract** (`SEAT_PROTOCOL.md` §1): authoritative on multi-host (postgrest) fleets; a derived mirror of the file-backed registry on single-host fleets | letter, runtime, model, effort, capabilities |
+| `roles` | seat registry + liveness — **authority defined by the seat-control contract** (`SEAT_PROTOCOL.md` §1): authoritative on multi-host (postgrest) fleets; a derived mirror of the file-backed registry on single-host fleets | letter, runtime, model, effort, capabilities, active/proposed incarnation, ack, membership (tombstone) — mirrors seat-record schema v2 (§2a) |
 | `dispatches` | units of assigned work | status ladder; prereq ids; scope class; refs (issue/PR) |
 | `status_events` | dispatch transitions | the event stream dispatch state folds from |
 | `threads` | long-running workstreams | state: live/parked/dead/shipped; checklist; depends_on |
