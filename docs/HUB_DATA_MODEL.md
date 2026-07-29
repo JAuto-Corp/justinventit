@@ -65,17 +65,19 @@ Records (versioned with the schema; one row per key):
   **Creation (the no-row case — defined per kind, with the authoritative creator and
   exact initial position):**
   - `processed` — created by the CONSUMER at first drain, under the steady-state seat
-    predicate; initial position = BEFORE-FIRST-EVENT of the stream, never the head:
-    at-least-once delivery forbids a silent skip. Deliberately skipping history (seat
-    adoption, grandfathered streams per §6) is an explicit RECORDED forward commit
-    after creation — an operator-visible act, never an initialization default.
+    predicate; initial position = BEFORE-FIRST-SUBSCRIBED-EVENT: the consumer's
+    effective §6 stream-start boundary where one exists, else before-first-event of the
+    stream — never the head: at-least-once delivery forbids a silent skip. Deliberate
+    history exclusion (seat adoption, migration cutover) exists ONLY as the §6
+    operator-minted stream-start record — there is NO consumer-side skip commit of any
+    kind; a consumer wanting one has found a missing §6 record, not a cursor move.
   - `notification` — created by the watcher matching the seat record's CURRENT
     generation/handle, at arm time; initial position = current stream head. This is
     safe BECAUSE observation acknowledges nothing: missed-event safety derives from
     §4's head-vs-PROCESSED comparison, not from notification history.
   - `delivered` — created by the projection maintainer when the projection is first
     materialized; initial position = the rebuild start (log origin, or the §6
-    grandfathering marker where one applies).
+    stream-start boundary where one applies).
   Fresh-cursor creation controls run alongside every takeover fixture.
 
   **Takeover (position-preserving rebinds; stored-row vs candidate-row terms are
@@ -102,12 +104,16 @@ Records (versioned with the schema; one row per key):
 - `ack {project_id, consumer, stream, seq, hub_id, action_kind, target, incarnation, at}`
   — per-event acknowledgement, for acts completed out of order.
 - **Contiguous-prefix rule (per stream)**: `processed.position` is the highest seq S such
-  that every event ≤ S is acked; acks beyond a gap stay as `ack` rows until the prefix
-  closes. A recipient VIEW spanning multiple streams computes per stream — nothing is
-  skippable by construction, because `processed` never jumps a gap. Cross-stream ordering
+  that every SUBSCRIBED event ≤ S is acked — the subscription domain is the suffix past
+  the consumer's effective §6 stream-start boundary (default: log origin); pre-boundary
+  events are OUTSIDE the domain, not "skipped". Acks beyond a gap stay as `ack` rows
+  until the prefix closes. A recipient VIEW spanning multiple streams computes per
+  stream — nothing subscribed is skippable by construction, because `processed` never
+  jumps a gap. Cross-stream ordering
   is still never promised (§1); consumers needing it sequence via explicit dependencies.
 - **Backlog age** (the stall-detection input): max over the view's streams of
-  (now − ts of the first event past that stream's `processed`). Read PROCESSED — reading
+  (now − ts of the first SUBSCRIBED event past that stream's `processed` — i.e., past
+  max(`processed.position`, the effective §6 boundary)). Read PROCESSED — reading
   `delivered` shows a seat as caught-up while its work is pending, a stall the watchdog
   structurally cannot see. `delivered` is transport bookkeeping advanced by the
   append/projection path; `notification` (`SEAT_PROTOCOL.md` §4) acknowledges nothing.
@@ -118,17 +124,22 @@ At-least-once delivery therefore requires per-action idempotency:
 
 - Action key: `{consumer, hub_id, action_kind, target}`.
 - **The action record is a versioned outbox** — `action {key, state: prepared |
-  effect_pending | complete, child_hub_ids[], incarnation, updated_at}` — and EVERY
+  effect_pending | complete | compromised, child_hub_ids[], incarnation, updated_at}` —
+  and EVERY
   backend provides the atomic envelope for its transitions (postgrest/sqlite:
   transaction; jsonl: the same length-prefixed-record + truncate-to-last-valid recovery
   as §5 — "where supported" is not a conformance level). Lifecycle: `prepared` (child
   `hub_id`s pre-minted into the record) → `effect_pending` (effect issued) → `complete`
-  (effect verified) — and the EVENT-LEVEL ack closes only from `complete`, so `processed`
-  can never advance past an action whose child append does not yet exist.
+  (effect verified) | `compromised` (fence lost — defined below) — and the EVENT-LEVEL
+  ack closes only from a TERMINAL state (`complete` | `compromised`), so `processed`
+  can never advance past an action whose child append does not yet exist or whose
+  outcome is unrecorded.
 - **The recovery actor is the consumer itself, at drain**: before processing any new
   event, a seat scans its own incomplete action records (`prepared`/`effect_pending`) and
   finishes them — retrying pre-minted child appends (deduped at write by the pre-minted
   id) and re-verifying effects — so crash recovery is a normal drain, not a special mode.
+  Records inherited from a PRIOR incarnation follow the `compromised` recovery branch
+  below — verification decides, never blind retry.
 - External effects (API calls, file mutations, notifications): sink-enforced idempotency
   via the action key where the sink supports one; otherwise the effect is classified
   **`at_least_once_visible`** — duplicates are possible and the action must be designed
@@ -136,6 +147,47 @@ At-least-once delivery therefore requires per-action idempotency:
   cannot prevent sequential duplication (crash-after-effect, lease expiry, retry) and is
   never an idempotency substitute.** The classification is explicit at the call site; an
   unclassified external effect is non-conforming.
+- **`compromised` — terminal, structural (the state `SEAT_PROTOCOL.md` §2a's fixtures
+  name).** The effect may have (or did) run OUTSIDE its fencing guarantee, and the record
+  can no longer certify fenced execution. It is DATA plus a durable linked event — never
+  a prose judgment.
+  - **Transition predicate** (any one, evidence-classed):
+    (1) *commit-refusal-after-issue* (from `effect_pending`) — the issuing actor's
+    effect-commit predicate is REFUSED on a fencing term (lease expired/reacquired,
+    incarnation superseded, handle mismatch) after the effect was issued;
+    (2) *unverifiable inheritance* (from `effect_pending`) — a recovery scan inherits a
+    record from a prior incarnation whose effect has no verification path (fired and
+    not-fired are indistinguishable); (3) *post-hoc stale-effect evidence* (from
+    `effect_pending` OR `complete`) — an `at_least_once_visible` or `unfencable` effect
+    is shown by its recorded acting incarnation to have landed stale (the
+    recorded-incarnation mechanism `SEAT_PROTOCOL.md` §2a class 3 mandates); a
+    certification that should never have been issued is downgraded on evidence, never
+    preserved for tidiness.
+  - **Writers**: the issuing incarnation for its OWN records — allowed even when stale
+    or lease-expired; this specific write is on `SEAT_PROTOCOL.md` §2a's
+    stale-incarnation allowance list — plus the seat's current active incarnation (at
+    recovery) and the watchdog/operator via named verb. Marking is monotonic:
+    `compromised` never returns to `complete` by state edit — a later-verified outcome
+    lands in the linked event's resolution, not by rewriting certification history.
+  - **Linked event, mandatory**: every transition APPENDS a finding-class hub event
+    `{action key, acting incarnation, evidence class, effect classification, refs}` —
+    the fleet-visible, routable surface (attention/O). The state without the event is
+    invisible; the event without the state is unanchored; conformance requires both.
+  - **Ack behavior**: the event-level ack closes from BOTH terminal states — recording
+    an outcome as UNCERTIFIED is itself processing the event. `processed` therefore
+    advances past a compromised action (a stream never wedges behind a broken effect);
+    the open obligation transfers to the linked event's lifecycle, not the cursor's.
+  - **Successor recovery** (the inherited-record branch of the recovery-actor rule):
+    for inherited `effect_pending` records, verification decides — verified-absent →
+    retry via pre-minted child ids (normal lifecycle); verified-present → `complete`,
+    recording the recovering incarnation; unverifiable → `compromised` + linked event +
+    ack closed. A maybe-fired effect is NEVER blind-retried — retry is exclusively the
+    verified-absent branch; blind retry converts uncertainty into duplication by policy.
+  - Fixtures (per backend, both directions with live controls): each evidence class
+    fires; a commit whose predicate HOLDS does not; verified-absent retries rather than
+    compromising; unverifiable compromises rather than retrying; ack closes from
+    `compromised` and the stream advances; the linked event exists for every
+    transition; a stale incarnation marks its OWN record and is refused on another's.
 - Conformance: crash-injection before effect, after effect, and during commit, for every
   action class, on every backend.
 
@@ -256,6 +308,41 @@ recovery, tenancy isolation, partial-write recovery).
 - `schema_version` per project, written at adopt/upgrade; framework ships ordered
   migrations per backend; verbs refuse to run against a newer schema than they know
   (fail loudly, upgrade instruction in the error).
+- **Stream-start / grandfather records (the boundary §1a's cursor rules name).** A
+  stream's SUBSCRIPTION DOMAIN for a consumer is the suffix `seq > boundary`, where the
+  effective boundary is the greatest of: log origin (the default — no record needed),
+  the stream-wide record, and that consumer's record. One versioned record per
+  (stream, scope): `stream_start {project_id, stream: (stream_kind, stream_key),
+  scope: stream-wide | consumer: <letter>, boundary: {seq, hub_id}, basis:
+  full_history_retained | snapshot {ref, digest}, minted_by, reason: adoption |
+  migration | repair, audit_hub_id, at}`.
+  - **Minting actor: operator-class only** — adopt/migration tooling, or an operator
+    via the named verb, under the same control-plane authority as membership writes. A
+    CONSUMER can never mint or move a boundary — self-authorized history-skipping is
+    exactly what this record replaces. Every mint APPENDS an audit event
+    (`audit_hub_id`) carrying boundary, scope, reason, and minter — operator-visible,
+    disputable via §1a origin integrity, deduplicated like any append.
+  - **Boundary semantics**: `{seq, hub_id}` names the last EXCLUDED position; the
+    first subscribed event is `seq + 1`. Boundaries move monotonically FORWARD only —
+    a re-mint supersedes by audit-event chain; a backward move would retroactively
+    reopen closed prefixes and is REFUSED.
+  - **Cursor interaction (§1a's creation rules defer here)**: `processed` cursors are
+    CREATED at the consumer's effective boundary. A boundary minted mid-life NEVER
+    rewrites any consumer's cursor; the consumer observes it at next drain and commits
+    forward to it as a NORMAL contiguous advance — pre-boundary events are outside the
+    subscription domain, not "unacked". The contiguous-prefix rule ranges over
+    SUBSCRIBED events only; nothing ever jumps an unacked subscribed event, and NO
+    consumer-side skip commit exists — that authority lives in this record or nowhere.
+  - **Fold/backlog semantics**: under `full_history_retained`, pre-boundary events stay
+    in the log (append-only; folds may still read them — only processing obligations
+    re-base). Under `snapshot` (migration/cutover: history lives in the retired
+    system), folds START from the referenced snapshot at the boundary; a fold that
+    cannot resolve its snapshot fails LOUDLY — it never silently folds from empty.
+    Backlog age counts only subscribed events (§1a).
+  - Fixtures: consumer-authority mint refused; backward move refused; mid-life mint
+    leaves consumer cursors untouched; `processed` created at the boundary;
+    backlog-age excludes pre-boundary events; unresolvable-snapshot fold fails loudly;
+    mint replay is a no-op (`hub_id` dedup).
 - **JAuto migration path — corrected by audit (in-place compound-keying is NOT additive)**:
   `orchestration_roles.letter` is a `char(1)` PK with 4 inbound FKs, `threads.id` a slug PK
   with 4 more, plus views and RLS — re-keying in place would drop and recreate all of them
@@ -267,7 +354,9 @@ recovery, tenancy isolation, partial-write recovery).
   (Phase-5 go/no-go, a declared NON-additive exception to law 7, executed as a cutover not
   as surgery)**: stand up a fresh multi-project-schema deployment, export/import with a
   dual-write window and read-compatibility views on the old side, then retire the old
-  tables. Verb clients are version-negotiated: refuse-newer applies to WRITES only — reads
+  tables. Each exported stream is re-based with a stream-start record (`basis:
+  snapshot`, above) minted by the cutover tooling — the audit trail of where its
+  history went. Verb clients are version-negotiated: refuse-newer applies to WRITES only — reads
   degrade gracefully during the window, so un-upgraded seats are never bricked mid-migration.
 
 ## 7. Routed review findings dispositioned here
