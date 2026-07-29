@@ -185,7 +185,8 @@ that correctly inherits the seat's tier, and for read-only exploration; **hands 
 a seat, and Codex participates only as seats, never as subagents.**
 
 The model/effort matrix is **generated configuration** (questionnaire dial + per-project
-overrides), not prose — the source system rewrote its model policy three times in two weeks
+overrides), not prose (generation pipeline: Phase-3 target — `MODEL_MATRIX.md` header
+status) — the source system rewrote its model policy three times in two weeks
 inside hand-edited documents; a matrix-as-data with one generator would have been one-line
 changes. Tier principles: judgment and synthesis-of-understanding run on thinking-tier
 models; execution runs scoped-down; maintenance documentation may drop tiers only after the

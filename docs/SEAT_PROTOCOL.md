@@ -121,6 +121,11 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
 
 ## 3. Launch and resume
 
+> **Status**: this table is the LAUNCH CONTRACT the Phase-3 launcher implements. Live
+> today: Claude seats boot via the consuming project's `role-launch` script; Codex boots
+> are manual, no project-qualified profile exists (`~/.codex/config.toml` carries none),
+> and the post-boot tier probe is unbuilt. Tier-selection rows below are target behavior.
+
 | | Claude seat | Codex seat |
 |-|-|-|
 | Boot | `role-launch` semantics: `claude -n <L> --remote-control <L> --model <m> --effort <e>` in a pane | `codex --profile <project_id>-<tier>` in a pane; first action `/rename <letter>`; registry stores thread name |
@@ -150,7 +155,8 @@ answerable only at the machine, invisible to remote taps):**
   surface can be driven remotely (tmux send-keys class) strictly dominate ones that cannot,
   for any seat that may ever be resumed unattended.
 
-Launcher is one script, runtime-dispatched by the seat record. Boot prompts come from
+The Phase-3 launcher is one script, runtime-dispatched by the seat record (status note
+above governs this whole section). Boot prompts come from
 role templates; the launcher never injects them as positional args (silent no-op trap on
 Claude interactive; unverified on Codex — templates are pasted/poked, not arg-passed).
 
@@ -353,21 +359,52 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
 
 - **Trust**: every workdir (main checkout + each worktree) needs a
   `[projects."<path>"] trust_level = "trusted"` entry, or its `.codex/` layer silently
-  no-ops. The launcher verifies trust at boot and fails loudly if absent.
+  no-ops. The Phase-3 launcher verifies trust at boot and fails loudly if absent; until
+  it ships, trust entries are checked manually at seat setup.
 - **Hooks trust**: interactive seats trust hooks once via `/hooks`; headless pokes use
   `--dangerously-bypass-hook-trust` ONLY for definitions vetted in-repo (hash-pinned list).
 - **`.rules` execpolicy**: generated from the authored command-policy source
   (`policy.yaml`, owned by `MODEL_MATRIX.md` §1a) per seat class — this spec cites policy
   ids (e.g. `ban.merge.non-integrator`, `ban.staging-ddl.all`) and never restates rule
-  content. Unit-tested via `codex execpolicy check`.
+  content. Unit-tested via `codex execpolicy check`. **Status: Phase-3 target — no
+  `policy.yaml`, no generated `.rules`, no such tests exist yet; today these bans are
+  instruction-enforced (roles bullet below + `MODEL_MATRIX.md` §3b).**
 - **Delegation gate**: Codex won't self-spawn subagents unless AGENTS.md grants it — the
   no-subagents ruling is enforced by simply never granting it (and `ultra` effort, which
   auto-delegates, is not in the matrix).
 - **Auth**: seats share the ChatGPT-plan `auth.json`. Until the concurrent-refresh race is
   tested (Phase 4 checklist), run FEW long-lived Codex seats, not parallel exec fan-outs.
   CI use requires API-key auth — never plan tokens.
-- **First roles: read-heavy** (review/audit/second-opinion), `sandbox read-only` +
-  `codex apply` for proposed patches. Write scope is a Phase-5 decision on pilot evidence.
+- **Roles and write scope — SUPERSEDED 2026-07-28 by the trust-parity ruling**
+  (`MODEL_MATRIX.md` §3b). The prior text ("first roles read-heavy; write scope is a Phase-5
+  decision on pilot evidence") is retired: a second-runtime thinking seat holds the same
+  standing as the first-runtime thinking seat and may hold a seat, take and issue dispatches,
+  and write. Reachable tool surface is bounded by sandbox grant, PATH, credentials and runtime
+  config — not by runtime identity; and independence for review purposes means a FRESH CONTEXT
+  that did not author the artifact, never merely a different runtime. Sandbox is sized to the
+  WORK, not the runtime — read-only where reading suffices, write scope where the work needs
+  it, no separate trust argument — and **sizing is the DISPATCHER's call at launch; a seat
+  never widens its own sandbox** (a seat reports a sandbox denial; the dispatcher runs any
+  unsandboxed control re-probe). Invariants still bind every seat on every runtime, in two
+  classes (`MODEL_MATRIX.md` §3b): COORDINATION — merge serialization (integrator only),
+  guarded paths for shared-environment mutation, shared-workspace safety (never destroy
+  another seat's uncommitted work, mutate shared git state under a live branch, corrupt
+  another seat's heartbeat/lease/cursor, or consume another seat's mailbox), and no
+  self-applied fleet guidance; EPISTEMIC — no self-verdicting and no actor-report-as-evidence,
+  which exist precisely because judgment and self-report can be biased on ANY runtime.
+  What actually constrains a seat today is sandbox + entry contract + host permissions +
+  provider controls; generated profiles/`.rules`/agent-pins are PLANNED, and the threat model
+  is a planned spec — so the irreversible-action surface a credentialed seat can reach
+  (force-push, ref deletion, repo settings, package publication, credential disclosure) is an
+  OPEN GAP, not a covered one.
+- **Capability caveat carried from the trust ruling**: a sandboxed probe proves presence and
+  its own sandbox's behavior — never the machine's auth or capability. Two 2026-07-28 probes
+  misread sandbox denials as machine defects. Every negative observed from inside a sandbox
+  needs an unsandboxed control before it is recorded as a finding.
+- **Known runtime gap (this fleet, 2026-07-28)**: snap-packaged CLIs can fail under the Codex
+  sandbox before executing (gcloud: `cannot create transient scope` / DBus), while working
+  normally unsandboxed. Launcher/profile design must either provision non-snap equivalents or
+  grant the sandbox allowance; discover this per-machine rather than assuming.
 
 ## 6a. Registry migration (live-path move)
 
