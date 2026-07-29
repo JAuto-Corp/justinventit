@@ -154,7 +154,7 @@ on any one migration.
   | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
   | arriving session (pre-acceptance) | `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
   | reviver (control plane: install / clear / accept) | `membership == live AND lease.purpose == revival AND lease.holder == mine` |
-  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND active_session_handle == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject` — authorizes ONLY that named effect, never a control transition |
+  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND active_session_handle == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject AND expires_at > now + effect_commit_budget` — authorizes ONLY that named effect, never a control transition |
   | anything else | refused |
 
   A lease's PURPOSE is part of every predicate — an action lease can never install,
@@ -192,16 +192,28 @@ on any one migration.
   active_incarnation == requester AND active_session_handle == requester's` while
   writing `{holder: fresh ULID, purpose: action, subject: <action id>, expires_at}` —
   availability is part of the predicate, so an action acquisition can never overwrite a
-  live revival lease (including the reviver's pre-proposal interval); the effect
-  re-asserts the identical full tuple PLUS `lease.subject == <this action>`; renewal is
-  conditional on `holder == self AND purpose == action`; release conditionally (on
-  holder) clears the COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or
+  live revival lease (including the reviver's pre-proposal interval). The EFFECT has its
+  OWN predicate (availability belongs to acquisition alone — it is necessarily false
+  once held): `membership == live AND proposed_incarnation == null AND
+  active_incarnation == mine AND active_session_handle == mine AND
+  lease.purpose == action AND lease.holder == mine AND lease.subject == <this action>
+  AND expires_at > now + effect_commit_budget` — the last term requires the lease to
+  remain valid across a NAMED bounded effect-and-commit budget (`effect_commit_budget`,
+  matrix-authored per action class), which is what makes the validate→effect→record span
+  a real guarantee rather than a hope. Insufficient remaining validity means RENEW FIRST
+  (conditional on `holder == self AND purpose == action`) before the effect; an effect
+  whose duration cannot be bounded is classified `unfencable` (class 3 above) rather
+  than pretending a lease spans it. Release conditionally (on holder) clears the
+  COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or
   a proposal-frozen incumbent therefore cannot self-mint external-effect authority.
   Fixtures, both directions with live controls: stale-incarnation acquisition refused;
   proposal-pending acquisition refused; wrong-subject effect refused;
   revival-held-before-proposal action acquisition refused; concurrent action
   acquisitions produce exactly one winner; the generic acquisition demonstrably CANNOT
-  mint `purpose: action`; wrong-session-handle acquisition refused; (3) where neither exists the effect
+  mint `purpose: action`; wrong-session-handle acquisition refused;
+  expiry-before-effect refused (budget term); expiry-DURING-effect racing a concurrent
+  revival acquisition — the revival serializes, the effect's commit fails its predicate,
+  and the action record surfaces COMPROMISED; (3) where neither exists the effect
   is classified `unfencable`: the residual stale/duplicate window is DECLARED at the call
   site, the action record carries the acting incarnation for post-hoc COMPROMISED
   detection, and the enforcement class is stated attentional. Silent membership in

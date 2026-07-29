@@ -62,18 +62,36 @@ Records (versioned with the schema; one row per key):
   position, a same-seq/different-`hub_id` value, or a failed authorization term is
   refused loudly. Fixture: lost-response retry on every backend, per cursor kind.
 
-  **Creation and takeover (position-preserving rebinds; stored-row vs candidate-row
-  terms are explicit).** A cursor's identity fields bind its CURRENT authorized writer;
-  succession REBINDS identity without losing position. Every predicate below tests the
-  STORED row's identity plus the writer's live authority; the CANDIDATE row carries the
-  writer's identity and the new (or preserved) position:
+  **Creation (the no-row case — defined per kind, with the authoritative creator and
+  exact initial position):**
+  - `processed` — created by the CONSUMER at first drain, under the steady-state seat
+    predicate; initial position = BEFORE-FIRST-EVENT of the stream, never the head:
+    at-least-once delivery forbids a silent skip. Deliberately skipping history (seat
+    adoption, grandfathered streams per §6) is an explicit RECORDED forward commit
+    after creation — an operator-visible act, never an initialization default.
+  - `notification` — created by the watcher matching the seat record's CURRENT
+    generation/handle, at arm time; initial position = current stream head. This is
+    safe BECAUSE observation acknowledges nothing: missed-event safety derives from
+    §4's head-vs-PROCESSED comparison, not from notification history.
+  - `delivered` — created by the projection maintainer when the projection is first
+    materialized; initial position = the rebuild start (log origin, or the §6
+    grandfathering marker where one applies).
+  Fresh-cursor creation controls run alongside every takeover fixture.
+
+  **Takeover (position-preserving rebinds; stored-row vs candidate-row terms are
+  explicit).** A cursor's identity fields bind its CURRENT authorized writer;
+  succession REBINDS identity without losing position. REFUSAL tests the WRITER against
+  CURRENT AUTHORITY (the seat record / projection metadata) — never against the stored
+  row, whose old identity is precisely what a legitimate successor overwrites; the
+  CANDIDATE row carries the writer's identity and the preserved position:
   - `processed` — active-incarnation ADOPTION: a writer holding the complete
     steady-state seat predicate whose incarnation differs from `stored.incarnation`
     performs one atomic rebind `{position preserved, incarnation := writer}`. A stale
     incarnation cannot adopt — it fails the seat predicate, not a cursor-local check.
   - `notification` — current-generation adoption: the watcher matching the seat
     record's CURRENT `watcher.generation`/`watcher.session_handle` rebinds the same
-    way; a superseded generation fails the stored-vs-current comparison.
+    way; a superseded generation fails the WRITER-vs-current comparison (the stored
+    row's old generation is expected to mismatch — that is what the rebind overwrites).
   - `delivered` — backend-authenticated projection takeover: `projection_id` is MINTED
     AND STORED by the backend's projection maintainer (the append path) in the
     projection's own metadata at creation and rotation — it is reachable through NO
