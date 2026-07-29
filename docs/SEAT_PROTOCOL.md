@@ -25,11 +25,12 @@ Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<
   "model": "from matrix",
   "effort": "from matrix",
   "workdir": "/abs/path",
-  "session_handle": "claude conversation UUID | codex thread name/uuid",
   "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "watcher_locations": ["host", "in-session"], "hooks": true, "memory": false },
   "lease": { "holder": null, "epoch": 0, "expires_at": null },
   "active_incarnation": "ULID | null before first activation (§2a — durable, survives lease release)",
+  "active_session_handle": "claude conversation UUID | codex thread name/uuid — the ACTIVE incarnation's handle",
   "proposed_incarnation": "ULID | null (installed under the revival lease, activated only by the §2a accept CAS)",
+  "proposed_session_handle": "handle bound at launch, installed WITH the proposal | null (never overwrites the active pair; failure cleanup clears the proposed pair only)",
   "ack": { "incarnation": null, "session_handle": null, "heartbeat_at": null },
   "membership": "live | tombstone (§2a — retirement tombstones, hard-delete is forbidden)",
   "seat_record_schema_version": 2,
@@ -95,18 +96,16 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   CAS implementation per registry backend: hub-backed registry = transactional
   conditional update; file-backed registry = a **per-seat mutex** (`flock` on
   `<letter>.lock`, held for the whole operation) inside which the acquirer re-reads the
-  lease record, re-verifies the full predicate (epoch AND holder AND expiry), and commits
+  lease record, re-verifies the full predicate (holder AND expiry — epoch is a display
+  counter with no fencing role, §2a owns write authorization), and commits
   the new record via temp+rename — versioned claim-file tricks are explicitly rejected
   (a freed pathname readmits delayed racers). Renewal and acquisition run under the SAME
   mutex with the same full-predicate re-read; they differ only in the predicate
   (renewal: holder == self).
-  The revived seat **validates its fencing token (holder + epoch) before its first
-  side-effect** and re-validates before irreversible actions; a stale token = stop
-  immediately. **Handoff**: the reviver passes its fencing token in the revival payload; the
-  revived seat validates token-equality against the CURRENT lease record before its first
-  side-effect and re-validates before irreversible actions; the reviver releases (nulls
-  holder) only AFTER observing the revived seat's first heartbeat — never mid-turn — after
-  which the seat runs unleased again. STALLED is defined solely by the predicate table
+  Write authorization during and after revival is owned by the **§2a normative predicate
+  table** — the single source; this section states none of its own. Installation,
+  acknowledgement, and acceptance-and-release are §2a's single CAS; there is NO separate
+  release step, and no epoch arithmetic anywhere in fencing. STALLED is defined solely by the predicate table
   above; DEAD = stalled AND the configured revival budget is exhausted (N failed/unclaimed
   revival windows) or an operator declares it. Lease state never defines liveness; process
   checks are diagnostics for reports, never triggers.
@@ -143,11 +142,26 @@ on any one migration.
   (by the holder, or by the next lease acquirer after expiry), park-supersession (§2),
   tombstone (membership below). Registry recreation cannot resurrect an incarnation —
   ULIDs are unique across recreation, and every fenced write re-validates its tuple.
-- Fencing is PHASE-SPECIFIC. DURING a revival window (proposed installed, not yet
-  accepted), every authoritative write by the arriving seat requires the tuple
-  `{lease.holder == reviver_token, proposed_incarnation == mine, session_handle == mine}`.
-  AFTER acceptance (the seat runs unleased), every authoritative write requires
-  `active_incarnation == mine`.
+- **THE normative write-authorization predicate table** (single source; §2 defers here —
+  every authoritative write, no exceptions):
+
+  | Writer | Predicate |
+  |-|-|
+  | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
+  | arriving session (pre-acceptance) | `lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
+  | reviver (control plane: install / clear / accept) | `lease.holder == mine` |
+  | anything else | refused |
+
+  **Pre-acceptance operations, complete list**: writing its OWN per-incarnation heartbeat
+  slot (which IS the acknowledgement) and forensic reads. Hub appends, cursor commits, and
+  registry mutations beyond that slot are FORBIDDEN before acceptance — they all require
+  the steady-state predicate (this answers where hub/cursor writes stand: active only).
+  **The incumbent freeze is deliberate**: installing a proposal makes the steady-state
+  predicate false (`proposed != null`), so a still-live predecessor's next authoritative
+  write is REFUSED — split-brain during the acknowledgement window becomes a visible stop,
+  not concurrent authority. A seat hitting the freeze halts, reports live-predecessor
+  evidence, and awaits disposition; revival only ever targets seats presumed stalled, so
+  the refusal is itself the discovery mechanism when that presumption was wrong.
 - **A validity check that is not atomic with its write is not a fence.** Every
   authoritative mutation — registry fields, cursor commits, lifecycle transitions,
   hub-local records — goes through the backend's ATOMIC CONDITIONAL WRITE: file backend =
@@ -171,13 +185,16 @@ on any one migration.
   acknowledgement (`superseded_acknowledged`). Nothing else.
 
 **Acknowledgement and release — one CAS, no inference.**
-- The revival acknowledgement is DATA the arriving seat writes: its first heartbeat,
-  carrying `{incarnation, session_handle}`. Acceptance-and-release is a SINGLE atomic
-  transition under the registry backend's conditional write, predicate:
+- The revival acknowledgement is DATA the arriving seat writes: its first heartbeat (its
+  own per-incarnation slot), carrying `{incarnation, session_handle}`. Acceptance-and-release
+  is a SINGLE atomic transition under the registry backend's conditional write, predicate:
   `lease.holder == reviver_token AND proposed_incarnation == heartbeat.incarnation AND
-  heartbeat.session_handle == the handle this reviver bound at launch`. Effect,
-  atomically: `active_incarnation := proposed`, `ack := {incarnation, session_handle,
-  heartbeat_at}` persisted, `proposed_incarnation := null`, `lease.holder := null`.
+  heartbeat.session_handle == proposed_session_handle` — every term read from the DURABLE
+  record, nothing from reviver memory. Effect, atomically: `{active_incarnation,
+  active_session_handle} := {proposed_incarnation, proposed_session_handle}`,
+  `ack := {incarnation, session_handle, heartbeat_at}` persisted, the proposed PAIR := null,
+  `lease.holder := null`. Failure cleanup clears the proposed pair only — the active pair
+  is never touched by any path except this promotion.
 - Release is NEVER a separate unconditional null-write. A reviver whose lease expired and
   was reacquired by another fails the predicate on `lease.holder` and stands down; a
   delayed heartbeat from incarnation N observed after N+1 is active fails on the
@@ -211,21 +228,27 @@ on any one migration.
   roster. Fixtures: create/retire/adopt/cutover interleaved with enumeration; a plausible
   NONZERO short roster (N−1 of N); a revision-torn scan retried to a stable read.
 
-**Heartbeat: independent resource, bounded, refuses to lie.**
-- Heartbeat is its OWN resource keyed `{seat, incarnation}`: file backend =
-  `<letter>.heartbeat.json`, written temp+rename under its own narrow flock — never the
-  seat-control mutex, never the registry lock; postgrest = a column-scoped UPDATE touching
-  heartbeat columns only, WHERE-fenced on incarnation. Never a whole-row
-  read-modify-write: heartbeat can then clobber control state (or be clobbered) by
-  construction, which is how independently-locked writers corrupt each other.
+**Heartbeat: per-incarnation evidence slots — uncontended writes, fenced SELECTION.**
+- Heartbeat is a PER-INCARNATION resource: file backend =
+  `<letter>.heartbeat.<incarnation>.json`, written temp+rename under its own narrow flock;
+  postgrest = a `(seat, incarnation)`-keyed row upserted column-scoped. An incarnation
+  writes ONLY its own slot, so predecessor and successor never contend for one file and
+  the hot path takes no seat-control or registry lock — the write itself needs NO
+  cross-incarnation refusal check, which is what makes it both uncontended and TOCTOU-free
+  (a refusal check here would need exactly the lock this rule forbids).
+- **Fencing lives in SELECTION, not the write.** Heartbeat slots are evidence, not
+  authority: acceptance reads the PROPOSED incarnation's slot (the ack predicate above);
+  watchdog liveness selects the slot matching the CURRENT `{active | proposed}` tuple and
+  live membership, read atomically under the seat-control read path. Slots from any other
+  incarnation, or for tombstoned seats, are IGNORED for liveness and separately REPORTED
+  (live-predecessor / late-writer evidence). Superseded slots are garbage-collected by the
+  sweep after tombstone or supersession — bounded, never load-bearing.
 - Bounded: the write carries a deadline (`hb_write_deadline`, matrix-authored). On failure
   or timeout the seat does NOT retry-loop inside the turn; it records the failure loudly
   in its own log/outbound stream. Degradation is externally observable BY CONSTRUCTION:
-  the watchdog reads heartbeat AGE, so a failing heartbeat path trips the §2 predicates —
-  the alert route needs no second channel to exist; the loud local record is for
-  diagnosis.
-- A heartbeat write from a stale incarnation, or against a tombstoned record, is REFUSED
-  and reported (live-predecessor evidence — same rule as the ack predicate).
+  the watchdog reads heartbeat AGE over the SELECTED slot, so a failing heartbeat path
+  trips the §2 predicates — the alert route needs no second channel; the loud local
+  record is for diagnosis.
 - The shipped template heartbeat-writer (swallows failures, exits zero) and the
   pacemaker's file-mtime fallback are **NONCONFORMING, named migration work** — replaced
   by this contract's implementation, never cited as behavior.
@@ -356,7 +379,8 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   interface** (§1): file operations on single-host registries, hub queries on postgrest
   fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
   covers EVERY registered seat by construction (roster = seat-control enumeration, never a
-  hardcoded list — the source system's hardcoded roster silently dropped two live seats).
+  hardcoded list — the source system's hardcoded roster silently dropped two live seats;
+  partial or torn rosters REFUSE per the §2a short-roster rule, which this claim defers to).
   **Alert dedup must not key on the frozen state it deduplicates**: a dedup key derived
   from the stall's reference epoch degrades "one alert per window" into ONE ALERT EVER for
   a never-recovering seat — the more broken the seat, the more silent its watchdog.

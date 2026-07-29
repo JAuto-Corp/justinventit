@@ -16,8 +16,9 @@ Semantic contract (every backend MUST pass the shared conformance suite on all o
 - **Ordering**: total order per stream; a stream is `(project_id, stream_kind, stream_key)`
   (e.g. one dispatch's status events; one thread's updates). No cross-stream ordering promise.
 - **Delivery**: at-least-once. Consumers (seats) read via **cursors** — durable per-consumer
-  offsets advanced only after processing. Crash recovery = resume from cursor; dedup by
-  `hub_id` makes redelivery safe.
+  offsets advanced only after processing. Crash recovery = resume from cursor; `hub_id`
+  dedup makes replayed APPENDS safe — consumer-EFFECT redelivery safety is §1a's action
+  contract (ingest-dedup is not effect-dedup).
 - **Atomicity**: one verb = one atomic append (single event or single transaction of events).
   The mailbox side-effect (transport) derives from the same append — record-as-byproduct —
   and MUST NOT be a second, separately-failable write from the client's perspective.
@@ -35,9 +36,12 @@ Records (versioned with the schema; one row per key):
 - `cursor {project_id, consumer, stream: (stream_kind, stream_key), kind: notification |
   delivered | processed, position: {seq, hub_id}, incarnation, updated_at}`. `seq` is the
   backend-assigned per-stream sequence (total order per §1); `hub_id` cross-checks it.
-  Update predicate: **monotonic incarnation-fenced CAS** — `new.seq > old.seq` AND the
-  writer's incarnation equals the seat's `active_incarnation` (`SEAT_PROTOCOL.md` §2a);
-  a rewind or stale-incarnation commit is refused loudly.
+  Update predicate: **monotonic incarnation-fenced CAS with three-way commit semantics**
+  (writer's incarnation must equal the seat's `active_incarnation`, `SEAT_PROTOCOL.md`
+  §2a): an IDENTICAL `{seq, hub_id}` is a successful NO-OP (a lost-response retry must not
+  fail loudly — commits are idempotent); a greater contiguous position advances; a lower
+  position, a same-seq/different-`hub_id` value, or a stale incarnation is refused loudly.
+  Fixture: lost-response retry on every backend.
 - `ack {project_id, consumer, stream, seq, hub_id, action_kind, target, incarnation, at}`
   — per-event acknowledgement, for acts completed out of order.
 - **Contiguous-prefix rule (per stream)**: `processed.position` is the highest seq S such
@@ -56,27 +60,43 @@ replayed APPENDS no-ops; it does nothing for a consumer's ACTIONS on delivered e
 At-least-once delivery therefore requires per-action idempotency:
 
 - Action key: `{consumer, hub_id, action_kind, target}`.
-- Hub-local effects (cursor commits, registry writes, derived appends) compose
-  transactionally with the `processed`/`ack` commit where the backend supports it (inbox
-  pattern). An action that APPENDS new events pre-mints the child event's `hub_id` into
-  the ack/action record BEFORE performing the append (outbox pattern) — crash redelivery
-  re-uses the same id and dedups at write.
+- **The action record is a versioned outbox** — `action {key, state: prepared |
+  effect_pending | complete, child_hub_ids[], incarnation, updated_at}` — and EVERY
+  backend provides the atomic envelope for its transitions (postgrest/sqlite:
+  transaction; jsonl: the same length-prefixed-record + truncate-to-last-valid recovery
+  as §5 — "where supported" is not a conformance level). Lifecycle: `prepared` (child
+  `hub_id`s pre-minted into the record) → `effect_pending` (effect issued) → `complete`
+  (effect verified) — and the EVENT-LEVEL ack closes only from `complete`, so `processed`
+  can never advance past an action whose child append does not yet exist.
+- **The recovery actor is the consumer itself, at drain**: before processing any new
+  event, a seat scans its own incomplete action records (`prepared`/`effect_pending`) and
+  finishes them — retrying pre-minted child appends (deduped at write by the pre-minted
+  id) and re-verifying effects — so crash recovery is a normal drain, not a special mode.
 - External effects (API calls, file mutations, notifications): sink-enforced idempotency
   via the action key where the sink supports one; otherwise the effect is classified
-  **`at_least_once_visible`** — duplicates are possible, and the action must be designed
-  tolerable or gated by `SEAT_PROTOCOL.md` §2a's action lease. The classification is
-  explicit at the call site; an unclassified external effect is non-conforming.
+  **`at_least_once_visible`** — duplicates are possible and the action must be designed
+  tolerable. **An action lease (`SEAT_PROTOCOL.md` §2a) is a CONCURRENCY fence only — it
+  cannot prevent sequential duplication (crash-after-effect, lease expiry, retry) and is
+  never an idempotency substitute.** The classification is explicit at the call site; an
+  unclassified external effect is non-conforming.
 - Conformance: crash-injection before effect, after effect, and during commit, for every
   action class, on every backend.
 
 **Origin integrity (2026-07-29; from a live false-authorship incident — hub finding
-01KYN928QZ).** Events record `origin` as CLAIMED by the writer; where the transport can
-bind the writing session (the attested send path), the event carries
-`origin_attested: true`. Append-only means a misattributed event is never edited or
-deleted: the correction is a `dispute_origin` event referencing the disputed `hub_id`,
-and folds MUST surface disputed events AS disputed rather than silently preferring either
-party. The schema anticipates disputes from day one — retrofitting origin disputes onto
-an append-only log is what makes misattribution permanent.
+01KYN928QZ). Status: OPEN — schema + verb land with the §1a implementation wave.**
+- `origin_claimed` is writer-asserted, always present. `origin_attestation` is a
+  **backend-authored** tuple `{project, seat, incarnation, session_handle, transport}`
+  written by the append path from its authenticated session context — a client cannot
+  self-assert it (a client-supplied attestation field is REFUSED at append); absent means
+  unattested, never "attested: false" by assertion.
+- Append-only means a misattributed event is never edited or deleted: the correction is a
+  **`dispute-origin` VERB** (no verb-gap rule, §2) appending an event
+  `{disputes: <hub_id>, claimed_by, evidence}`; folds and views MUST surface disputed
+  events AS DISPUTED — both parties visible — rather than silently preferring either.
+- Fixtures, per backend, both directions: forged client attestation refused; valid
+  backend attestation recorded; dispute surfaces in the fold; undisputed control stays
+  clean. The schema anticipates disputes from day one — retrofitting origin disputes onto
+  an append-only log is what makes misattribution permanent.
 
 ## 2. Entities
 
@@ -165,7 +185,7 @@ behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
 |-|-|-|-|
 | Concurrency | full (DB) | full single-host (WAL) | flock append; single-writer-at-a-time |
 | Reads | SQL views | SQL views | full scan folds |
-| Cursors | table | table | **hub_id-valued** files (byte offsets would be invalidated by repair-by-rewrite) |
+| Cursors | table | table | **{seq, hub_id}-valued** files — both persisted, per the §1a record (byte offsets would be invalidated by repair-by-rewrite) |
 | Multi-host | yes | no | no |
 | Guarantees | full contract | full contract | **stated weaker**: no fold caching, O(n) full-scan folds, repair-by-rewrite; crash atomicity is length-prefixed-record + truncate-to-last-valid on open (flock serializes writers but does NOT make appends crash-atomic; >PIPE_BUF appends can tear — the recovery scan is the mechanism, and its fixture corrupts a tail record and asserts truncation) |
 
