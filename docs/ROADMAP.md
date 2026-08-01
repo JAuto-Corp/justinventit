@@ -16,6 +16,48 @@ Complete enough for the staged bootstrap path. Someone can `copier copy` into an
 ### M3: Community-Ready
 Documentation, examples, and polish for public use. First public announcement.
 
+## Conformance wave — live host before portable generation
+
+The conformance wave sits between the normative L2 specs and template generation. It makes a
+bounded surface true on a live consumer, records the observed guarantees and gaps, then ports
+only that exercised contract and its shared tests. A live-host candidate is evidence for the
+portable source; it is not itself a template deliverable.
+
+### C0: durable async completion — current first unit
+
+`complete` is the first named conformance/transport unit because supervised fan-out cannot
+become durable asynchronous work until a returning orchestrator can receive one structured,
+dispatch-correlated terminal outcome without reconstructing mailbox prose.
+
+- **Host candidate built, not integrated:** JAuto draft PR #3444 implements SPEC R2
+  (`3e6d13ed23fd77855d0c855fdf6c78b842c0e2d88a885d89f3f4cd5d9f2c54b1`) and
+  SCENARIOS R2 (`8ebcd3ab0fb6feaabf7d4b110f6362e8f71c8e0711f746ad4eeee5103d7819d8`)
+  after the bounded audit disposition recorded by hub finding `01KYY2D8K6WCT1PFWFASS0X91M`.
+  Its base is `0992dce5922975febd3b01581c9be5b57939127c`, RED is
+  `9e045f9289363e53f2710ab31f3b4d79c2ee6652`, candidate head
+  `bc5a5c057ccbb4bb9fb257b97cdd99ebb5bf50c7`. The focused suite is 97/97 and live
+  completion `01KYY6ZMN8MT0N716P46H38BMR` dogfooded one authoritative event, its exact
+  recipient view, result digest and completion-aware drain. The implementation-review loop
+  converged at hub finding `01KYY6YKP7R9C241ENWVFT8X4V`. The PR remains draft/unmerged;
+  integration is a separate integrator/user window.
+- **What that candidate exercises:** JSONL authority append, canonical multi-recipient
+  projections, fresh-process projection repair, typed completion recognition, and
+  `sol-review` as the first producer.
+- **What remains portable work:** the normative folded completion view, durable consumer
+  cursors/effect acknowledgement, cross-backend conformance, doorbell coalescing, template
+  emission and a scratch-consumer proof. The JAuto JSONL recovery slice must not be described
+  as satisfying those unbuilt guarantees.
+- **Dependents:** supervised async review lanes, safe seat scale-out, context-delivery fan-out
+  and the disposable local-substrate experiments may use the host candidate after their own
+  gates. None may treat an unmerged feature wrapper as fleet-wide deployment.
+
+Program closure has two separately visible implementation steps, and **each** must traverse
+SPEC → fresh audit → RED → GREEN → independent review before it can count: (1) the JAuto
+candidate's evidence above becomes merge-ready and is integrated through its governed window;
+(2) a later portable slice derives the backend-neutral contract/tests from the exercised host
+behavior, completes the same loop, and passes them in a generated scratch consumer. Do not
+collapse those steps into one checkbox or let integration substitute for review evidence.
+
 ---
 
 ## M0: Foundation — DONE

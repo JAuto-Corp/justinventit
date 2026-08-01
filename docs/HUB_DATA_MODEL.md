@@ -73,11 +73,17 @@ recipients, DEDUPLICATED (the invoker-as-recipient case yields one delivery). Th
 append MUST project to all recipient mailbox views atomically per §1 — never N
 separately-failable sends. Completion events are doorbell sources under `SEAT_PROTOCOL.md`
 §4; consumers MUST deduplicate against runtime task-exit notifications by run id.
-Implementation status: the `complete` verb and its projections land with the
-authoritative-transport conformance wave (the archived doorbell r4 record's B0/B6); this
-contract is normative now, its tooling is not yet built. Origin: 4+ review one-shots in one
-night whose finished verdicts reached nobody (detached launches; session-mortal
-notifications) — a completed gate result that reaches nobody is not a gate.
+Implementation status: this contract is normative. A bounded JAuto JSONL host candidate exists
+in draft PR #3444 at `bc5a5c057ccbb4bb9fb257b97cdd99ebb5bf50c7` (RED
+`9e045f9289363e53f2710ab31f3b4d79c2ee6652`; 97/97 focused GREEN). Live completion
+`01KYY6ZMN8MT0N716P46H38BMR` exercised one authority event, its exact recipient projection,
+result-digest binding and completion-aware drain. It is **host evidence, not portable closure**:
+the PR is unmerged, and its explicit JSONL slice uses fail-loud projection repair rather than
+claiming the folded completion view, durable consumer cursors/effect acknowledgement, or
+postgrest/sqlite conformance required by this spec. Those remain in the portable conformance
+unit tracked by `ROADMAP.md` C0. Origin: 4+ review one-shots in one night whose finished
+verdicts reached nobody (detached launches; session-mortal notifications) — a completed gate
+result that reaches nobody is not a gate.
 
 **Message/event class taxonomy (owned HERE; `SEAT_PROTOCOL.md` §4 owns immediate/defer
 behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
