@@ -73,17 +73,25 @@ recipients, DEDUPLICATED (the invoker-as-recipient case yields one delivery). Th
 append MUST project to all recipient mailbox views atomically per §1 — never N
 separately-failable sends. Completion events are doorbell sources under `SEAT_PROTOCOL.md`
 §4; consumers MUST deduplicate against runtime task-exit notifications by run id.
-Implementation status: this contract is normative. A bounded JAuto JSONL host candidate exists
-in draft PR #3444 at `bc5a5c057ccbb4bb9fb257b97cdd99ebb5bf50c7` (RED
-`9e045f9289363e53f2710ab31f3b4d79c2ee6652`; 97/97 focused GREEN). Live completion
-`01KYY6ZMN8MT0N716P46H38BMR` exercised one authority event, its exact recipient projection,
-result-digest binding and completion-aware drain. It is **host evidence, not portable closure**:
-the PR is unmerged, and its explicit JSONL slice uses fail-loud projection repair rather than
-claiming the folded completion view, durable consumer cursors/effect acknowledgement, or
-postgrest/sqlite conformance required by this spec. Those remain in the portable conformance
-unit tracked by `ROADMAP.md` C0. Origin: 4+ review one-shots in one night whose finished
-verdicts reached nobody (detached launches; session-mortal notifications) — a completed gate
-result that reaches nobody is not a gate.
+Implementation status: this contract is normative. The bounded JAuto JSONL **core** is accepted
+in draft PR #3446 at `973e19e4a43cfc868a8a2d436652d0a7ae078310` (base `0992dce5`;
+initial RED `7b6cff3e`; final correction RED `6990fffd`; 87/87 final GREEN). Fresh exact-head
+primary and adversarial review-of-review both returned zero-finding `PASS_WITH_NOTES`.
+Isolated pre-merge completion `01KYZRS56B2E543H38JZ0V0FEQ` exercised one authority event,
+its exact recipient projection, result-digest binding, identical-replay deduplication and
+consumer readback. The isolation was deliberate: the deployed pre-merge ingester does not yet
+recognize the new verb, so no remote-registry acknowledgement or live dispatch fold is claimed.
+
+This is **host-core evidence, not deployment, producer closure or portable closure**. It covers
+CLI validation, JSONL authority append, canonical multi-recipient projection, authority-derived
+fresh-process repair and side-effect-free structured recognition. Automatic producer emission,
+runtime/process supervision, folded completion state, durable consumer cursors/effect
+acknowledgement, postgrest/sqlite conformance, doorbell coalescing and template proof remain
+separate units in `ROADMAP.md` C0. Superseded draft #3444 is closed at its preserved overcoupled
+head; it is evidence of why the core and lifecycle concerns are separated, not an implementation
+to revive. Origin: 4+ review one-shots in one night whose finished verdicts reached nobody
+(detached launches; session-mortal notifications) — a completed gate result that reaches nobody
+is not a gate.
 
 **Message/event class taxonomy (owned HERE; `SEAT_PROTOCOL.md` §4 owns immediate/defer
 behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**

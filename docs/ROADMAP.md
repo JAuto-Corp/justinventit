@@ -23,40 +23,58 @@ bounded surface true on a live consumer, records the observed guarantees and gap
 only that exercised contract and its shared tests. A live-host candidate is evidence for the
 portable source; it is not itself a template deliverable.
 
-### C0: durable async completion — current first unit
+### C0: durable async completion — host core accepted, integration and producer pending
 
 `complete` is the first named conformance/transport unit because supervised fan-out cannot
 become durable asynchronous work until a returning orchestrator can receive one structured,
 dispatch-correlated terminal outcome without reconstructing mailbox prose.
 
-- **Host candidate built, not integrated:** JAuto draft PR #3444 implements SPEC R2
-  (`3e6d13ed23fd77855d0c855fdf6c78b842c0e2d88a885d89f3f4cd5d9f2c54b1`) and
-  SCENARIOS R2 (`8ebcd3ab0fb6feaabf7d4b110f6362e8f71c8e0711f746ad4eeee5103d7819d8`)
-  after the bounded audit disposition recorded by hub finding `01KYY2D8K6WCT1PFWFASS0X91M`.
-  Its base is `0992dce5922975febd3b01581c9be5b57939127c`, RED is
-  `9e045f9289363e53f2710ab31f3b4d79c2ee6652`, candidate head
-  `bc5a5c057ccbb4bb9fb257b97cdd99ebb5bf50c7`. The focused suite is 97/97 and live
-  completion `01KYY6ZMN8MT0N716P46H38BMR` dogfooded one authoritative event, its exact
-  recipient view, result digest and completion-aware drain. The implementation-review loop
-  converged at hub finding `01KYY6YKP7R9C241ENWVFT8X4V`. The PR remains draft/unmerged;
-  integration is a separate integrator/user window.
-- **What that candidate exercises:** JSONL authority append, canonical multi-recipient
-  projections, fresh-process projection repair, typed completion recognition, and
-  `sol-review` as the first producer.
-- **What remains portable work:** the normative folded completion view, durable consumer
+- **Host core built and accepted, not integrated:** JAuto draft PR #3446 contains the narrow
+  JSONL core at exact head `973e19e4a43cfc868a8a2d436652d0a7ae078310`. Its base is
+  `0992dce5922975febd3b01581c9be5b57939127c`; initial RED is `7b6cff3e`; a fresh review
+  found a same-id retry truthfulness defect; correction RED `6990fffd` isolated it; final
+  GREEN is 87/87. Fresh exact-head primary and adversarial review-of-review each returned
+  zero-finding `PASS_WITH_NOTES`. The PR remains draft/unmerged; integration is an I-owned,
+  user-called window.
+- **What the accepted core exercises:** strict `hub complete` CLI validation; one JSONL
+  authority append; canonical multi-recipient projections; fresh-process authority-derived
+  append-only repair; identical replay and conflicting-content refusal; truthful
+  recorded-versus-not-recorded failure diagnostics; and typed, side-effect-free completion
+  recognition. Isolated dogfood `01KYZRS56B2E543H38JZ0V0FEQ` proved one authority, one exact
+  projection, replay dedup and consumer readback without claiming live-registry acknowledgement.
+- **What the core does not unlock by itself:** no automatic producer emits the event, no
+  returning orchestrator drains a folded completion queue, and no process/runtime supervisor
+  has been accepted. Therefore fire-and-forget seats and unsupervised scale-out are still
+  pending capabilities. The stopped overcoupled attempt is preserved at closed PR #3444 and
+  must not be revived as an implicit next revision.
+- **Next host slices, separately bounded:** integrate #3446 through its governed window;
+  design a producer adapter from actual runtime terminal evidence; characterize or explicitly
+  defer process supervision instead of coupling it to transport; then prove a returning
+  orchestrator can consume completion without reconstructing prose. Each slice names its own
+  executable falsifier before implementation.
+- **What remains portable work:** normative folded completion state, durable consumer
   cursors/effect acknowledgement, cross-backend conformance, doorbell coalescing, template
-  emission and a scratch-consumer proof. The JAuto JSONL recovery slice must not be described
-  as satisfying those unbuilt guarantees.
-- **Dependents:** supervised async review lanes, safe seat scale-out, context-delivery fan-out
-  and the disposable local-substrate experiments may use the host candidate after their own
-  gates. None may treat an unmerged feature wrapper as fleet-wide deployment.
+  emission and a scratch-consumer proof. The JAuto JSONL core must not be described as
+  satisfying those unbuilt guarantees.
+- **Dependents:** context-delivery and local-substrate work may use the accepted core manually
+  in isolated feature environments after their own gates. Safe async seat scale-out depends
+  on the producer/consumer slices above, and fleet-wide use depends on merge/deployment. No
+  dependent may treat an unmerged CLI as deployment.
 
-Program closure has two separately visible implementation steps, and **each** must traverse
-SPEC → fresh audit → RED → GREEN → independent review before it can count: (1) the JAuto
-candidate's evidence above becomes merge-ready and is integrated through its governed window;
-(2) a later portable slice derives the backend-neutral contract/tests from the exercised host
-behavior, completes the same loop, and passes them in a generated scratch consumer. Do not
-collapse those steps into one checkbox or let integration substitute for review evidence.
+Program closure therefore has at least three separately visible implementation steps, and
+**each** traverses its applicable SPEC → audit → RED → GREEN → independent review gate before
+it counts: (1) integrate the accepted JAuto host core through its governed window; (2) prove
+host producer/consumer behavior against real runtime evidence, with process supervision split
+where reality requires it; (3) derive the backend-neutral contract/tests from exercised host
+behavior and pass them in a generated scratch consumer. Do not collapse those steps into one
+checkbox or let integration substitute for review evidence.
+
+**Review economy for this wave:** hub rule `01KYZNHFAMPWM8Y6HQRS0DW6K2` tiers review by
+authority. Governing contracts/gates receive primary plus review-of-review when they claim
+authority. Working notes and draft deltas receive at most one pass until promotion. Every unit
+declares a correction budget; exhausting it leaves a visible provisional artifact with
+residuals rather than an unbounded revision chain. Prefer runnable artifacts because execution
+provides the falsifier that prose review cannot.
 
 ---
 
