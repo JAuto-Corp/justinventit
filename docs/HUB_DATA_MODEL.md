@@ -73,11 +73,25 @@ recipients, DEDUPLICATED (the invoker-as-recipient case yields one delivery). Th
 append MUST project to all recipient mailbox views atomically per §1 — never N
 separately-failable sends. Completion events are doorbell sources under `SEAT_PROTOCOL.md`
 §4; consumers MUST deduplicate against runtime task-exit notifications by run id.
-Implementation status: the `complete` verb and its projections land with the
-authoritative-transport conformance wave (the archived doorbell r4 record's B0/B6); this
-contract is normative now, its tooling is not yet built. Origin: 4+ review one-shots in one
-night whose finished verdicts reached nobody (detached launches; session-mortal
-notifications) — a completed gate result that reaches nobody is not a gate.
+Implementation status: this contract is normative. The bounded JAuto JSONL **core** is accepted
+in draft PR #3446 at `973e19e4a43cfc868a8a2d436652d0a7ae078310` (base `0992dce5`;
+initial RED `7b6cff3e`; final correction RED `6990fffd`; 87/87 final GREEN). Fresh exact-head
+primary and adversarial review-of-review both returned zero-finding `PASS_WITH_NOTES`.
+Isolated pre-merge completion `01KYZRS56B2E543H38JZ0V0FEQ` exercised one authority event,
+its exact recipient projection, result-digest binding, identical-replay deduplication and
+consumer readback. The isolation was deliberate: the deployed pre-merge ingester does not yet
+recognize the new verb, so no remote-registry acknowledgement or live dispatch fold is claimed.
+
+This is **host-core evidence, not deployment, producer closure or portable closure**. It covers
+CLI validation, JSONL authority append, canonical multi-recipient projection, authority-derived
+fresh-process repair and side-effect-free structured recognition. Automatic producer emission,
+runtime/process supervision, folded completion state, durable consumer cursors/effect
+acknowledgement, postgrest/sqlite conformance, doorbell coalescing and template proof remain
+separate units in `ROADMAP.md` C0. Superseded draft #3444 is closed at its preserved overcoupled
+head; it is evidence of why the core and lifecycle concerns are separated, not an implementation
+to revive. Origin: 4+ review one-shots in one night whose finished verdicts reached nobody
+(detached launches; session-mortal notifications) — a completed gate result that reaches nobody
+is not a gate.
 
 **Message/event class taxonomy (owned HERE; `SEAT_PROTOCOL.md` §4 owns immediate/defer
 behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
