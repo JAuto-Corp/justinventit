@@ -1,0 +1,5 @@
+Remote settings: Fetch failed (http_401) and no cached settings
+Loading skills from: managed=/etc/claude-code/.claude/skills, user=/ci/config/skills, project=[/ci/project/.claude/skills]
+Total plugin skills loaded: 0 (0 duplicate/user-owned entries skipped)
+Loaded 1 unique skills (1 unconditional, 0 conditional, managed: 0, user: 0, project: 1, additional: 0, legacy commands: 0)
+Sending 12 skills via attachment (initial)

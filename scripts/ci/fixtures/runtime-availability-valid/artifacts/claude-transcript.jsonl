@@ -1,0 +1,2 @@
+{"type":"attachment","attachment":{"type":"skill_listing","content":"- frontend-design: fixture"},"cwd":"/ci/project","sessionId":"8e535220-a4ce-47f3-a825-5f2c39b48212","version":"2.1.232"}
+{"type":"assistant","message":{"content":[{"type":"text","text":"Invalid API key · Fix external API key"}]},"error":"authentication_failed","isApiErrorMessage":true,"apiErrorStatus":401,"sessionId":"8e535220-a4ce-47f3-a825-5f2c39b48212","version":"2.1.232"}

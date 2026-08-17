@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "copier_version": "copier 9.17.1",
+  "history": {
+    "v1": {
+      "tag": "v1.0.0",
+      "skill_bytes": 93,
+      "skill_sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+    },
+    "v2": {
+      "tag": "v2.0.0",
+      "skill_bytes": 93,
+      "skill_sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "real-clean-update",
+      "conflict_mode": "inline",
+      "consumer_edit": "preapply-v2",
+      "expected_classification": "clean-overwrite"
+    },
+    {
+      "id": "real-inline-conflict",
+      "conflict_mode": "inline",
+      "consumer_edit": "conflicting-local",
+      "expected_classification": "conflict-markers"
+    },
+    {
+      "id": "real-reject-conflict",
+      "conflict_mode": "rej",
+      "consumer_edit": "conflicting-local",
+      "expected_classification": "reject-artifact"
+    }
+  ]
+}
