@@ -1,0 +1,93 @@
+{
+  "authority_kind": "real-copier-evidence-fixture-authority",
+  "copier_version": "copier 9.17.1",
+  "fixture_manifest": {
+    "path": "scripts/ci/fixtures/copier-portability/manifest.json",
+    "sha256": "748398d613143921eb521eafc51c2a7b1c5311741682713caebff1306012ce1f"
+  },
+  "rows": {
+    "real-clean-update": {
+      "consumer_transition": {
+        "after_sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959",
+        "before_sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+      },
+      "observation": {
+        "bytes": 93,
+        "captured_path": "observations/real-clean-update/pre-remediation.generated.SKILL.md",
+        "marker_counts": {
+          "close": 0,
+          "middle": 0,
+          "open": 0
+        },
+        "outcome": "clean-overwrite",
+        "payload_identity": "canonical-v2-generated-skill",
+        "reject_artifact_count": 0,
+        "reject_relative_path": null,
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959",
+        "source_path": ".claude/skills/copier-conflict-fixture/SKILL.md"
+      },
+      "post_remediation": {
+        "bytes": 93,
+        "path": "scripts/ci/fixtures/copier-portability/v2/template/.claude/skills/copier-conflict-fixture/SKILL.md",
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+      }
+    },
+    "real-inline-conflict": {
+      "consumer_transition": {
+        "after_sha256": "e5d39e0709e4acad8ac08518945474fbb41a097bece074758d75876cefe09ff5",
+        "before_sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+      },
+      "observation": {
+        "bytes": 218,
+        "captured_path": "observations/real-inline-conflict/pre-remediation.generated.SKILL.md",
+        "marker_counts": {
+          "close": 1,
+          "middle": 1,
+          "open": 1
+        },
+        "outcome": "conflict-markers",
+        "payload_identity": "copier-inline-conflict-v1-consumer-v2",
+        "reject_artifact_count": 0,
+        "reject_relative_path": null,
+        "sha256": "19f03bf1fe2ff771fe5dc70e2e6816b035b47640230ba599586d4557f2a94a55",
+        "source_path": ".claude/skills/copier-conflict-fixture/SKILL.md"
+      },
+      "post_remediation": {
+        "bytes": 93,
+        "path": "scripts/ci/fixtures/copier-portability/v2/template/.claude/skills/copier-conflict-fixture/SKILL.md",
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+      }
+    },
+    "real-reject-conflict": {
+      "consumer_transition": {
+        "after_sha256": "e5d39e0709e4acad8ac08518945474fbb41a097bece074758d75876cefe09ff5",
+        "before_sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+      },
+      "observation": {
+        "bytes": 304,
+        "captured_path": "observations/real-reject-conflict/pre-remediation.reject.SKILL.md.rej",
+        "marker_counts": {
+          "close": 0,
+          "middle": 0,
+          "open": 0
+        },
+        "outcome": "reject-artifact",
+        "payload_identity": "copier-reject-patch-v1-consumer-v2",
+        "reject_artifact_count": 1,
+        "reject_relative_path": ".claude/skills/copier-conflict-fixture/SKILL.md.rej",
+        "sha256": "5ccc99d9738cebdd6b5a35e70ee0a037b6cafc9388cd6d0b2791deb9f7a81fab",
+        "source_path": ".claude/skills/copier-conflict-fixture/SKILL.md.rej"
+      },
+      "post_remediation": {
+        "bytes": 93,
+        "path": "scripts/ci/fixtures/copier-portability/v2/template/.claude/skills/copier-conflict-fixture/SKILL.md",
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+      }
+    }
+  },
+  "schema_version": 1,
+  "template_trees": {
+    "v1": "e1969e3c1728be334addb3ac02e0f3e0c8e078d3",
+    "v2": "f7c7ba917e712e6d308d98197ab7d70cc5c2a029"
+  }
+}
