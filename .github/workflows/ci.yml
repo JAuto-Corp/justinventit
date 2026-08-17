@@ -32,11 +32,44 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install copier
-        run: python -m pip install --upgrade pip copier
+      - name: Set up Node 22.23.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.2"
+
+      - name: Install pinned Copier
+        run: python -m pip install --upgrade pip copier==9.17.1
+
+      - name: Install pinned skill-receipt runtimes
+        run: >-
+          npm install --global
+          @openai/codex@0.145.0
+          @anthropic-ai/claude-code@2.1.232
+
+      - name: Assert skill-receipt runtime versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v22.23.2"
+          test "$(codex --version)" = "codex-cli 0.145.0"
+          test "$(claude --version)" = "2.1.232 (Claude Code)"
+          test "$(copier --version)" = "copier 9.17.1"
 
       - name: Ensure jq is available
         run: jq --version || sudo apt-get update && sudo apt-get install -y jq
 
       - name: Generate matrix + coherence assertions
         run: bash scripts/ci/generate-matrix-check.sh "$(command -v copier)"
+
+      - name: Portable frontend-design acceptance
+        run: bash scripts/ci/test-skill-portability.sh
+
+      - name: Runtime frontend-design availability receipt
+        run: bash scripts/ci/runtime-skill-receipt.sh
+
+      - name: Upload runtime frontend-design receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-design-runtime-receipt
+          path: ${{ runner.temp }}/jv-runtime-skill-receipt.*/raw/
+          if-no-files-found: error

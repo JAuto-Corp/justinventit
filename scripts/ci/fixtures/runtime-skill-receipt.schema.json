@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://justinventit.dev/schemas/runtime-skill-receipt-v1.json",
+  "title": "JUSTINVENTIT runtime skill receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "node_version",
+    "codex_version",
+    "claude_version"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "receipt_kind",
+        "observed_at",
+        "candidate_head",
+        "candidate_tree",
+        "generated_tree_sha256",
+        "codex_availability",
+        "claude_availability",
+        "claude_no_project"
+      ],
+      "properties": {
+        "receipt_kind": {"const": "availability"}
+      }
+    },
+    {
+      "not": {"required": ["receipt_kind"]},
+      "required": [
+        "status",
+        "timeout_seconds",
+        "kill_after_seconds",
+        "session_id",
+        "debug_sha256",
+        "debug_bytes",
+        "stdout_sha256",
+        "stdout_bytes",
+        "stderr_sha256",
+        "stderr_bytes",
+        "transcript_sha256",
+        "transcript_bytes",
+        "codex_no_project",
+        "claude_no_project",
+        "claude_invocation",
+        "codex_native"
+      ]
+    }
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "receipt_kind": {"enum": ["availability", "fixture-validation"]},
+    "generated_tree_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "node_version": {"const": "v22.23.2"},
+    "codex_version": {"const": "codex-cli 0.145.0"},
+    "claude_version": {"const": "2.1.232 (Claude Code)"},
+    "status": {"type": "integer"},
+    "timeout_seconds": {"const": 30},
+    "kill_after_seconds": {"const": 5},
+    "session_id": {"type": "string", "minLength": 1},
+    "debug_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "debug_bytes": {"type": "integer", "minimum": 1},
+    "stdout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "stdout_bytes": {"const": 40},
+    "stderr_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "stderr_bytes": {"const": 0},
+    "transcript_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "transcript_bytes": {"type": "integer", "minimum": 1},
+    "codex_no_project": {
+      "type": "object",
+      "required": ["target_count"],
+      "properties": {"target_count": {"const": 0}}
+    },
+    "claude_no_project": {
+      "type": "object",
+      "required": ["target_count"],
+      "properties": {"target_count": {"const": 0}}
+    },
+    "claude_invocation": {
+      "type": "object",
+      "required": ["marker", "source_body", "loaded_body"]
+    },
+    "codex_native": {
+      "type": "object",
+      "required": [
+        "raw_prompt",
+        "source_body",
+        "skill_records",
+        "fallback_used",
+        "fallback_reruled"
+      ]
+    }
+  }
+}

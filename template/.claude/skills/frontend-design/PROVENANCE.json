@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "name": "frontend-design",
+  "upstream": {
+    "repository": "anthropics/claude-plugins-official",
+    "commit": "d029127f7d29bdb8fd8902ac34dd7d5c8ba92b6e",
+    "path": "plugins/frontend-design/skills/frontend-design"
+  },
+  "equivalent_distribution": {
+    "repository": "anthropics/claude-code",
+    "plugin_name": "frontend-design",
+    "plugin_version": "1.1.0"
+  },
+  "authors": [
+    "Prithvi Rajasekaran",
+    "Alexander Bricken"
+  ],
+  "license": {
+    "spdx": "Apache-2.0",
+    "filename": "LICENSE.txt",
+    "frontmatter": "Complete terms in LICENSE.txt"
+  },
+  "files": {
+    "SKILL.md": {
+      "bytes": 8260,
+      "sha256": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd"
+    },
+    "LICENSE.txt": {
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    }
+  },
+  "runtime_routes": {
+    "codex": {
+      "mode": "canonical",
+      "path": ".agents/skills/frontend-design"
+    },
+    "claude": {
+      "mode": "physical-copy",
+      "path": ".claude/skills/frontend-design"
+    }
+  }
+}

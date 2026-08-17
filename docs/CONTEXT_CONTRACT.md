@@ -165,3 +165,14 @@ read root AGENTS.md natively; nested behavior there is out of scope until a cons
 - Cross-runtime nested resolution (major): §3 — per-directory shims / compiled resolution.
 - Budget determinism (major): §4 — repo-owned payload budgeted; global reported separately.
 - Region ownership enforceability (blocker, arch-level): §2 — manifest + composer + conformance tests.
+
+## 9. Portable skill resolution
+
+The frontend-design context has one canonical project source:
+.agents/skills/frontend-design. Codex resolves that source directly. Claude resolves the
+byte-identical physical projection at .claude/skills/frontend-design; symlinks, pointer files,
+plugin aliases, and .codex/skills project routes are outside the contract.
+
+Availability listings prove discovery only. Work claiming the skill influenced its result still
+needs a runtime-generated invocation/read receipt bound to the candidate head, complete source
+body, resolved route, and source hash.

@@ -69,6 +69,11 @@ else
   echo "       pass a path, e.g. $(basename "$0") /tmp/civenv/bin/copier" >&2
   exit 3
 fi
+COPIER_VERSION="$("$COPIER" --version 2>&1)"
+[[ "$COPIER_VERSION" == "copier 9.17.1" ]] || {
+  echo "ERROR: copier version mismatch: expected 9.17.1, got $COPIER_VERSION" >&2
+  exit 3
+}
 
 # --- required tooling --------------------------------------------------------
 for tool in jq python3 bash find grep sed; do
@@ -173,6 +178,34 @@ check_set() {
   local S="$out/.claude/settings.json"
   local HB="$out/.claude/hooks/stop/actions/heartbeat-writer.sh"
   local GUARD="$out/.claude/hooks/guards/migration-safety.sh"
+  local EXPECTED="$TEMPLATE_ROOT/scripts/ci/fixtures/frontend-design.expected.json"
+
+  # --- portable frontend-design authority and both physical runtime routes ---
+  local CANONICAL="$out/.agents/skills/frontend-design"
+  local CLAUDE_PROJECTION="$out/.claude/skills/frontend-design"
+  if [ ! -d "$CANONICAL" ] || [ ! -d "$CLAUDE_PROJECTION" ]; then
+    errs+=("(skill) frontend-design canonical or Claude projection missing")
+  elif [ -L "$CANONICAL" ] || [ -L "$CLAUDE_PROJECTION" ]; then
+    errs+=("(skill) frontend-design routes must be physical directories")
+  elif ! diff -qr --no-dereference "$CANONICAL" "$CLAUDE_PROJECTION" >/dev/null; then
+    errs+=("(skill) .agents/skills/frontend-design and .claude/skills/frontend-design differ")
+  else
+    local expected_skill_sha expected_license_sha
+    expected_skill_sha="$(jq -r '.skill.files["SKILL.md"].sha256' "$EXPECTED")"
+    expected_license_sha="$(jq -r '.skill.files["LICENSE.txt"].sha256' "$EXPECTED")"
+    if [ "$(sha256sum "$CANONICAL/SKILL.md" | awk '{print $1}')" != "$expected_skill_sha" ]; then
+      errs+=("(skill) canonical frontend-design SKILL.md differs from expected fixture")
+    fi
+    if [ "$(sha256sum "$CANONICAL/LICENSE.txt" | awk '{print $1}')" != "$expected_license_sha" ]; then
+      errs+=("(skill) canonical frontend-design LICENSE.txt differs from expected fixture")
+    fi
+    if ! python3 "$TEMPLATE_ROOT/scripts/generate-skill-surfaces.py" --project-root "$out" --check >"$TMP_ROOT/$name.skill-generator.log" 2>&1; then
+      errs+=("(skill) generated projection check failed")
+    fi
+    if ! python3 "$TEMPLATE_ROOT/scripts/ci/check-skill-routes.py" --project-root "$out" >"$TMP_ROOT/$name.skill-routes.log" 2>&1; then
+      errs+=("(skill) runtime route/authority check failed")
+    fi
+  fi
 
   # --- (a) no leaked .jinja files ---
   local leaked

@@ -126,3 +126,12 @@ If a framework convention doesn't fit your project:
 3. **Full override**: Replace the hook script entirely (but it won't receive framework updates)
 
 The skip file is the recommended approach — it's explicit, version-controlled, and survives framework updates.
+
+## Frontend design skill boundary
+
+frontend-design is framework-owned and unconditional across answer sets. Customize product
+truths, brand language, semantic tokens, and approved components in project-owned domain skills;
+do not edit .agents/skills/frontend-design or its generated .claude projection. After a Copier
+conflict, a consumer may restore the projection byte-for-byte from the updated canonical source,
+but source-side automated remediation requires a compatible JUSTINVENTIT checkout and is not
+shipped in generated projects.

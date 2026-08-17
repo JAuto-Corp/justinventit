@@ -97,3 +97,10 @@ justinventit is built for Claude Code but the concepts are portable:
 - Hooks → IDE-specific extension points
 
 The ATDD cycle and state management work regardless of IDE.
+
+### "Can I customize frontend-design?"
+
+Treat .agents/skills/frontend-design and .claude/skills/frontend-design as framework-owned. Keep
+automotive or product truths, brand vocabulary, tokens, and component constraints in a separate
+project-owned domain skill. This preserves the pinned upstream license/provenance and prevents
+Copier updates from turning local design preferences into a drifting fork.
