@@ -240,6 +240,15 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("copier_version") != copier_version or len(manifest.get("scenarios", [])) != 3:
             raise CopierReceiptError("committed Copier manifest is invalid")
+        authority_path = (
+            project_root
+            / "scripts/ci/fixtures/copier-portability/evidence-r4-authority.json"
+        )
+        if authority_path.is_symlink() or not authority_path.is_file():
+            raise CopierReceiptError("committed independent evidence authority is missing")
+        authority_info = authority_path.stat()
+        if authority_info.st_nlink != 1:
+            raise CopierReceiptError("committed independent evidence authority must be a unique file")
         with tempfile.TemporaryDirectory(prefix="jv-real-copier.") as temp:
             work = Path(temp)
             source = work / "template-source"
@@ -255,6 +264,7 @@ def main() -> int:
             "schema_version": 1,
             "copier_version": copier_version,
             "fixture_manifest_sha256": digest(manifest_path),
+            "authority_sha256": digest(authority_path),
             "provenance_question": "fixture_channel=portability-evidence",
             "manifest_path": "evidence-manifest.json",
             "rows": rows,
