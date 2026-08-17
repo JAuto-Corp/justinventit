@@ -21,16 +21,23 @@ AUTHORITY = FIXTURE_ROOT / "evidence-r4-authority.json"
 REGISTRY = FIXTURE_ROOT / "evidence-r4-mutations.json"
 PRODUCER = ROOT / "scripts/ci/copier-real-update-receipt.py"
 VALIDATOR = ROOT / "scripts/ci/validate-copier-evidence.py"
-EXPECTED_GROUPS = {
+WORKFLOW = ROOT / ".github/workflows/ci.yml"
+WRAPPER = FIXTURE_ROOT / "run-r4-gate.sh"
+R4_GROUPS = {
     "R4-01-independent-fixture-authority",
     "R4-02-exact-remediation-result",
     "R4-03-full-entry-closure",
 }
+R4A_GROUP = "R4a-01-ci-reachability"
+EXPECTED_GROUPS = R4_GROUPS | {R4A_GROUP}
 EXPECTED_MUTATIONS = 29
+EXPECTED_R4A_MUTATIONS = 6
 FAILURES: list[str] = []
 GROUP_FAILURES: dict[str, list[str]] = {group: [] for group in EXPECTED_GROUPS}
 MUTATIONS_EXECUTED = 0
 MUTATIONS_PASSED = 0
+R4A_MUTATIONS_EXECUTED = 0
+R4A_MUTATIONS_PASSED = 0
 
 
 class HarnessError(RuntimeError):
@@ -366,6 +373,170 @@ def external_authority_validator(case_id: str, temp_root: Path) -> Path:
     raise HarnessError(f"unimplemented authority mutation: {case_id}")
 
 
+def unquote_simple_yaml(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def portability_steps(workflow: str) -> list[dict[str, str]]:
+    lines = workflow.splitlines()
+    matches: list[dict[str, str]] = []
+    index = 0
+    while index < len(lines):
+        named = re.match(r"^(?P<indent>\s*)-\s+name:\s*(?P<name>.*?)\s*$", lines[index])
+        if named is None or unquote_simple_yaml(named.group("name")) != "Portable frontend-design acceptance":
+            index += 1
+            continue
+        item_indent = len(named.group("indent"))
+        end = index + 1
+        while end < len(lines):
+            next_item = re.match(r"^(?P<indent>\s*)-\s+", lines[end])
+            if next_item is not None and len(next_item.group("indent")) <= item_indent:
+                break
+            end += 1
+        fields = {"name": "Portable frontend-design acceptance"}
+        cursor = index + 1
+        while cursor < end:
+            line = lines[cursor]
+            if not line.strip() or line.lstrip().startswith("#"):
+                cursor += 1
+                continue
+            field = re.match(r"^(?P<indent>\s+)(?P<key>[A-Za-z0-9_-]+):(?:\s*(?P<value>.*))?$", line)
+            if field is None or len(field.group("indent")) <= item_indent:
+                cursor += 1
+                continue
+            key = field.group("key")
+            if key in fields:
+                raise HarnessError(f"workflow portability step duplicates key: {key}")
+            value = (field.group("value") or "").strip()
+            if key == "run" and value in {"|", "|-", "|+", ">", ">-", ">+"}:
+                block_indent = len(field.group("indent"))
+                block: list[str] = []
+                cursor += 1
+                while cursor < end:
+                    raw = lines[cursor]
+                    if raw.strip() and len(raw) - len(raw.lstrip()) <= block_indent:
+                        cursor -= 1
+                        break
+                    block.append(raw.strip())
+                    cursor += 1
+                value = (" " if value.startswith(">") else "\n").join(block).strip()
+            fields[key] = unquote_simple_yaml(value)
+            cursor += 1
+        matches.append(fields)
+        index = end
+    return matches
+
+
+def validate_workflow_text(workflow: str) -> str | None:
+    steps = portability_steps(workflow)
+    if len(steps) != 1:
+        return f"exactly one executable portability step required, got {len(steps)}"
+    step = steps[0]
+    if set(step) != {"name", "run"}:
+        return f"portability step must be unconditional and closed, got keys={sorted(step)}"
+    expected = "bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh"
+    if step["run"] != expected:
+        return f"executable portability command mismatch: {step['run']!r}"
+    return None
+
+
+def validate_wrapper_contract(wrapper: str) -> str | None:
+    lines = [line.strip() for line in wrapper.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+    retained_init = "retained_rc=0"
+    r4_init = "r4_rc=0"
+    retained_call = '"$ROOT/scripts/ci/test-skill-portability.sh" || retained_rc=$?'
+    r4_call = 'python3 "$SCRIPT_DIR/r4_acceptance.py" || r4_rc=$?'
+    failure_if = 'if [[ "$retained_rc" -ne 0 || "$r4_rc" -ne 0 ]]; then'
+    required = (retained_init, r4_init, retained_call, r4_call, failure_if, "exit 1", "fi")
+    missing = [line for line in required if lines.count(line) != 1]
+    if missing:
+        return f"wrapper exact status-preservation contract missing/duplicated: {missing}"
+    if not lines.index(retained_init) < lines.index(retained_call) < lines.index(r4_call):
+        return "wrapper must execute the retained gate before R4"
+    if not lines.index(r4_init) < lines.index(r4_call):
+        return "wrapper must initialize and preserve the R4 exit code"
+    if not lines.index(failure_if) < lines.index("exit 1") < lines.index("fi"):
+        return "wrapper must fail when either preserved exit code is nonzero"
+    return None
+
+
+def test_ci_reachability(case_ids: list[str]) -> None:
+    global R4A_MUTATIONS_EXECUTED, R4A_MUTATIONS_PASSED
+    actual_failures: list[str] = []
+    if not WORKFLOW.is_file():
+        actual_failures.append("workflow missing")
+    else:
+        workflow_failure = validate_workflow_text(WORKFLOW.read_text(encoding="utf-8"))
+        if workflow_failure:
+            actual_failures.append(workflow_failure)
+    if not WRAPPER.is_file():
+        actual_failures.append("R4 wrapper missing")
+    else:
+        wrapper_failure = validate_wrapper_contract(WRAPPER.read_text(encoding="utf-8"))
+        if wrapper_failure:
+            actual_failures.append(wrapper_failure)
+    if actual_failures:
+        record_failure(R4A_GROUP, "R4a-01-ci-reachability", ", ".join(actual_failures))
+    else:
+        record_pass("R4a-01-ci-reachability")
+
+    valid = """jobs:
+  generate-matrix-check:
+    steps:
+      - name: Portable frontend-design acceptance
+        run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh
+"""
+    mutations = {
+        "ci-comment-only": """jobs:
+  generate-matrix-check:
+    steps:
+      # - name: Portable frontend-design acceptance
+      #   run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh
+""",
+        "ci-disabled-step": valid.replace(
+            "        run:",
+            "        if: false\n        run:",
+        ),
+        "ci-wrong-wrapper-path": valid.replace("run-r4-gate.sh", "run-r4-gates.sh"),
+        "ci-standalone-retained-gate": valid.replace(
+            "bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh",
+            "bash scripts/ci/test-skill-portability.sh",
+        ),
+        "ci-shell-short-circuit": valid.replace(
+            "bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh",
+            "bash scripts/ci/test-skill-portability.sh && python3 scripts/ci/fixtures/copier-portability/r4_acceptance.py",
+        ),
+        "ci-r4-only": valid.replace(
+            "bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh",
+            "python3 scripts/ci/fixtures/copier-portability/r4_acceptance.py",
+        ),
+    }
+    if set(mutations) != set(case_ids):
+        raise HarnessError("R4a reachability mutations do not equal the closed registry")
+    for case_id in case_ids:
+        R4A_MUTATIONS_EXECUTED += 1
+        reason = validate_workflow_text(mutations[case_id])
+        if reason is None:
+            record_failure(R4A_GROUP, case_id, "reachability mutation accepted")
+        else:
+            R4A_MUTATIONS_PASSED += 1
+            record_pass(case_id)
+
+    reachability_pass = 0 if GROUP_FAILURES[R4A_GROUP] else 1
+    print(
+        f"R4A_REACHABILITY_MUTATIONS registered={EXPECTED_R4A_MUTATIONS} "
+        f"actual={R4A_MUTATIONS_EXECUTED} pass={R4A_MUTATIONS_PASSED} "
+        f"fail={R4A_MUTATIONS_EXECUTED - R4A_MUTATIONS_PASSED}"
+    )
+    print(
+        f"R4A_CORRECTION registered=1 actual=1 pass={reachability_pass} "
+        f"fail={1 - reachability_pass}"
+    )
+
+
 def validate_registry() -> dict[str, list[str]]:
     value = load_json(REGISTRY)
     if set(value) != {"schema_version", "groups"} or value["schema_version"] != 1:
@@ -378,10 +549,15 @@ def validate_registry() -> dict[str, list[str]]:
         if not isinstance(cases, list) or not cases or not all(isinstance(case, str) and case for case in cases):
             raise HarnessError(f"mutation registry malformed group: {group}")
         identities.extend(cases)
-    if len(identities) != EXPECTED_MUTATIONS or len(set(identities)) != EXPECTED_MUTATIONS:
+    expected_total = EXPECTED_MUTATIONS + EXPECTED_R4A_MUTATIONS
+    if len(identities) != expected_total or len(set(identities)) != expected_total:
         raise HarnessError(
-            f"mutation registry must contain {EXPECTED_MUTATIONS} unique identities, got {len(identities)}/{len(set(identities))}"
+            f"mutation registry must contain {expected_total} unique identities, got {len(identities)}/{len(set(identities))}"
         )
+    if sum(len(groups[group]) for group in R4_GROUPS) != EXPECTED_MUTATIONS:
+        raise HarnessError("retained R4 mutation registry cardinality changed")
+    if len(groups[R4A_GROUP]) != EXPECTED_R4A_MUTATIONS:
+        raise HarnessError("R4a reachability mutation registry cardinality mismatch")
     return groups
 
 
@@ -433,7 +609,8 @@ def main() -> int:
                 "external-authority-missing-row-key",
                 "external-authority-extra-row-key",
             }
-            for group, case_ids in groups.items():
+            for group in sorted(R4_GROUPS):
+                case_ids = groups[group]
                 expected_diagnostic = {
                     "R4-01-independent-fixture-authority": r"independent authority",
                     "R4-02-exact-remediation-result": r"post-remediation authority",
@@ -450,7 +627,7 @@ def main() -> int:
                     expect_rejection(group, case_id, validate(mutated, validator), expected_diagnostic)
 
         correction_passes = 0
-        for group in sorted(EXPECTED_GROUPS):
+        for group in sorted(R4_GROUPS):
             if GROUP_FAILURES[group]:
                 print(f"[R4-CORRECTION-FAIL] {group} failures={len(GROUP_FAILURES[group])}")
             else:
@@ -464,6 +641,7 @@ def main() -> int:
             f"R4_CORRECTION registered=3 actual=3 pass={correction_passes} "
             f"fail={3 - correction_passes}"
         )
+        test_ci_reachability(groups[R4A_GROUP])
         if FAILURES:
             print("R4_FAILURE_IDENTITIES_BEGIN")
             for failure in FAILURES:

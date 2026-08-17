@@ -34,6 +34,14 @@
       "symlinked-directory",
       "file-in-implied-parent",
       "hardlink-artifact"
+    ],
+    "R4a-01-ci-reachability": [
+      "ci-comment-only",
+      "ci-disabled-step",
+      "ci-wrong-wrapper-path",
+      "ci-standalone-retained-gate",
+      "ci-shell-short-circuit",
+      "ci-r4-only"
     ]
   },
   "schema_version": 1
