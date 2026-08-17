@@ -229,6 +229,22 @@ except ValidationError as exc:
 PY
 }
 
+validate_availability_fixture() {
+  local fixture_dir="$1" receipt_path
+  [[ -d "$fixture_dir" ]] || die "availability fixture directory missing: $fixture_dir"
+  if [[ -f "$fixture_dir/receipt.json" ]]; then
+    receipt_path="$fixture_dir/receipt.json"
+  elif [[ -f "$fixture_dir/claude-receipt.json" ]]; then
+    receipt_path="$fixture_dir/claude-receipt.json"
+  else
+    die "availability fixture receipt missing: $fixture_dir"
+  fi
+  python3 "$source_root/scripts/ci/validate-runtime-receipt.py" \
+    --schema "$schema_path" \
+    --receipt "$receipt_path" \
+    --artifact-root "$fixture_dir"
+}
+
 acquire_ci_receipt() {
   command -v node >/dev/null 2>&1 || die "node CLI missing"
   command -v codex >/dev/null 2>&1 || die "codex CLI missing"
@@ -256,12 +272,12 @@ acquire_ci_receipt() {
   set +e
   (
     cd "$project"
-    env HOME="$receipt_scratch/home" CODEX_HOME="$receipt_scratch/codex-home" codex debug prompt-input '$frontend-design availability probe only'
+    env -u OPENAI_API_KEY -u CODEX_API_KEY HOME="$receipt_scratch/home" CODEX_HOME="$receipt_scratch/codex-home" codex debug prompt-input '$frontend-design availability probe only'
   ) >"$receipt_raw/codex-project.json" 2>"$receipt_raw/codex-project.stderr"
   codex_status=$?
   (
     cd "$control"
-    env HOME="$receipt_scratch/control-home" CODEX_HOME="$receipt_scratch/control-codex-home" codex debug prompt-input 'availability probe only'
+    env -u OPENAI_API_KEY -u CODEX_API_KEY HOME="$receipt_scratch/control-home" CODEX_HOME="$receipt_scratch/control-codex-home" codex debug prompt-input 'availability probe only'
   ) >"$receipt_raw/codex-control.json" 2>"$receipt_raw/codex-control.stderr"
   codex_control_status=$?
 
@@ -276,6 +292,16 @@ acquire_ci_receipt() {
   ) >"$receipt_raw/claude-control-stdout.txt" 2>"$receipt_raw/claude-control-stderr.txt"
   claude_control_status=$?
   set -e
+
+  local -a project_transcripts control_transcripts
+  mapfile -t project_transcripts < <(find "$receipt_scratch/claude-config/projects" -mindepth 2 -maxdepth 2 -type f -name '*.jsonl' -print | LC_ALL=C sort)
+  mapfile -t control_transcripts < <(find "$receipt_scratch/control-claude-config/projects" -mindepth 2 -maxdepth 2 -type f -name '*.jsonl' -print | LC_ALL=C sort)
+  [[ "${#project_transcripts[@]}" -eq 1 ]] || die "Claude project transcript cardinality: expected 1, got ${#project_transcripts[@]}"
+  [[ "${#control_transcripts[@]}" -eq 1 ]] || die "Claude control transcript cardinality: expected 1, got ${#control_transcripts[@]}"
+  cp -- "${project_transcripts[0]}" "$receipt_raw/claude-transcript.jsonl"
+  cp -- "${control_transcripts[0]}" "$receipt_raw/claude-control-transcript.jsonl"
+  cmp -s -- "${project_transcripts[0]}" "$receipt_raw/claude-transcript.jsonl" || die "Claude project transcript archive mismatch"
+  cmp -s -- "${control_transcripts[0]}" "$receipt_raw/claude-control-transcript.jsonl" || die "Claude control transcript archive mismatch"
 
   python3 - "$source_root" "$receipt_scratch" "$codex_status" "$codex_control_status" "$claude_status" "$claude_control_status" <<'PY'
 from __future__ import annotations
@@ -314,8 +340,13 @@ def file_record(path: Path, label: str, allow_empty: bool = False) -> dict:
     data = path.read_bytes()
     if not allow_empty and not data:
         raise ReceiptError(f"artifact empty: {label}")
+    try:
+        relative = path.resolve().relative_to(raw.resolve()).as_posix()
+    except ValueError as exc:
+        raise ReceiptError(f"artifact outside uploaded closure: {label}") from exc
     return {
-        "path": str(path),
+        "path": relative,
+        "class": "regular",
         "bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
     }
@@ -354,7 +385,10 @@ def validate_claude(prefix: str, config_name: str, expected_project: Path, targe
     stdout_path = raw / f"claude-{prefix}stdout.txt"
     stderr_path = raw / f"claude-{prefix}stderr.txt"
     config = scratch / config_name
-    transcript = only_transcript(config, f"claude {prefix}control")
+    source_transcript = only_transcript(config, f"claude {prefix}control")
+    transcript = raw / f"claude-{prefix}transcript.jsonl"
+    if source_transcript.read_bytes() != transcript.read_bytes():
+        raise ReceiptError(f"claude {prefix}archived transcript differs from runtime source")
     artifacts = {
         "debug": file_record(debug_path, f"claude {prefix}debug"),
         "transcript": file_record(transcript, f"claude {prefix}transcript"),
@@ -505,8 +539,15 @@ receipt = {
     "node_version": "v22.23.2",
     "codex_version": "codex-cli 0.145.0",
     "claude_version": "2.1.232 (Claude Code)",
+    "isolation": {
+        "codex_home": "scratch",
+        "claude_config_dir": "scratch",
+        "managed_roots_absent": True,
+        "inherited_auth": False,
+    },
     "codex_availability": {
         "status": statuses["codex"],
+        "target_count": frontmatter_count,
         "locator_start_marker": "(file: ",
         "locator_end_marker": ")",
         "observed_absolute_path": project_locators[0],
@@ -514,7 +555,6 @@ receipt = {
         "derived_repository_path": ".agents/skills/frontend-design/SKILL.md",
         "skill_bytes": len(skill_bytes),
         "skill_sha256": hashlib.sha256(skill_bytes).hexdigest(),
-        "generated_tree_target_count": frontmatter_count,
         "no_project_target_count": len(control_locators),
         "artifacts": codex_records,
     },
@@ -524,14 +564,23 @@ receipt = {
 receipt_path = raw / "claude-receipt.json"
 receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 file_record(receipt_path, "machine receipt")
-print(f"runtime skill availability receipt: PASS {receipt_path}")
+print(f"runtime skill availability receipt produced: {receipt_path}")
 PY
+  python3 "$source_root/scripts/ci/validate-runtime-receipt.py" \
+    --schema "$schema_path" \
+    --receipt "$receipt_raw/claude-receipt.json" \
+    --artifact-root "$receipt_raw"
+  printf 'runtime skill availability receipt: PASS %s\n' "$receipt_raw/claude-receipt.json"
 }
 
 case "${1:-}" in
   --validate-fixture)
     [[ "$#" -eq 2 ]] || die "usage: $0 --validate-fixture DIR"
     validate_fixture "$2"
+    ;;
+  --validate-availability-fixture)
+    [[ "$#" -eq 2 ]] || die "usage: $0 --validate-availability-fixture DIR"
+    validate_availability_fixture "$2"
     ;;
   "")
     acquire_ci_receipt

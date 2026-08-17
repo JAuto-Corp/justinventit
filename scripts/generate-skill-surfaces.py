@@ -134,18 +134,8 @@ def validate_canonical(root: Path) -> tuple[Path, dict]:
 
 def paired_skills(root: Path, canonical_frontend: Path) -> list[tuple[Path, Path]]:
     surfaces = surface_root(root)
-    canonical_root = surfaces / ".agents/skills"
     projection_root = surfaces / ".claude/skills"
-    pairs = [(canonical_frontend, projection_root / SKILL_NAME)]
-    for skill_file in sorted(canonical_root.rglob("SKILL.md")):
-        source = skill_file.parent
-        if source == canonical_frontend:
-            continue
-        relative = source.relative_to(canonical_root)
-        target = projection_root / relative
-        if target.exists() or target.is_symlink():
-            pairs.append((source, target))
-    return pairs
+    return [(canonical_frontend, projection_root / SKILL_NAME)]
 
 
 def projection_differences(source: Path, target: Path) -> list[str]:

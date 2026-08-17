@@ -8,8 +8,38 @@ die() {
   exit 1
 }
 
-[[ "${1:-}" == "--target" && "$#" -eq 2 ]] || die "usage: $0 --target DIR"
-target="$2"
+target=""
+conflict_mode=""
+vcs_ref=""
+receipt_out=""
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --target)
+      [[ "$#" -ge 2 ]] || die "--target requires a directory"
+      target="$2"
+      shift 2
+      ;;
+    --conflict)
+      [[ "$#" -ge 2 && ( "$2" == "inline" || "$2" == "rej" ) ]] || die "--conflict requires inline or rej"
+      conflict_mode="$2"
+      shift 2
+      ;;
+    --vcs-ref)
+      [[ "$#" -ge 2 ]] || die "--vcs-ref requires a value"
+      vcs_ref="$2"
+      shift 2
+      ;;
+    --receipt-out)
+      [[ "$#" -ge 2 ]] || die "--receipt-out requires a path"
+      receipt_out="$2"
+      shift 2
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+done
+[[ -n "$target" ]] || die "usage: $0 --target DIR [--conflict inline|rej] [--vcs-ref REF] [--receipt-out FILE]"
 [[ -d "$target" ]] || die "target missing: $target"
 
 copier_bin="$(command -v copier || true)"
@@ -31,11 +61,25 @@ skip_hash_before="$(sha256sum "$skip_state" | awk '{print $1}')"
 
 receipt_dir="$(mktemp -d)"
 trap 'rm -rf "$receipt_dir"' EXIT
+copier_command=("$copier_bin" update --defaults --trust)
+if [[ -n "$conflict_mode" ]]; then
+  copier_command+=(--conflict "$conflict_mode")
+fi
+if [[ -n "$vcs_ref" ]]; then
+  copier_command+=(--vcs-ref "$vcs_ref")
+fi
+copier_command+=("$target")
 set +e
-"$copier_bin" update --defaults --trust "$target" >"$receipt_dir/copier.stdout" 2>"$receipt_dir/copier.stderr"
+"${copier_command[@]}" >"$receipt_dir/copier.stdout" 2>"$receipt_dir/copier.stderr"
 copier_status=$?
 set -e
-[[ "$copier_status" -eq 0 ]] || die "Copier exited $copier_status; stdout/stderr recorded"
+if [[ "$copier_status" -ne 0 ]]; then
+  printf '%s\n' '--- Copier stdout ---' >&2
+  tail -40 "$receipt_dir/copier.stdout" >&2
+  printf '%s\n' '--- Copier stderr ---' >&2
+  tail -40 "$receipt_dir/copier.stderr" >&2
+  die "Copier exited $copier_status; stdout/stderr shown above"
+fi
 
 [[ -f "$canonical" && ! -L "$canonical" ]] || die "canonical ownership breach: unexpected Copier outcome"
 [[ -f "$generated" && ! -L "$generated" ]] || die "unexpected Copier outcome: generated projection missing"
@@ -69,6 +113,8 @@ if [[ "$classification" == "reject-artifact" ]]; then
   rm -- "$allowed_reject"
 fi
 
+cp -- "$canonical" "$generated"
+
 python3 "$source_root/scripts/generate-skill-surfaces.py" --project-root "$target"
 python3 "$source_root/scripts/generate-skill-surfaces.py" --project-root "$target" --check
 python3 "$source_root/scripts/ci/check-skill-routes.py" --project-root "$target"
@@ -84,5 +130,35 @@ project_hash_after="$(sha256sum "$project_owned" | awk '{print $1}')"
 skip_hash_after="$(sha256sum "$skip_state" | awk '{print $1}')"
 [[ "$project_hash_before" == "$project_hash_after" ]] || die "project-owned hash drift"
 [[ "$skip_hash_before" == "$skip_hash_after" ]] || die "skip state hash drift"
+
+if [[ -n "$receipt_out" ]]; then
+  mkdir -p "$(dirname "$receipt_out")"
+  python3 - "$receipt_out" "$copier_bin" "$copier_version" "$copier_status" "$classification" "$receipt_dir/copier.stdout" "$receipt_dir/copier.stderr" "${copier_command[@]}" <<'PY'
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+
+output = Path(sys.argv[1])
+stdout = Path(sys.argv[6]).read_bytes()
+stderr = Path(sys.argv[7]).read_bytes()
+receipt = {
+    "copier_path": str(Path(sys.argv[2]).resolve()),
+    "copier_version": sys.argv[3],
+    "update": {
+        "command": sys.argv[8:],
+        "status": int(sys.argv[4]),
+        "stdout_sha256": hashlib.sha256(stdout).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
+    },
+    "classification": sys.argv[5],
+    "remediation": "framework-wins",
+}
+output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+fi
 
 printf 'copier update check: PASS classification=%s version=%s status=%s\n' "$classification" "$copier_version" "$copier_status"

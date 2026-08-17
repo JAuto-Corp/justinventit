@@ -135,3 +135,8 @@ do not edit .agents/skills/frontend-design or its generated .claude projection. 
 conflict, a consumer may restore the projection byte-for-byte from the updated canonical source,
 but source-side automated remediation requires a compatible JUSTINVENTIT checkout and is not
 shipped in generated projects.
+
+Project-owned additions under `.agents/skills` are Codex-only in this slice. Project-authored Claude skills
+are independently owned under `.claude/skills/domain`; matching relative paths do not imply shared ownership.
+There is no cross-runtime consumer projection generator. The only route governed by
+`scripts/generate-skill-surfaces.py` is the explicit framework-owned `frontend-design` route documented above.
