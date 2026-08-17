@@ -62,7 +62,8 @@ jobs:
         run: bash scripts/ci/generate-matrix-check.sh "$(command -v copier)"
 
       - name: Portable frontend-design acceptance
-        run: bash scripts/ci/test-skill-portability.sh
+        # The R4 wrapper first retains: bash scripts/ci/test-skill-portability.sh
+        run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh
 
       - name: Runtime frontend-design availability receipt
         run: bash scripts/ci/runtime-skill-receipt.sh
