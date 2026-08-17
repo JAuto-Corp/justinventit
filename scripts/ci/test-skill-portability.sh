@@ -25,8 +25,8 @@ allowed = (
     r"template/\.agents/skills/frontend-design(?:/.*)?",
     r"template/\.claude/skills/frontend-design(?:/.*)?",
     r"scripts/generate-skill-surfaces\.py",
-    r"scripts/ci/(?:check-skill-routes\.py|test-skill-portability(?:-r2\.py|\.sh)|copier-update-check\.sh|copier-real-update-receipt\.py|runtime-skill-receipt\.sh|validate-runtime-receipt\.py|generate-matrix-check\.sh)",
-    r"scripts/ci/fixtures/(?:frontend-design\.expected\.json|runtime-skill-receipt\.schema\.json|copier-portability/.*|runtime-availability-valid/.*)",
+    r"scripts/ci/(?:check-skill-routes\.py|test-skill-portability(?:-r[23]\.py|\.sh)|copier-update-check\.sh|copier-real-update-receipt\.py|validate-copier-evidence\.py|runtime-skill-receipt\.sh|validate-runtime-receipt\.py|generate-matrix-check\.sh)",
+    r"scripts/ci/fixtures/(?:frontend-design\.expected\.json|runtime-skill-receipt\.schema\.json|copier-evidence-r3\.expected\.json|copier-portability/.*|runtime-availability-valid/.*)",
     r"\.github/workflows/ci\.yml",
     r"(?:CLAUDE\.md|README\.md|docs/(?:CONTEXT_CONTRACT|CUSTOMIZATION|GETTING_STARTED|MIGRATION|ROADMAP)\.md)",
 )
@@ -1898,6 +1898,19 @@ check_r2_corrections() {
   fi
 }
 
+check_r3_corrections() {
+  local cell="P14"
+  local output rc
+  output="$(python3 "$ROOT/scripts/ci/test-skill-portability-r3.py" 2>&1)"
+  rc=$?
+  printf '%s\n' "$output"
+  if [[ "$rc" -eq 0 ]]; then
+    pass "$cell both durable Copier evidence corrections satisfy the frozen contract"
+  else
+    fail "$cell" "MISSING_BEHAVIOR:R3 durable Copier evidence"
+  fi
+}
+
 printf 'frontend-design portability acceptance runner\n'
 printf 'ROOT=%s\n' "$ROOT"
 printf 'HEAD=%s\n' "$(git -C "$ROOT" rev-parse HEAD)"
@@ -1915,6 +1928,7 @@ check_docs_and_scope_contract
 check_rollback_scope_subject_contract
 check_scenario_crosswalk
 check_r2_corrections
+check_r3_corrections
 
 printf '\nSUMMARY pass=%d fail=%d\n' "$PASS" "$FAIL"
 if [[ "$FAIL" -gt 0 ]]; then
