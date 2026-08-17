@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,11 +14,13 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, Callable
+from types import ModuleType
 
 
 ROOT = Path(__file__).resolve().parents[4]
 FIXTURE_ROOT = Path(__file__).resolve().parent
 AUTHORITY = FIXTURE_ROOT / "evidence-r4-authority.json"
+HISTORY_AUTHORITY = FIXTURE_ROOT / "evidence-r5-history-authority.json"
 REGISTRY = FIXTURE_ROOT / "evidence-r4-mutations.json"
 PRODUCER = ROOT / "scripts/ci/copier-real-update-receipt.py"
 VALIDATOR = ROOT / "scripts/ci/validate-copier-evidence.py"
@@ -29,15 +32,20 @@ R4_GROUPS = {
     "R4-03-full-entry-closure",
 }
 R4A_GROUP = "R4a-01-ci-reachability"
-EXPECTED_GROUPS = R4_GROUPS | {R4A_GROUP}
+R5_GROUP = "R5-01-fresh-checkout-determinism"
+EXPECTED_GROUPS = R4_GROUPS | {R4A_GROUP, R5_GROUP}
 EXPECTED_MUTATIONS = 29
 EXPECTED_R4A_MUTATIONS = 6
+EXPECTED_R5_MUTATIONS = 5
+HISTORY_INVARIANT = "content-addressed fixture history invariant"
 FAILURES: list[str] = []
 GROUP_FAILURES: dict[str, list[str]] = {group: [] for group in EXPECTED_GROUPS}
 MUTATIONS_EXECUTED = 0
 MUTATIONS_PASSED = 0
 R4A_MUTATIONS_EXECUTED = 0
 R4A_MUTATIONS_PASSED = 0
+R5_MUTATIONS_EXECUTED = 0
+R5_MUTATIONS_PASSED = 0
 
 
 class HarnessError(RuntimeError):
@@ -373,6 +381,284 @@ def external_authority_validator(case_id: str, temp_root: Path) -> Path:
     raise HarnessError(f"unimplemented authority mutation: {case_id}")
 
 
+def load_producer_module() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("copier_real_update_receipt_r5", PRODUCER)
+    if spec is None or spec.loader is None:
+        raise HarnessError("could not load production Copier history builder")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def git_at(repo: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise HarnessError(
+            f"history control git {' '.join(arguments)} exited {result.returncode}: "
+            f"{(result.stdout + result.stderr)[-800:]}"
+        )
+    return result.stdout.strip()
+
+
+def validate_history_authority() -> dict[str, Any]:
+    authority = load_json(HISTORY_AUTHORITY)
+    if set(authority) != {
+        "schema_version",
+        "authority_kind",
+        "collision_mtime_ns",
+        "paths",
+        "template_trees",
+    }:
+        raise HarnessError("R5 history authority root is not closed")
+    if authority["schema_version"] != 1 or authority["authority_kind"] != "copier-history-content-authority":
+        raise HarnessError("R5 history authority identity mismatch")
+    expected_paths = {
+        "template/.agents/skills/copier-conflict-fixture/SKILL.md",
+        "template/.claude/skills/copier-conflict-fixture/SKILL.md",
+    }
+    if set(authority["paths"]) != expected_paths:
+        raise HarnessError("R5 history authority must close both conflict-fixture surfaces")
+    for relative, versions in authority["paths"].items():
+        if set(versions) != {"v1", "v2"}:
+            raise HarnessError(f"R5 history authority versions mismatch: {relative}")
+        for version, record in versions.items():
+            if set(record) != {"bytes", "sha256", "git_blob"}:
+                raise HarnessError(f"R5 history authority record is not closed: {version}/{relative}")
+            fixture_path = FIXTURE_ROOT / version / relative
+            payload = fixture_path.read_bytes()
+            if len(payload) != record["bytes"] or sha256_bytes(payload) != record["sha256"]:
+                raise HarnessError(f"R5 history authority payload mismatch: {version}/{relative}")
+            blob = subprocess.run(
+                ["git", "hash-object", "--stdin"],
+                input=payload,
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+            if blob.returncode != 0 or blob.stdout.decode().strip() != record["git_blob"]:
+                raise HarnessError(f"R5 history authority blob mismatch: {version}/{relative}")
+    trees = authority["template_trees"]
+    if set(trees) != {"v1", "v2"} or trees["v1"] == trees["v2"]:
+        raise HarnessError("R5 history authority tree identities are malformed")
+    return authority
+
+
+def prepare_history_fixture(target: Path, authority: dict[str, Any]) -> list[dict[str, Any]]:
+    target.mkdir(parents=True)
+    shutil.copy2(FIXTURE_ROOT / "copier.yml", target / "copier.yml")
+    for directory in ("common", "v1", "v2"):
+        shutil.copytree(FIXTURE_ROOT / directory, target / directory)
+    collision_ns = authority["collision_mtime_ns"]
+    receipts: list[dict[str, Any]] = []
+    for version in ("v1", "v2"):
+        for relative in sorted(authority["paths"]):
+            path = target / version / relative
+            os.utime(path, ns=(collision_ns, collision_ns))
+            info = path.stat()
+            receipts.append(
+                {
+                    "version": version,
+                    "path": relative,
+                    "bytes": info.st_size,
+                    "mtime_ns": info.st_mtime_ns,
+                    "sha256": sha256(path),
+                }
+            )
+    if len({row["bytes"] for row in receipts}) != 1:
+        raise HarnessError("R5 collision control requires equal-size v1/v2 payloads")
+    if len({row["mtime_ns"] for row in receipts}) != 1:
+        raise HarnessError("R5 collision control requires identical fixture mtimes")
+    return receipts
+
+
+def with_collision_git_config(action: Callable[[], Any]) -> Any:
+    keys = (
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_KEY_0",
+        "GIT_CONFIG_VALUE_0",
+        "GIT_CONFIG_KEY_1",
+        "GIT_CONFIG_VALUE_1",
+    )
+    previous = {key: os.environ.get(key) for key in keys}
+    os.environ.update(
+        {
+            "GIT_CONFIG_COUNT": "2",
+            "GIT_CONFIG_KEY_0": "core.trustctime",
+            "GIT_CONFIG_VALUE_0": "false",
+            "GIT_CONFIG_KEY_1": "core.checkStat",
+            "GIT_CONFIG_VALUE_1": "minimal",
+        }
+    )
+    try:
+        return action()
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def invoke_history_builder(module: ModuleType, fixture: Path, source: Path) -> tuple[str, str]:
+    return with_collision_git_config(lambda: module.build_history(ROOT, fixture, source))
+
+
+def mutate_history_fixture(case_id: str, fixture: Path, authority: dict[str, Any]) -> None:
+    paths = sorted(authority["paths"])
+    if case_id == "history-no-v2-byte-change":
+        selected = paths
+    elif case_id == "history-one-surface-changed":
+        selected = [paths[0]]
+    elif case_id in {
+        "history-false-v2-success-retains-v1-tree",
+        "history-metadata-only-staging",
+    }:
+        selected = []
+    elif case_id == "history-expected-v2-blob-mismatch":
+        selected = paths
+        for relative in selected:
+            path = fixture / "v2" / relative
+            payload = path.read_bytes().replace(b"version two", b"version bad", 1)
+            if len(payload) != authority["paths"][relative]["v2"]["bytes"]:
+                raise HarnessError("R5 wrong-blob control changed payload size")
+            path.write_bytes(payload)
+    else:
+        raise HarnessError(f"unimplemented R5 history mutation: {case_id}")
+    if case_id != "history-expected-v2-blob-mismatch":
+        for relative in selected:
+            (fixture / "v2" / relative).write_bytes((fixture / "v1" / relative).read_bytes())
+    collision_ns = authority["collision_mtime_ns"]
+    for version in ("v1", "v2"):
+        for relative in paths:
+            os.utime(fixture / version / relative, ns=(collision_ns, collision_ns))
+
+
+def install_history_git_control(module: ModuleType, case_id: str) -> Callable[[], None]:
+    real_git = module.git
+    if case_id == "history-metadata-only-staging":
+        def metadata_only(repo: Path, *arguments: str) -> str:
+            if arguments == ("add", "--renormalize", "."):
+                return real_git(repo, "add", ".")
+            return real_git(repo, *arguments)
+        module.git = metadata_only
+    elif case_id == "history-false-v2-success-retains-v1-tree":
+        state: dict[str, str] = {}
+
+        def false_success(repo: Path, *arguments: str) -> str:
+            if arguments == ("rev-parse", "v1.0.0^{tree}"):
+                state["v1_tree"] = real_git(repo, *arguments)
+                return state["v1_tree"]
+            if arguments == ("commit", "--quiet", "-m", "fixture v2"):
+                return ""
+            if arguments == ("tag", "v2.0.0"):
+                return ""
+            if arguments == ("rev-parse", "v2.0.0^{tree}"):
+                return state["v1_tree"]
+            return real_git(repo, *arguments)
+        module.git = false_success
+
+    def restore() -> None:
+        module.git = real_git
+
+    return restore
+
+
+def test_history_determinism(case_ids: list[str], temp_root: Path) -> None:
+    global R5_MUTATIONS_EXECUTED, R5_MUTATIONS_PASSED
+    authority = validate_history_authority()
+    module = load_producer_module()
+    fixture = temp_root / "r5-positive-fixture"
+    receipts = prepare_history_fixture(fixture, authority)
+    print("R5_COLLISION_CONTROL " + json.dumps(receipts, sort_keys=True, separators=(",", ":")))
+    source = temp_root / "r5-positive-source"
+    positive_failures: list[str] = []
+    try:
+        v1_tree, v2_tree = invoke_history_builder(module, fixture, source)
+    except Exception as exc:  # The production exception type is part of the RED observation.
+        positive_failures.append(f"production builder rejected deterministic v2 content: {exc}")
+    else:
+        if v1_tree != authority["template_trees"]["v1"]:
+            positive_failures.append(f"v1 tree mismatch: {v1_tree}")
+        if v2_tree != authority["template_trees"]["v2"]:
+            positive_failures.append(f"v2 tree mismatch: {v2_tree}")
+        if v1_tree == v2_tree:
+            positive_failures.append("v2 tree retained the v1 tree")
+        v1_commit = git_at(source, "rev-parse", "v1.0.0^{commit}")
+        v2_commit = git_at(source, "rev-parse", "v2.0.0^{commit}")
+        if v1_commit == v2_commit:
+            positive_failures.append("v2 tag retained the v1 commit")
+        for relative, versions in sorted(authority["paths"].items()):
+            for version in ("v1", "v2"):
+                tag = f"{version}.0.0"
+                blob = git_at(source, "rev-parse", f"{tag}:{relative}")
+                payload = subprocess.run(
+                    ["git", "show", f"{tag}:{relative}"],
+                    cwd=source,
+                    capture_output=True,
+                    timeout=30,
+                    check=False,
+                )
+                if payload.returncode != 0:
+                    positive_failures.append(f"missing {version} blob: {relative}")
+                elif blob != versions[version]["git_blob"] or sha256_bytes(payload.stdout) != versions[version]["sha256"]:
+                    positive_failures.append(f"wrong {version} blob: {relative}")
+        print(
+            "R5_HISTORY_IDENTITIES "
+            f"v1_commit={v1_commit} v1_tree={v1_tree} "
+            f"v2_commit={v2_commit} v2_tree={v2_tree}"
+        )
+    if positive_failures:
+        for reason in positive_failures:
+            record_failure(R5_GROUP, "R5-01-fresh-checkout-determinism", reason)
+    else:
+        record_pass("R5-01-fresh-checkout-determinism")
+
+    if set(case_ids) != {
+        "history-no-v2-byte-change",
+        "history-one-surface-changed",
+        "history-false-v2-success-retains-v1-tree",
+        "history-expected-v2-blob-mismatch",
+        "history-metadata-only-staging",
+    }:
+        raise HarnessError("R5 history mutations do not equal the closed registry")
+    for case_id in case_ids:
+        R5_MUTATIONS_EXECUTED += 1
+        case_fixture = temp_root / f"r5-fixture-{case_id}"
+        prepare_history_fixture(case_fixture, authority)
+        mutate_history_fixture(case_id, case_fixture, authority)
+        restore = install_history_git_control(module, case_id)
+        try:
+            try:
+                invoke_history_builder(module, case_fixture, temp_root / f"r5-source-{case_id}")
+            except Exception as exc:  # A named production invariant is the required outcome.
+                if HISTORY_INVARIANT in str(exc):
+                    R5_MUTATIONS_PASSED += 1
+                    record_pass(case_id)
+                else:
+                    record_failure(R5_GROUP, case_id, f"wrong diagnostic: {exc}")
+            else:
+                record_failure(R5_GROUP, case_id, "production history builder accepted mutation")
+        finally:
+            restore()
+    correction_pass = 0 if GROUP_FAILURES[R5_GROUP] else 1
+    print(
+        f"R5_HISTORY_MUTATIONS registered={EXPECTED_R5_MUTATIONS} "
+        f"actual={R5_MUTATIONS_EXECUTED} pass={R5_MUTATIONS_PASSED} "
+        f"fail={R5_MUTATIONS_EXECUTED - R5_MUTATIONS_PASSED}"
+    )
+    print(
+        f"R5_CORRECTION registered=1 actual=1 pass={correction_pass} "
+        f"fail={1 - correction_pass}"
+    )
+
+
 def unquote_simple_yaml(value: str) -> str:
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
@@ -549,7 +835,7 @@ def validate_registry() -> dict[str, list[str]]:
         if not isinstance(cases, list) or not cases or not all(isinstance(case, str) and case for case in cases):
             raise HarnessError(f"mutation registry malformed group: {group}")
         identities.extend(cases)
-    expected_total = EXPECTED_MUTATIONS + EXPECTED_R4A_MUTATIONS
+    expected_total = EXPECTED_MUTATIONS + EXPECTED_R4A_MUTATIONS + EXPECTED_R5_MUTATIONS
     if len(identities) != expected_total or len(set(identities)) != expected_total:
         raise HarnessError(
             f"mutation registry must contain {expected_total} unique identities, got {len(identities)}/{len(set(identities))}"
@@ -558,16 +844,19 @@ def validate_registry() -> dict[str, list[str]]:
         raise HarnessError("retained R4 mutation registry cardinality changed")
     if len(groups[R4A_GROUP]) != EXPECTED_R4A_MUTATIONS:
         raise HarnessError("R4a reachability mutation registry cardinality mismatch")
+    if len(groups[R5_GROUP]) != EXPECTED_R5_MUTATIONS:
+        raise HarnessError("R5 history mutation registry cardinality mismatch")
     return groups
 
 
 def main() -> int:
     try:
         groups = validate_registry()
-        if not AUTHORITY.is_file() or not PRODUCER.is_file() or not VALIDATOR.is_file():
-            raise HarnessError("R4 authority or production subject missing")
+        if not all(path.is_file() for path in (AUTHORITY, HISTORY_AUTHORITY, PRODUCER, VALIDATOR)):
+            raise HarnessError("R4/R5 authority or production subject missing")
         with tempfile.TemporaryDirectory(prefix="jv-r4-copier-evidence.") as temp:
             temp_root = Path(temp)
+            test_history_determinism(groups[R5_GROUP], temp_root)
             produced = temp_root / "produced"
             producer = run(
                 [

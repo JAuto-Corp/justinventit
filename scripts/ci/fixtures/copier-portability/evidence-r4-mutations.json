@@ -42,6 +42,13 @@
       "ci-standalone-retained-gate",
       "ci-shell-short-circuit",
       "ci-r4-only"
+    ],
+    "R5-01-fresh-checkout-determinism": [
+      "history-no-v2-byte-change",
+      "history-one-surface-changed",
+      "history-false-v2-success-retains-v1-tree",
+      "history-expected-v2-blob-mismatch",
+      "history-metadata-only-staging"
     ]
   },
   "schema_version": 1
