@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 from typing import Any
 
@@ -92,6 +93,23 @@ def command_record(command: list[str], result: subprocess.CompletedProcess[str])
     }
 
 
+def bundle_file_record(bundle: Path, relative: str) -> dict[str, Any]:
+    path = bundle / relative
+    if path.is_symlink() or not path.is_file():
+        raise CopierReceiptError(f"bundle artifact is not a regular file: {relative}")
+    info = path.stat()
+    if info.st_nlink != 1:
+        raise CopierReceiptError(f"bundle artifact is hardlinked: {relative}")
+    payload = path.read_bytes()
+    return {
+        "path": relative,
+        "class": "regular",
+        "mode": f"{info.st_mode & 0o7777:04o}",
+        "bytes": len(payload),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+
+
 def configure_consumer(target: Path, fixture_root: Path, edit: str) -> tuple[str, str]:
     generated = target / ".claude/skills/copier-conflict-fixture/SKILL.md"
     before = digest(generated)
@@ -140,6 +158,7 @@ def exercise(
     copier_version: str,
     v1_tree: str,
     v2_tree: str,
+    evidence_root: Path,
 ) -> dict[str, Any]:
     target = work / scenario["id"]
     copy_command = [copier, "copy", "--defaults", "--trust", "--vcs-ref", "v1.0.0", str(source), str(target)]
@@ -155,6 +174,8 @@ def exercise(
         "--conflict", scenario["conflict_mode"],
         "--vcs-ref", "v2.0.0",
         "--receipt-out", str(actor_receipt),
+        "--evidence-root", str(evidence_root),
+        "--row-id", scenario["id"],
     ]
     actor_env = os.environ.copy()
     actor_env["PATH"] = f"{Path(copier).parent}:{actor_env.get('PATH', '')}"
@@ -169,6 +190,9 @@ def exercise(
     generated = target / ".claude/skills/copier-conflict-fixture/SKILL.md"
     if canonical.read_bytes() != generated.read_bytes():
         raise CopierReceiptError(f"{scenario['id']} framework-wins remediation did not converge")
+    observation = actor.get("observation")
+    if not isinstance(observation, dict):
+        raise CopierReceiptError(f"{scenario['id']} actor omitted pre-remediation observation")
     rollback_record = rollback(target)
     return {
         "id": scenario["id"],
@@ -181,7 +205,9 @@ def exercise(
         "consumer_edit_after_sha256": after,
         "classification": actor["classification"],
         "remediation": actor["remediation"],
+        "post_remediation_sha256": actor["post_remediation_sha256"],
         "rollback": rollback_record,
+        "observation": observation,
         "template_v1_tree": v1_tree,
         "template_v2_tree": v2_tree,
     }
@@ -197,6 +223,11 @@ def main() -> int:
     fixture_root = args.fixture_root.resolve()
     output_root = args.output_root.resolve()
     try:
+        if output_root.is_symlink() or (output_root.exists() and not output_root.is_dir()):
+            raise CopierReceiptError("output root must be a real directory")
+        if output_root.exists() and any(output_root.iterdir()):
+            raise CopierReceiptError("output root must be empty")
+        output_root.mkdir(parents=True, exist_ok=True)
         copier = shutil.which("copier")
         if copier is None:
             raise CopierReceiptError("copier not found")
@@ -216,20 +247,46 @@ def main() -> int:
             rows = [
                 exercise(
                     project_root, fixture_root, source, work, scenario, copier,
-                    copier_version, v1_tree, v2_tree,
+                    copier_version, v1_tree, v2_tree, output_root,
                 )
                 for scenario in manifest["scenarios"]
             ]
-        output_root.mkdir(parents=True, exist_ok=True)
         receipt = {
             "schema_version": 1,
             "copier_version": copier_version,
             "fixture_manifest_sha256": digest(manifest_path),
             "provenance_question": "fixture_channel=portability-evidence",
+            "manifest_path": "evidence-manifest.json",
             "rows": rows,
         }
         receipt_path = output_root / "copier-real-update-receipt.json"
         receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        receipt_path.chmod(0o444)
+        authorized_paths = [
+            "copier-real-update-receipt.json",
+            *(row["observation"]["captured_path"] for row in rows),
+        ]
+        evidence_manifest = {
+            "schema_version": 1,
+            "bundle_kind": "real-copier-pre-remediation-evidence",
+            "receipt_path": "copier-real-update-receipt.json",
+            "files": [bundle_file_record(output_root, relative) for relative in authorized_paths],
+        }
+        evidence_manifest_path = output_root / "evidence-manifest.json"
+        evidence_manifest_path.write_text(
+            json.dumps(evidence_manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        evidence_manifest_path.chmod(0o444)
+        validated = run(
+            [
+                sys.executable,
+                str(project_root / "scripts/ci/validate-copier-evidence.py"),
+                "--bundle-root", str(output_root),
+            ],
+            cwd=project_root,
+        )
+        require_success(validated, "durable Copier evidence validation")
         print(f"real Copier update receipt: PASS {receipt_path}")
         return 0
     except (OSError, json.JSONDecodeError, CopierReceiptError) as exc:
