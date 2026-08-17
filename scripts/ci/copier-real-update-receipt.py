@@ -19,6 +19,13 @@ class CopierReceiptError(RuntimeError):
     """The real Copier integration did not satisfy its evidence contract."""
 
 
+HISTORY_INVARIANT = "content-addressed fixture history invariant"
+HISTORY_PATHS = {
+    "template/.agents/skills/copier-conflict-fixture/SKILL.md",
+    "template/.claude/skills/copier-conflict-fixture/SKILL.md",
+}
+
+
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -51,7 +58,121 @@ def overlay(source: Path, target: Path) -> None:
     shutil.copytree(source, target, dirs_exist_ok=True, symlinks=True)
 
 
+def history_error(reason: str) -> CopierReceiptError:
+    return CopierReceiptError(f"{HISTORY_INVARIANT}: {reason}")
+
+
+def load_history_authority(project_root: Path) -> dict[str, Any]:
+    path = (
+        project_root
+        / "scripts/ci/fixtures/copier-portability/evidence-r5-history-authority.json"
+    )
+    if path.is_symlink() or not path.is_file():
+        raise history_error("committed R5 authority is missing or not a regular file")
+    if path.stat().st_nlink != 1:
+        raise history_error("committed R5 authority must be a unique file")
+    try:
+        authority = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise history_error(f"committed R5 authority is unreadable: {exc}") from exc
+    if not isinstance(authority, dict) or set(authority) != {
+        "schema_version",
+        "authority_kind",
+        "collision_mtime_ns",
+        "paths",
+        "template_trees",
+    }:
+        raise history_error("committed R5 authority root is not closed")
+    if authority["schema_version"] != 1 or authority["authority_kind"] != "copier-history-content-authority":
+        raise history_error("committed R5 authority identity mismatch")
+    paths = authority["paths"]
+    if not isinstance(paths, dict) or set(paths) != HISTORY_PATHS:
+        raise history_error("committed R5 authority does not close both fixture surfaces")
+    for relative, versions in paths.items():
+        if not isinstance(versions, dict) or set(versions) != {"v1", "v2"}:
+            raise history_error(f"authority version closure mismatch: {relative}")
+        for version, record in versions.items():
+            if not isinstance(record, dict) or set(record) != {"bytes", "sha256", "git_blob"}:
+                raise history_error(f"authority payload closure mismatch: {version}/{relative}")
+            if (
+                not isinstance(record["bytes"], int)
+                or record["bytes"] < 0
+                or not isinstance(record["sha256"], str)
+                or len(record["sha256"]) != 64
+                or not isinstance(record["git_blob"], str)
+                or len(record["git_blob"]) != 40
+            ):
+                raise history_error(f"authority payload identity malformed: {version}/{relative}")
+    trees = authority["template_trees"]
+    if (
+        not isinstance(trees, dict)
+        or set(trees) != {"v1", "v2"}
+        or not all(isinstance(value, str) and len(value) == 40 for value in trees.values())
+        or trees["v1"] == trees["v2"]
+    ):
+        raise history_error("authority tree identities are malformed")
+    return authority
+
+
+def require_payload(payload: bytes, record: dict[str, Any], label: str) -> None:
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    if len(payload) != record["bytes"] or actual_sha256 != record["sha256"]:
+        raise history_error(
+            f"{label} payload mismatch: bytes={len(payload)} sha256={actual_sha256}"
+        )
+
+
+def verify_worktree_history_payloads(
+    source: Path,
+    authority: dict[str, Any],
+    version: str,
+) -> None:
+    for relative, versions in sorted(authority["paths"].items()):
+        path = source / relative
+        if path.is_symlink() or not path.is_file():
+            raise history_error(f"{version} worktree path missing or non-regular: {relative}")
+        require_payload(path.read_bytes(), versions[version], f"{version} worktree {relative}")
+
+
+def staged_blob(source: Path, relative: str) -> tuple[str, bytes]:
+    listing = git(source, "ls-files", "--stage", "--", relative).splitlines()
+    if len(listing) != 1:
+        raise history_error(f"staged path missing or ambiguous: {relative}")
+    fields = listing[0].split(maxsplit=3)
+    if len(fields) != 4 or fields[2] != "0" or fields[3] != relative:
+        raise history_error(f"staged path entry malformed: {relative}")
+    blob = fields[1]
+    result = subprocess.run(
+        ["git", "cat-file", "blob", blob],
+        cwd=source,
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise history_error(
+            f"staged blob unreadable for {relative}: {result.stderr.decode(errors='replace')[-800:]}"
+        )
+    return blob, result.stdout
+
+
+def verify_staged_v2(source: Path, authority: dict[str, Any], v1_tree: str) -> str:
+    staged_tree = git(source, "write-tree")
+    if staged_tree == v1_tree:
+        raise history_error("v2 staged tree retained the v1 tree")
+    if staged_tree != authority["template_trees"]["v2"]:
+        raise history_error(f"unexpected v2 staged tree: {staged_tree}")
+    for relative, versions in sorted(authority["paths"].items()):
+        blob, payload = staged_blob(source, relative)
+        record = versions["v2"]
+        require_payload(payload, record, f"v2 staged {relative}")
+        if blob != record["git_blob"]:
+            raise history_error(f"v2 staged blob identity mismatch: {relative} blob={blob}")
+    return staged_tree
+
+
 def build_history(project_root: Path, fixture_root: Path, source: Path) -> tuple[str, str]:
+    history_authority = load_history_authority(project_root)
     source.mkdir(parents=True)
     copier_config = (fixture_root / "copier.yml").read_text(encoding="utf-8")
     # Copier omits its answers file when a template has zero questions. This
@@ -69,6 +190,7 @@ def build_history(project_root: Path, fixture_root: Path, source: Path) -> tuple
         skill = project_root / "template" / surface / "skills/frontend-design"
         shutil.copytree(skill, source / "template" / surface / "skills/frontend-design")
     overlay(fixture_root / "v1", source)
+    verify_worktree_history_payloads(source, history_authority, "v1")
     git(source, "init", "--quiet")
     git(source, "config", "user.name", "Portability Evidence")
     git(source, "config", "user.email", "portability-evidence@invalid.example")
@@ -76,11 +198,20 @@ def build_history(project_root: Path, fixture_root: Path, source: Path) -> tuple
     git(source, "commit", "--quiet", "-m", "fixture v1")
     git(source, "tag", "v1.0.0")
     v1_tree = git(source, "rev-parse", "v1.0.0^{tree}")
+    if v1_tree != history_authority["template_trees"]["v1"]:
+        raise history_error(f"unexpected v1 tree: {v1_tree}")
     overlay(fixture_root / "v2", source)
-    git(source, "add", ".")
+    verify_worktree_history_payloads(source, history_authority, "v2")
+    git(source, "add", "--all")
+    git(source, "add", "--renormalize", ".")
+    staged_v2_tree = verify_staged_v2(source, history_authority, v1_tree)
     git(source, "commit", "--quiet", "-m", "fixture v2")
     git(source, "tag", "v2.0.0")
     v2_tree = git(source, "rev-parse", "v2.0.0^{tree}")
+    if v2_tree != staged_v2_tree or v2_tree == v1_tree:
+        raise history_error(
+            f"committed v2 tree mismatch: v1={v1_tree} staged={staged_v2_tree} committed={v2_tree}"
+        )
     return v1_tree, v2_tree
 
 
