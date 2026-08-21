@@ -1,0 +1,70 @@
+#!/bin/bash
+# justinventit provider-neutral session-start hook
+# Generates a concise session brief from project state for every runtime.
+
+set -euo pipefail
+
+# Hooks execute with the session cwd. Resolve shared helpers from the Git root
+# so nested-directory starts behave the same in Claude Code and Codex.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+UTILS="$REPO_ROOT/.agents/hooks/lib/utils.sh"
+if [ ! -f "$UTILS" ]; then
+  echo "justinventit session-start: missing shared utilities at $UTILS" >&2
+  exit 1
+fi
+source "$UTILS"
+
+REPO_ROOT=$(get_repo_root)
+STATE_DIR=$(get_state_dir)
+DOCS_DIR=$(get_docs_dir)
+
+echo "=== SESSION STATE ==="
+
+# Current branch and uncommitted files
+BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+UNCOMMITTED=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+echo "Branch: $BRANCH ($UNCOMMITTED uncommitted files)"
+
+# Worktree context (if applicable)
+if is_worktree; then
+  EPIC=$(get_branch_config "epic")
+  echo "Worktree: epic-$EPIC (isolated)"
+fi
+
+# Active work pointer
+if [ -f "$DOCS_DIR/CURRENT_WORK.md" ]; then
+  # Extract the Active section
+  ACTIVE=$(sed -n '/^## Active/,/^## /p' "$DOCS_DIR/CURRENT_WORK.md" | head -5 | tail -4 || true)
+  if [ -n "$ACTIVE" ]; then
+    echo ""
+    echo "Active work:"
+    echo "$ACTIVE"
+  fi
+fi
+
+# Latest WORKING.md observation block (last entry)
+if [ -f "$STATE_DIR/WORKING.md" ]; then
+  LAST_BLOCK=$(grep -n "^## [0-9]" "$STATE_DIR/WORKING.md" | tail -1 | cut -d: -f1 || true)
+  if [ -n "$LAST_BLOCK" ]; then
+    echo ""
+    echo "Last state:"
+    sed -n "${LAST_BLOCK},$((LAST_BLOCK + 5))p" "$STATE_DIR/WORKING.md"
+  fi
+fi
+
+echo ""
+echo "=== END ==="
+
+# Dev-log attention query — the ONE read for "where did I leave everything"
+# (overdue gates + stalled threads + blocked-on-user). The solo agent's payoff.
+ATTENTION="$REPO_ROOT/scripts/attention.sh"
+if [ -x "$ATTENTION" ]; then
+  echo ""
+  "$ATTENTION" || true
+fi
+
+echo ""
+echo "Read: context/WORKING.md (full state)"
+echo "Read: docs/PLAYBOOK.md (routing)"
+echo "Run:  scripts/log.sh attention (re-check the dev-log)"
+echo "Run:  git log -3 (recent commits)"

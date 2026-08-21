@@ -249,6 +249,13 @@ _skip_if_exists:
   # --- Copier answers (seeded once; updated in place by Copier itself, never re-templated) ---
   - ".copier-answers.yml"
 
+  # --- Runtime-local composite seeds ---------------------------------------
+  # Until the deterministic region composer lands, never replace a project's
+  # existing Codex config or hook registry. Fresh projects receive the adapter;
+  # brownfield projects with either file retain it for an explicit merge.
+  - ".codex/config.toml"
+  - ".codex/hooks.json"
+
 _exclude:
   # --- Copier / VCS defaults (must re-list because _exclude replaces the built-in set) ---
   - "copier.yml"

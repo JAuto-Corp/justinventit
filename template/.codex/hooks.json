@@ -1,0 +1,18 @@
+{
+  "description": "justinventit project lifecycle context for Codex CLI and Codex Desktop",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.agents/hooks/session-start.sh\"",
+            "statusMessage": "Loading justinventit session context",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -105,6 +105,7 @@ Key design decisions validated by independent research:
 - [Customization](docs/CUSTOMIZATION.md) — How to extend without breaking sync
 - [Self-Improvement](docs/SELF_IMPROVEMENT.md) — Friction journal and upstream contribution
 - [Brownfield Migration](docs/MIGRATION.md) — Bringing an existing project into the framework
+- [Codex Runtime Adapter](docs/CODEX_RUNTIME_ADAPTER.md) — Safe project-local CLI/Desktop bridge
 
 ## Origin
 
