@@ -34,7 +34,7 @@ fi
 # Active work pointer
 if [ -f "$DOCS_DIR/CURRENT_WORK.md" ]; then
   # Extract the Active section
-  ACTIVE=$(sed -n '/^## Active/,/^## /p' "$DOCS_DIR/CURRENT_WORK.md" | head -5 | tail -4)
+  ACTIVE=$(sed -n '/^## Active/,/^## /p' "$DOCS_DIR/CURRENT_WORK.md" | head -5 | tail -4 || true)
   if [ -n "$ACTIVE" ]; then
     echo ""
     echo "Active work:"
@@ -44,11 +44,11 @@ fi
 
 # Latest WORKING.md observation block (last entry)
 if [ -f "$STATE_DIR/WORKING.md" ]; then
-  LAST_BLOCK=$(grep -n "^## [0-9]" "$STATE_DIR/WORKING.md" | tail -1 | cut -d: -f1)
+  LAST_BLOCK=$(grep -n "^## [0-9]" "$STATE_DIR/WORKING.md" | tail -1 | cut -d: -f1 || true)
   if [ -n "$LAST_BLOCK" ]; then
     echo ""
     echo "Last state:"
-    tail -n +"$LAST_BLOCK" "$STATE_DIR/WORKING.md" | head -6
+    sed -n "${LAST_BLOCK},$((LAST_BLOCK + 5))p" "$STATE_DIR/WORKING.md"
   fi
 fi
 

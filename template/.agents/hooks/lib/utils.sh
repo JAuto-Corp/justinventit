@@ -13,10 +13,12 @@ get_timestamp() {
 
 # Check if we're in a worktree (not the main repo)
 is_worktree() {
-  local root
+  local root common_dir git_dir
   root=$(get_repo_root)
+  common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+  git_dir=$(git rev-parse --path-format=absolute --git-dir 2>/dev/null) || return 1
   [ -f "$root/.supabase-branch.json" ] || \
-    [ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ]
+    [ "$common_dir" != "$git_dir" ]
 }
 
 # Read a JSON field from .supabase-branch.json (if it exists)
