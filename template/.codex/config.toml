@@ -1,0 +1,3 @@
+# Transitional context bridge for projects that have not generated AGENTS.md
+# yet. Native AGENTS.md discovery always wins when the migration lands.
+project_doc_fallback_filenames = ["CLAUDE.md"]

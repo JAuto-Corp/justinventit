@@ -76,7 +76,7 @@ COPIER_VERSION="$("$COPIER" --version 2>&1)"
 }
 
 # --- required tooling --------------------------------------------------------
-for tool in jq python3 bash find grep sed; do
+for tool in jq python3 bash find grep sed cmp git codex; do
   command -v "$tool" >/dev/null 2>&1 || { echo "ERROR: required tool missing: $tool" >&2; exit 3; }
 done
 
@@ -178,6 +178,12 @@ check_set() {
   local S="$out/.claude/settings.json"
   local HB="$out/.claude/hooks/stop/actions/heartbeat-writer.sh"
   local GUARD="$out/.claude/hooks/guards/migration-safety.sh"
+  local SHARED_START="$out/.agents/hooks/session-start.sh"
+  local SHARED_UTILS="$out/.agents/hooks/lib/utils.sh"
+  local CLAUDE_START="$out/.claude/hooks/session-start.sh"
+  local CLAUDE_UTILS="$out/.claude/hooks/lib/utils.sh"
+  local CODEX_CONFIG="$out/.codex/config.toml"
+  local CODEX_HOOKS="$out/.codex/hooks.json"
   local EXPECTED="$TEMPLATE_ROOT/scripts/ci/fixtures/frontend-design.expected.json"
 
   # --- portable frontend-design authority and both physical runtime routes ---
@@ -224,6 +230,44 @@ check_set() {
     errs+=("(b) .claude/settings.json is NOT valid JSON")
   fi
 
+  # --- (b) Codex adapter is project-local and policy-neutral ---------------
+  if [ ! -f "$CODEX_CONFIG" ]; then
+    errs+=("(b) .codex/config.toml missing")
+  elif ! python3 - "$CODEX_CONFIG" >"$TMP_ROOT/$name.codex-config.log" 2>&1 <<'PY'
+import sys
+import tomllib
+
+with open(sys.argv[1], "rb") as handle:
+    config = tomllib.load(handle)
+
+expected = {"project_doc_fallback_filenames": ["CLAUDE.md"]}
+if config != expected:
+    raise SystemExit(f"Codex project config widened beyond the context bridge: {config!r}")
+PY
+  then
+    errs+=("(b) .codex/config.toml is invalid or contains non-context policy")
+  fi
+
+  if [ ! -f "$CODEX_HOOKS" ]; then
+    errs+=("(b) .codex/hooks.json missing")
+  elif ! jq -e '
+    (.hooks | keys == ["SessionStart"]) and
+    (.hooks.SessionStart | length == 1) and
+    (.hooks.SessionStart[0].matcher == "startup|resume|clear|compact") and
+    (.hooks.SessionStart[0].hooks | length == 1) and
+    (.hooks.SessionStart[0].hooks[0].type == "command") and
+    (.hooks.SessionStart[0].hooks[0].command == "bash \"$(git rev-parse --show-toplevel)/.agents/hooks/session-start.sh\"") and
+    (.hooks.SessionStart[0].hooks[0].additionalContextLimit == 6000)
+  ' "$CODEX_HOOKS" >/dev/null 2>&1; then
+    errs+=("(b) .codex/hooks.json is invalid or widens beyond SessionStart context")
+  fi
+
+  for codex_seed in '.codex/config.toml' '.codex/hooks.json'; do
+    if ! grep -qF -- "- \"$codex_seed\"" "$TEMPLATE_ROOT/copier.yml"; then
+      errs+=("(b) $codex_seed is not protected as a seed-once brownfield file")
+    fi
+  done
+
   # --- (c) bash -n clean on every generated *.sh ---
   local sh nerr
   nerr=""
@@ -238,7 +282,11 @@ check_set() {
     [ -x "$sh" ] || ne="$ne ${sh#"$out"/}"
   done < <(find "$out/.claude/hooks/stop/checks" "$out/.claude/hooks/stop/actions" -name '*.sh' -print 2>/dev/null)
   [ -x "$out/.claude/hooks/stop/runner.sh" ] || ne="$ne .claude/hooks/stop/runner.sh"
-  [ -n "$ne" ] && { errs+=("(c) NON-executable stop hook(s) — pipeline would be dead:"); for x in $ne; do errs+=("    $x"); done; }
+  [ -x "$SHARED_START" ] || ne="$ne .agents/hooks/session-start.sh"
+  [ -x "$SHARED_UTILS" ] || ne="$ne .agents/hooks/lib/utils.sh"
+  [ -x "$CLAUDE_START" ] || ne="$ne .claude/hooks/session-start.sh"
+  [ -x "$CLAUDE_UTILS" ] || ne="$ne .claude/hooks/lib/utils.sh"
+  [ -n "$ne" ] && { errs+=("(c) NON-executable framework hook(s) — pipeline would be dead:"); for x in $ne; do errs+=("    $x"); done; }
 
   # --- (d) hook harness green ---
   if [ -f "$out/.claude/hooks/tests/run-all.sh" ]; then
@@ -262,6 +310,37 @@ check_set() {
     fi
   else
     errs+=("(d) stop/runner.sh missing")
+  fi
+
+  # --- (d) Codex actually consumes CLAUDE.md through the trusted fallback --
+  # A private temporary CODEX_HOME proves the project file is doing the work;
+  # no developer machine or CI runner configuration is read or mutated.
+  local codex_home="$TMP_ROOT/codex-home-$name"
+  local prompt_json="$TMP_ROOT/$name.codex-prompt.json"
+  local prompt_err="$TMP_ROOT/$name.codex-prompt.err"
+  local prompt_marker
+  mkdir -p "$codex_home"
+  git -C "$out" init -q -b adapter-prompt-test
+  python3 - "$codex_home/config.toml" "$out" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+destination = Path(sys.argv[1])
+project = str(Path(sys.argv[2]).resolve())
+destination.write_text(
+    f"[projects.{json.dumps(project)}]\ntrust_level = \"trusted\"\n",
+    encoding="utf-8",
+)
+PY
+  prompt_marker="$(grep -m1 '^# .* — Development Guide$' "$out/CLAUDE.md")"
+  if [ -z "$prompt_marker" ]; then
+    errs+=("(d) generated CLAUDE.md has no project development-guide marker")
+  elif ! (cd "$out" && CODEX_HOME="$codex_home" codex debug prompt-input) \
+      >"$prompt_json" 2>"$prompt_err"; then
+    errs+=("(d) codex debug prompt-input failed for the generated project")
+  elif ! grep -qF -- "$prompt_marker" "$prompt_json"; then
+    errs+=("(d) Codex did not load generated CLAUDE.md through the project fallback")
   fi
 
   # --- (e) answer-coherence: heartbeat gate (orchestration_tier) ---
@@ -321,6 +400,37 @@ _report() {
     printf '\n[FAIL] %s\n' "$name"
     local line
     for line in "${_e[@]}"; do printf '   %s\n' "$line"; done
+  fi
+}
+
+check_codex_brownfield_preservation() {
+  local datafile="$1"
+  local out="$TMP_ROOT/out-brownfield-existing-codex"
+  local expected_config="$TMP_ROOT/brownfield-config.expected"
+  local expected_hooks="$TMP_ROOT/brownfield-hooks.expected"
+
+  mkdir -p "$out/.codex"
+  printf '%s\n' '# project-owned config sentinel' 'model = "project-owned"' \
+    > "$out/.codex/config.toml"
+  printf '%s\n' '{"projectOwned":true}' > "$out/.codex/hooks.json"
+  cp "$out/.codex/config.toml" "$expected_config"
+  cp "$out/.codex/hooks.json" "$expected_hooks"
+
+  if ! "$COPIER" copy --defaults "${VCS_ARGS[@]}" --data-file "$datafile" \
+      "$TEMPLATE_ROOT" "$out" >"$TMP_ROOT/brownfield-codex.copier.log" 2>&1; then
+    FAILS=$((FAILS + 1))
+    echo ""
+    echo "[FAIL] brownfield-existing-codex"
+    echo "   copier copy failed while testing seed preservation"
+  elif ! cmp -s "$expected_config" "$out/.codex/config.toml" || \
+       ! cmp -s "$expected_hooks" "$out/.codex/hooks.json"; then
+    FAILS=$((FAILS + 1))
+    echo ""
+    echo "[FAIL] brownfield-existing-codex"
+    echo "   existing project-owned Codex config or hooks were replaced"
+  else
+    echo ""
+    echo "[PASS] brownfield-existing-codex"
   fi
 }
 
@@ -416,6 +526,7 @@ staging_branch: staging
 YML
 
 #            name                            data-file                                        hb        mig
+check_codex_brownfield_preservation "$TMP_ROOT/data/solo-greenfield-none.yml"
 check_set "solo-greenfield-none"        "$TMP_ROOT/data/solo-greenfield-none.yml"        inert     none
 check_set "cluster-brownfield-supabase" "$TMP_ROOT/data/cluster-brownfield-supabase.yml" producer  supabase
 check_set "cluster-brownfield-postgres" "$TMP_ROOT/data/cluster-brownfield-postgres.yml" producer  sql
