@@ -25,9 +25,15 @@ Registry: one JSON file per seat at `<coordination-root>/<project_id>/sessions/<
   "model": "from matrix",
   "effort": "from matrix",
   "workdir": "/abs/path",
-  "session_handle": "claude conversation UUID | codex thread name/uuid",
   "capabilities": { "resumable": true, "external_invoke": "remote-control | exec-resume | tmux-keys | none", "watcher_locations": ["host", "in-session"], "hooks": true, "memory": false },
-  "lease": { "holder": null, "epoch": 0, "expires_at": null },
+  "lease": { "holder": null, "purpose": "revival | action | null", "subject": "action id when purpose == action | null", "epoch": 0, "expires_at": null },
+  "active_incarnation": "ULID | null before first activation (§2a — durable, survives lease release)",
+  "active_session_handle": "{id: claude conversation UUID | codex thread name/uuid, launch_id: launcher-minted ULID, fresh per launch/resume attempt} — the ACTIVE incarnation's handle; a handle is a COMPOUND and every handle comparison in this spec compares BOTH fields (§2a)",
+  "proposed_incarnation": "ULID | null (installed under the revival lease, activated only by the §2a accept CAS)",
+  "proposed_session_handle": "handle (compound, as above) bound at launch, installed WITH the proposal | null (never overwrites the active pair; failure cleanup clears the proposed pair only)",
+  "ack": { "incarnation": null, "session_handle": null, "heartbeat_at": null },
+  "membership": "live | tombstone (§2a — retirement tombstones, hard-delete is forbidden)",
+  "seat_record_schema_version": 2,
   "watcher": { "location": null, "generation": 0, "session_handle": null, "status": null, "last_poll_at": null, "expires_at": null }
 }
 ```
@@ -70,18 +76,23 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
 | (no match) | a seat whose state matches no row is itself a LOUD finding | — |
 
 - **Heartbeat**: written ONLY by the seat's own turn-end hook, on both runtimes (Codex Stop
-  hook; same portable script). Fields: state, role, heartbeat_at, wake_count,
-  cadence_seconds, next_wake_at, context. Schema-validated on write AND read — prose in a
+  hook; same portable script). Fields: state, role, incarnation, session_handle, heartbeat_at,
+  wake_count, cadence_seconds, next_wake_at, context (incarnation/handle per §2a — a
+  heartbeat that cannot say WHO wrote it cannot fence anything). Schema-validated on write AND read — prose in a
   numeric field is a loud error, not a watchdog crash. **No external process ever writes
   heartbeat fields** — a watchdog-authored heartbeat certifies false liveness (§4 canary).
 - `dormant` + a conclusion reason (§4a ceremony) is deliberate sleep, never a stall.
-- **Leases exist only for revival windows — liveness is heartbeats.** A healthy seat runs
+- **Leases exist only for bounded windows — revival choreography and §2a's named-action
+  effects; liveness is heartbeats.** A healthy seat runs
   **unleased** (`holder: null` is the normal state); staleness is judged by heartbeat age,
   never by lease state. Every revival path (pacemaker, doorbell, human script) must acquire
   the seat's revival lease via **compare-and-swap**: read `{holder, expires_at}`;
   acquisition succeeds only if the CAS primitive atomically verifies
-  `holder is null OR expires_at < now` while writing `{holder: <fencing token = fresh ULID>,
-  expires_at}`. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
+  `(holder is null OR expires_at < now) AND membership == live` while writing
+  `{holder: <fencing token = fresh ULID>, purpose: revival, subject: null, expires_at}` —
+  THIS transition mints REVIVAL leases only; action leases have their own complete §2a
+  acquisition and can never come from this one. Purpose is immutable for a lease's life;
+  a tombstoned seat's lease is never acquirable. Fencing is by **token equality, not epoch arithmetic** — ULIDs are unique
   across registry recreation and re-adoption, so there is no counter to reset (the epoch
   field survives only as a human-readable revival counter with no fencing role). Two racers
   cannot both win — exactly one CAS succeeds; the loser observes a foreign token and stands
@@ -89,18 +100,16 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   CAS implementation per registry backend: hub-backed registry = transactional
   conditional update; file-backed registry = a **per-seat mutex** (`flock` on
   `<letter>.lock`, held for the whole operation) inside which the acquirer re-reads the
-  lease record, re-verifies the full predicate (epoch AND holder AND expiry), and commits
+  lease record, re-verifies the full predicate (holder AND expiry — epoch is a display
+  counter with no fencing role, §2a owns write authorization), and commits
   the new record via temp+rename — versioned claim-file tricks are explicitly rejected
   (a freed pathname readmits delayed racers). Renewal and acquisition run under the SAME
   mutex with the same full-predicate re-read; they differ only in the predicate
   (renewal: holder == self).
-  The revived seat **validates its fencing token (holder + epoch) before its first
-  side-effect** and re-validates before irreversible actions; a stale token = stop
-  immediately. **Handoff**: the reviver passes its fencing token in the revival payload; the
-  revived seat validates token-equality against the CURRENT lease record before its first
-  side-effect and re-validates before irreversible actions; the reviver releases (nulls
-  holder) only AFTER observing the revived seat's first heartbeat — never mid-turn — after
-  which the seat runs unleased again. STALLED is defined solely by the predicate table
+  Write authorization during and after revival is owned by the **§2a normative predicate
+  table** — the single source; this section states none of its own. Installation,
+  acknowledgement, and acceptance-and-release are §2a's single CAS; there is NO separate
+  release step, and no epoch arithmetic anywhere in fencing. STALLED is defined solely by the predicate table
   above; DEAD = stalled AND the configured revival budget is exhausted (N failed/unclaimed
   revival windows) or an operator declares it. Lease state never defines liveness; process
   checks are diagnostics for reports, never triggers.
@@ -114,6 +123,237 @@ any → dead (stalled + revival budget exhausted, or operator-declared) ↘ repo
   `superseded_by`, performs NO side effects, and self-concludes. Human-unpark of a
   not-yet-superseded seat re-acquires the lease and injects a fresh validated token before
   any turn.
+
+### 2a. Seat-control primitives (2026-07-28, r2 2026-07-29 — stage-0 hardening: every fence moved to the atomic effect boundary)
+
+**Status: normative but NOT BUILT — OPEN.** No seat-control backend implementing this
+section exists at PR head; the owning implementation wave is the conformance wave's
+revival-hardening unit. The JAuto artifacts cited at the end are prior-art EVIDENCE from
+the source fleet, never authority. The lease above is a REVIVAL-WINDOW primitive; building
+against it exposed the gaps below. Each is a requirement on the seat-control backend, not
+on any one migration.
+
+**Incarnations and phase-specific fencing.**
+- The record carries `active_incarnation` — a durable ULID, `null` only before first
+  activation. It is minted by the REVIVER (the current lease holder — first boot is the
+  revival of an empty seat and takes the same lease, which also serializes initial-boot
+  races), bound at launch to the launched session's EXACT compound `session_handle`
+  (§1: `{id, launch_id}` — never the letter, which names the SEAT across all
+  incarnations; and never a bare session id, which RECURS across incarnations on
+  resume-capable runtimes), installed as
+  `proposed_incarnation` under the lease, and becomes ACTIVE only through the
+  acknowledgement CAS below. Boot/revival state machine, complete: mint(reviver) →
+  bind(session handle, at launch) → install(proposed, under lease) → accept(one CAS:
+  activate + persist ack + release) → unleased-active; failure exits: clear-proposed
+  (by the holder, or by the next lease acquirer after expiry), park-supersession (§2),
+  tombstone (membership below). Registry recreation cannot resurrect an incarnation —
+  ULIDs are unique across recreation, and every fenced write re-validates its tuple.
+- **Why the compound handle (evidence-corrected 2026-07-29).** An earlier revision
+  rationalized handle-binding as "letters recur across incarnations, handles do not" —
+  REFUTED by source-fleet evidence: the launcher revives seats by RESUMING the prior
+  session id (one seat's single id carried three models across resume generations), so
+  a bare id looks freshest exactly when it is stalest — two stale artifacts agreeing is
+  not evidence. `launch_id` is a FRESH ULID the launcher mints per launch or resume
+  ATTEMPT (§3) — uniqueness by mint, deliberately NOT a per-id counter: a counter needs
+  a durable, never-cleared high-water mark to survive crash-before-install and
+  failed-proposal cleanup, which re-imports exactly the epoch-reset trap §2 rejects
+  ("there is no counter to reset" is the design rule, and it applies here too). It is
+  carried in the LAUNCH ENVIRONMENT, never the transcript: a delayed turn from a
+  pre-resume attempt computes its fencing terms from its own launch-time environment,
+  and cannot echo its successor's `launch_id` even though the successor's transcript is
+  ambient in the shared conversation. Across revivals the generation discriminator
+  remains the incarnation ULID; the compound handle additionally pins the WITHIN-ID
+  attempt, closing the resumed-handle hole. Crash behavior is stateless by
+  construction: crash-before-launch, crash-after-launch-before-install, and
+  failed-attempt-then-resume each mint a fresh `launch_id` on the next attempt —
+  nothing durable to reserve, nothing cleanup can lose; registry recreation changes
+  nothing (ULIDs are unique across recreation). Schema note: §2a is pre-build (status
+  above) — the compound lands in seat-record schema v2 as authored; there is no
+  deployed v2 to migrate.
+- **THE normative write-authorization predicate table** (single source; §2 defers here —
+  every authoritative write, no exceptions):
+
+  | Writer | Predicate |
+  |-|-|
+  | steady-state seat | `membership == live AND proposed_incarnation == null AND active_incarnation == mine` |
+  | arriving session (pre-acceptance) | `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND proposed_incarnation == mine AND proposed_session_handle == mine` — and ONLY the enumerated pre-acceptance operations below |
+  | reviver (control plane: install / clear / accept) | `membership == live AND lease.purpose == revival AND lease.holder == mine` |
+  | action-lease holder | `membership == live AND proposed_incarnation == null AND active_incarnation == mine AND active_session_handle == mine AND lease.purpose == action AND lease.holder == mine AND requested effect == lease.subject AND expires_at > now + effect_commit_budget` — authorizes ONLY that named effect, never a control transition |
+  | anything else | refused |
+
+  A lease's PURPOSE is part of every predicate — an action lease can never install,
+  clear, or accept a proposal, and a revival lease never authorizes an external effect
+  outside the revival choreography. Fixtures, both directions: tombstoned-seat lease
+  acquisition refused (with live-seat control); action-lease holder attempting a control
+  transition refused (with revival-lease control).
+
+  **Pre-acceptance operations, complete list**: writing its OWN per-incarnation heartbeat
+  slot (which IS the acknowledgement) and forensic reads. Hub appends, cursor commits, and
+  registry mutations beyond that slot are FORBIDDEN before acceptance — they all require
+  the steady-state predicate (this answers where hub/cursor writes stand: active only).
+  **The incumbent freeze is deliberate**: installing a proposal makes the steady-state
+  predicate false (`proposed != null`), so a still-live predecessor's next authoritative
+  write is REFUSED — split-brain during the acknowledgement window becomes a visible stop,
+  not concurrent authority. A seat hitting the freeze halts, reports live-predecessor
+  evidence, and awaits disposition; revival only ever targets seats presumed stalled, so
+  the refusal is itself the discovery mechanism when that presumption was wrong.
+- **A validity check that is not atomic with its write is not a fence.** Every
+  authoritative mutation — registry fields, cursor commits, lifecycle transitions,
+  hub-local records — goes through the backend's ATOMIC CONDITIONAL WRITE: file backend =
+  the §2 per-seat mutex with the predicate re-read INSIDE the lock and a temp+rename
+  commit; postgrest = a conditional UPDATE whose WHERE clause carries the fencing tuple,
+  verified by rows-affected. Read-validate-then-write without the enclosing atomicity is
+  NON-CONFORMING — the TOCTOU window between validation and effect is exactly where a
+  concurrent revival lands.
+- **External effects cannot be conditioned on the registry atomically.** In order of
+  preference: (1) sink-enforced fencing/idempotency key
+  `{project, seat, incarnation, action_id}` where the sink supports one; (2) an ACTION
+  LEASE — a short-lived seat-control lease spanning validate→effect→record, so a
+  superseding revival cannot begin inside the window. Its lifecycle is PURPOSE-SPECIFIC,
+  never the generic revival acquisition, and it is a COMPLETE lease CAS of its own:
+  acquisition atomically verifies `(holder is null OR expires_at < now) AND
+  membership == live AND proposed_incarnation == null AND
+  active_incarnation == requester AND active_session_handle == requester's` while
+  writing `{holder: fresh ULID, purpose: action, subject: <action id>, expires_at}` —
+  availability is part of the predicate, so an action acquisition can never overwrite a
+  live revival lease (including the reviver's pre-proposal interval). The EFFECT has its
+  OWN predicate (availability belongs to acquisition alone — it is necessarily false
+  once held): `membership == live AND proposed_incarnation == null AND
+  active_incarnation == mine AND active_session_handle == mine AND
+  lease.purpose == action AND lease.holder == mine AND lease.subject == <this action>
+  AND expires_at > now + effect_commit_budget` — the last term requires the lease to
+  remain valid across a NAMED bounded effect-and-commit budget (`effect_commit_budget`,
+  matrix-authored per action class), which is what makes the validate→effect→record span
+  a real guarantee rather than a hope. Insufficient remaining validity means RENEW FIRST
+  (conditional on `holder == self AND purpose == action`) before the effect; an effect
+  whose duration cannot be bounded is classified `unfencable` (class 3 above) rather
+  than pretending a lease spans it. Release conditionally (on holder) clears the
+  COMPLETE tuple `{holder, purpose, subject}`. A stale incarnation or
+  a proposal-frozen incumbent therefore cannot self-mint external-effect authority.
+  Fixtures, both directions with live controls: stale-incarnation acquisition refused;
+  proposal-pending acquisition refused; wrong-subject effect refused;
+  revival-held-before-proposal action acquisition refused; concurrent action
+  acquisitions produce exactly one winner; the generic acquisition demonstrably CANNOT
+  mint `purpose: action`; wrong-session-handle acquisition refused;
+  expiry-before-effect refused (budget term); expiry-DURING-effect racing a concurrent
+  revival acquisition — the revival serializes, the effect's commit fails its predicate,
+  and the action record surfaces `compromised` (state defined structurally in
+  `HUB_DATA_MODEL.md` §1a — transition predicate, linked event, ack behavior, successor
+  recovery); (3) where neither exists the effect
+  is classified `unfencable`: the residual stale/duplicate window is DECLARED at the call
+  site, the action record carries the acting incarnation for post-hoc `compromised`
+  detection (immutable attempt attribution — `HUB_DATA_MODEL.md` §1a evidence class 3),
+  and the enforcement class is
+  stated attentional. Silent membership in
+  class (3) is forbidden.
+- A seat whose incarnation is no longer current performs NO authoritative or external
+  effects. The stale-incarnation allowance list, complete: forensic reads; appends to its
+  OWN outbound/report stream (marked stale-incarnation); its own self-conclusion
+  acknowledgement (`superseded_acknowledged`); marking its OWN action records
+  `compromised` (`HUB_DATA_MODEL.md` §1a — the write that turns a lost fence into a
+  visible record). Nothing else.
+
+**Acknowledgement and release — one CAS, no inference.**
+- The revival acknowledgement is DATA the arriving seat writes: its first heartbeat (its
+  own per-incarnation slot), carrying `{incarnation, session_handle}`. Acceptance-and-release
+  is a SINGLE atomic transition under the registry backend's conditional write, predicate:
+  `membership == live AND lease.purpose == revival AND lease.holder == reviver_token AND
+  proposed_incarnation == heartbeat.incarnation AND
+  heartbeat.session_handle == proposed_session_handle` — every term read from the DURABLE
+  record, nothing from reviver memory. Effect, atomically: `{active_incarnation,
+  active_session_handle} := {proposed_incarnation, proposed_session_handle}`,
+  `ack := {incarnation, session_handle, heartbeat_at}` persisted, the proposed PAIR := null,
+  `lease.holder := null`. Failure cleanup clears the proposed pair only — the active pair
+  is never touched by any path except this promotion.
+- Release is NEVER a separate unconditional null-write. A reviver whose lease expired and
+  was reacquired by another fails the predicate on `lease.holder` and stands down; a
+  delayed heartbeat from incarnation N observed after N+1 is active fails on the
+  incarnation term and is REPORTED as evidence of a live predecessor, never accepted.
+  The persisted `ack` distinguishes installed-but-unacked from accepted across crashes.
+- Fixtures (both directions, with validity controls): two-reviver race;
+  delayed-ack-after-expiry-and-reacquisition; wrong-session-handle ack;
+  stale-launch-id ack (same session id, prior launch attempt);
+  crash-before-launch, crash-after-launch-before-install, and
+  failed-attempt-then-resume (each asserts the next attempt carries a FRESH
+  `launch_id` and the prior attempt's ack is refused);
+  N-ack-after-N+1-active; stale-release attempt; crash-between-install-and-accept;
+  registry-recreation-mid-revival.
+
+**Membership is serialized WITH enumeration — per backend, by name.**
+- File backend: a PROJECT registry lock at
+  `<coordination-root>/<project_id>/registry.lock` plus a manifest
+  (`registry.json`: `{membership_revision, letters[]}`, committed temp+rename).
+  Membership writers (create, adopt, retire, cutover) hold the lock EXCLUSIVE and
+  increment `membership_revision`; enumeration either holds it SHARED or runs lock-free
+  by reading `membership_revision` before and after the scan and RETRYING on change.
+- postgrest backend: membership writes are single-statement DML on `roles`; enumeration
+  is a single-statement read (statement snapshot) or a repeatable-read transaction — the
+  serialization point is the database snapshot, named so nobody substitutes polling.
+- Lock ORDER is registry-before-seat, never inverted; a path needing both acquires the
+  registry lock first.
+- **Retirement is a TOMBSTONE, never a hard delete — and it is ONE atomic transition**:
+  set `membership: tombstone`, invalidate any lease (null holder/purpose/subject), and
+  clear the proposed pair, in a single conditional write under the registry lock. A
+  retired record keeps its letter and final incarnation. Late-write semantics distinguish
+  EVIDENCE from AUTHORITY: a CONTROL write for a tombstoned seat (lease acquisition, ack
+  consumption, registry mutation) is refused LOUDLY; an own-slot heartbeat write LANDS as
+  non-authoritative evidence (per the heartbeat block — no membership check on the hot
+  path) and is ignored for liveness/acceptance and REPORTED. Either way the late writer
+  is preserved as evidence — never silently re-creatable as a fresh identity (the
+  false-authorship class, `HUB_DATA_MODEL.md` §1a origin integrity).
+- **The short-roster rule (named HERE; §4's watchdog coverage claim defers to it):**
+  enumeration that observes zero seats, a `membership_revision` change mid-scan, or fewer
+  letters than the manifest claims emits a LOUD finding and does NOT act on the partial
+  roster. Fixtures: create/retire/adopt/cutover interleaved with enumeration; a plausible
+  NONZERO short roster (N−1 of N); a revision-torn scan retried to a stable read.
+
+**Heartbeat: per-incarnation evidence slots — uncontended writes, fenced SELECTION.**
+- Heartbeat is a PER-INCARNATION resource: file backend =
+  `<letter>.heartbeat.<incarnation>.json`, written temp+rename under its own narrow flock;
+  postgrest = a `(seat, incarnation)`-keyed row upserted column-scoped. An incarnation
+  writes ONLY its own slot, so predecessor and successor never contend for one file and
+  the hot path takes no seat-control or registry lock — the write itself performs NO
+  cross-incarnation and NO membership refusal check, which is what makes it uncontended
+  and TOCTOU-free (either check here would need exactly the lock this rule forbids).
+  Admission is not authority: a slot landing proves only that a session wrote it —
+  SELECTION (below) is where tombstone and incarnation checks live, atomically.
+- **Fencing lives in SELECTION, not the write.** Heartbeat slots are evidence, not
+  authority: acceptance reads the PROPOSED incarnation's slot (the ack predicate above);
+  watchdog liveness selects the slot matching the CURRENT `{active | proposed}` tuple and
+  live membership, read atomically under the seat-control read path. Slots from any other
+  incarnation, or for tombstoned seats, are IGNORED for liveness and separately REPORTED
+  (live-predecessor / late-writer evidence). Superseded slots are garbage-collected by the
+  sweep after tombstone or supersession — bounded, never load-bearing.
+- Bounded: the write carries a deadline (`hb_write_deadline`, matrix-authored). On failure
+  or timeout the seat does NOT retry-loop inside the turn; it records the failure loudly
+  in its own log/outbound stream. Degradation is externally observable BY CONSTRUCTION:
+  the watchdog reads heartbeat AGE over the SELECTED slot, so a failing heartbeat path
+  trips the §2 predicates — the alert route needs no second channel; the loud local
+  record is for diagnosis.
+- The shipped template heartbeat-writer (swallows failures, exits zero) and the
+  pacemaker's file-mtime fallback are **NONCONFORMING, named migration work** — replaced
+  by this contract's implementation, never cited as behavior.
+
+**Cursors, acknowledgement records, and effect idempotency — canonical model in
+`HUB_DATA_MODEL.md` §1a.** This spec uses three cursors by name — `notification` (watcher
+observation), `delivered` (transport/projection bookkeeping), `processed` (act-commit) —
+and §1a owns their schema (discriminated per kind), the per-stream contiguous-prefix
+rule, per-event ack records for out-of-order acts, the PER-KIND authorization predicates
+with three-way commit semantics, backlog-age semantics, and the action-idempotency
+contract (ingest-dedup is NOT effect-dedup).
+
+**Conformance for this whole section**: every negative claim above ("refused", "LOUD",
+"stands down", "never") ships a BOTH-DIRECTIONS fixture with a validity control, per
+backend, per runtime — plus composition fixtures: lease×incarnation×ack,
+membership×heartbeat (retire racing a heartbeat write), and incarnation×processed-commit
+(revival racing a mid-act consumer). Until that wave ships, every rule here is
+enforcement-class ATTENTIONAL, and this sentence is the disclosure.
+
+**Provenance (evidence, not authority):** JAuto conformance-wave artifacts — B4 seat
+records (RED 7661422f7), B0 authoritative-append transport (#3407, staging 136aace47),
+watchdog detection unit (PR #3426, head bd33de07d) — and hub findings 01KYN928QZ
+(false authorship / origin-disputed appends) and 01KYN10VA7 (nine-worktree fork table,
+a lower bound).
   Conformance: adversarial concurrent-acquisition fixtures (two racers, N racers,
   crash-mid-acquire, **delayed-racer-after-commit, renewal-vs-acquisition race, registry
   recreation mid-lease** — token fencing must hold across a recreated registry) run
@@ -159,20 +399,24 @@ The Phase-3 launcher is one script, runtime-dispatched by the seat record (statu
 above governs this whole section). Boot prompts come from
 role templates; the launcher never injects them as positional args (silent no-op trap on
 Claude interactive; unverified on Codex — templates are pasted/poked, not arg-passed).
+The launcher also authors the handle compound's `launch_id` (§1/§2a): a fresh ULID
+minted per launch or resume attempt, exported into the launch environment — never
+sourced from the transcript, never reused across attempts.
 
 ## 4. Wake model
 
 - **Doorbell (preferred; cross-seat events + durable actionable completions — the
   completion event is the one non-cross-seat doorbell source, since it may address its own
   invoker; in-session subagents remain native-delivery, never doorbells)**: a bounded watcher re-invokes the seat ON an
-  event (mailbox append, artifact landing). **Two cursors, never conflated**: the watcher
-  reads from its own *notification cursor* (observation only — advancing it acknowledges
-  nothing); the seat's *processing cursor* advances only after the message's side effect is
-  recorded. Missed-event-safe: the watcher compares the stream head to the processing
+  event (mailbox append, artifact landing). **Three cursors, never conflated** (canonical model:
+  `HUB_DATA_MODEL.md` §1a): the watcher reads from its own *notification cursor*
+  (observation only — advancing it acknowledges nothing); the transport's *delivered
+  cursor* is projection bookkeeping; the seat's *processing cursor* advances only after
+  the message's side effect is recorded (commit-after-acting, §5). Missed-event-safe: the watcher compares the stream head to the processing
   cursor, so an event landing before the watcher armed still triggers a wake. Redelivery
-  after a crash (side effect done, processing cursor not advanced) is safe because consumer
-  side effects are idempotent by `hub_id` (the hub contract); crash before the side effect
-  simply reprocesses. Bursts coalesce (one wake per quiet-window); watcher expiry = seat's
+  after a crash (side effect done, processing cursor not advanced) is safe under §1a's
+  ACTION-idempotency contract — `hub_id` ingest-dedup alone does NOT make consumer effects
+  idempotent; crash before the side effect simply reprocesses. Bursts coalesce (one wake per quiet-window); watcher expiry = seat's
   grace window; every wake goes through the lease (§2). Conformance fixtures crash the
   consumer both before and after side-effect/cursor-advance. In-session subagents NEVER use
   doorbells — the harness re-invokes the parent natively.
@@ -225,7 +469,8 @@ Claude interactive; unverified on Codex — templates are pasted/poked, not arg-
   interface** (§1): file operations on single-host registries, hub queries on postgrest
   fleets — never a hardcoded path assumption. Acts only through leases; skips `dormant`;
   covers EVERY registered seat by construction (roster = seat-control enumeration, never a
-  hardcoded list — the source system's hardcoded roster silently dropped two live seats).
+  hardcoded list — the source system's hardcoded roster silently dropped two live seats;
+  partial or torn rosters REFUSE per the §2a short-roster rule, which this claim defers to).
   **Alert dedup must not key on the frozen state it deduplicates**: a dedup key derived
   from the stall's reference epoch degrades "one alert per window" into ONE ALERT EVER for
   a never-recovering seat — the more broken the seat, the more silent its watchdog.
@@ -311,13 +556,25 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
 - Recipient isolation is **enforced by the backend where it can be** (postgrest:
   recipient-scoped reads). On the portable single-host backends it is a stated trust
   assumption: **seats within one project are mutually trusted** (hub spec §4); own-letter-only
-  remains the protocol rule everywhere because a read advances the processing cursor —
-  reading another seat's mail destroys their delivery.
+  remains the protocol rule everywhere: a consuming drain mutates the RECIPIENT's cursor
+  state — on the legacy consume-on-read transport it destroys their delivery outright,
+  and under the `HUB_DATA_MODEL.md` §1a model it corrupts their delivered/processed
+  records.
 - **Inspecting another seat's mail** (a legitimate operator request) is done
   NON-DESTRUCTIVELY: read the stream from their stored cursor offset WITHOUT writing the
   cursor — never via the consuming read verb, whose obvious use silently eats messages the
   seat is holding.
 - Drain on boot and at phase boundaries; drain files are read whole.
+- **Commit after acting, not after reading** (2026-07-28). Delivery advances a `delivered`
+  cursor; the `processed` cursor advances only when the seat has ACTED on the message —
+  explicitly, by id. Advance-at-print is at-MOST-once and loses messages silently when a
+  seat dies mid-turn; commit-after-acting is the at-least-once `HUB_DATA_MODEL.md` §1
+  requires, with redelivery made safe by §1a's ACTION-idempotency contract (`hub_id`
+  ingest-dedup is not effect-dedup). Commits follow §1a's monotonic incarnation-fenced
+  predicate — idempotent, never rewind, gap-safe via the contiguous-prefix rule. Any
+  backlog-age consumer (stall detection) reads the PROCESSED cursor — reading `delivered`
+  would show a seat as caught-up while its work is still pending, which is a stall the
+  watchdog structurally cannot see.
 - **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
   observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
   sender-shell `$()` execution, subject/body collapse, flag-eaten-as-positional). Rules:
@@ -419,7 +676,7 @@ uppercase) — the mirror contract names this conversion explicitly.
 
 ## 7. Routed review findings dispositioned here
 
-- Seat lifecycle races / split-brain (major): §2 — leases + fencing epochs on every revival path.
+- Seat lifecycle races / split-brain (major): §§2–2a — revival-token plus phase-specific incarnation/session fencing (epoch has no fencing role).
 - Non-revivable runtimes (major): §1 — capability negotiation; report-only watchdog mode.
 - Doorbell races/bursts/missed events (major): §4 — cursor-based subscribe, coalescing, expiry, lease.
 - Mailbox authorization (major, shared with hub spec): §5 — mechanism where possible, etiquette as last resort.
