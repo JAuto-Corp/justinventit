@@ -1,0 +1,55 @@
+{
+  "groups": {
+    "R4-01-independent-fixture-authority": [
+      "substitute-observation-clean",
+      "substitute-observation-inline",
+      "substitute-observation-reject",
+      "substitute-fixture-manifest",
+      "substitute-template-v1-tree",
+      "substitute-template-v2-tree",
+      "substitute-authority-hash",
+      "launder-authority-inside-bundle",
+      "missing-external-authority",
+      "malformed-external-authority-json",
+      "tampered-external-authority",
+      "external-authority-extra-root-key",
+      "external-authority-missing-row",
+      "external-authority-extra-row",
+      "external-authority-missing-row-key",
+      "external-authority-extra-row-key",
+      "substitute-consumer-before",
+      "substitute-consumer-after-clean",
+      "substitute-consumer-after-inline",
+      "substitute-consumer-after-reject"
+    ],
+    "R4-02-exact-remediation-result": [
+      "arbitrary-post-remediation-clean",
+      "arbitrary-post-remediation-inline",
+      "arbitrary-post-remediation-reject"
+    ],
+    "R4-03-full-entry-closure": [
+      "extra-empty-directory",
+      "extra-nonempty-directory",
+      "alternate-nesting-directory",
+      "symlinked-directory",
+      "file-in-implied-parent",
+      "hardlink-artifact"
+    ],
+    "R4a-01-ci-reachability": [
+      "ci-comment-only",
+      "ci-disabled-step",
+      "ci-wrong-wrapper-path",
+      "ci-standalone-retained-gate",
+      "ci-shell-short-circuit",
+      "ci-r4-only"
+    ],
+    "R5-01-fresh-checkout-determinism": [
+      "history-no-v2-byte-change",
+      "history-one-surface-changed",
+      "history-false-v2-success-retains-v1-tree",
+      "history-expected-v2-blob-mismatch",
+      "history-metadata-only-staging"
+    ]
+  },
+  "schema_version": 1
+}

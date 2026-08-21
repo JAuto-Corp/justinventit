@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+die() {
+  printf 'copier update check error: %s\n' "$*" >&2
+  exit 1
+}
+
+target=""
+conflict_mode=""
+vcs_ref=""
+receipt_out=""
+evidence_root=""
+row_id=""
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --target)
+      [[ "$#" -ge 2 ]] || die "--target requires a directory"
+      target="$2"
+      shift 2
+      ;;
+    --conflict)
+      [[ "$#" -ge 2 && ( "$2" == "inline" || "$2" == "rej" ) ]] || die "--conflict requires inline or rej"
+      conflict_mode="$2"
+      shift 2
+      ;;
+    --vcs-ref)
+      [[ "$#" -ge 2 ]] || die "--vcs-ref requires a value"
+      vcs_ref="$2"
+      shift 2
+      ;;
+    --receipt-out)
+      [[ "$#" -ge 2 ]] || die "--receipt-out requires a path"
+      receipt_out="$2"
+      shift 2
+      ;;
+    --evidence-root)
+      [[ "$#" -ge 2 ]] || die "--evidence-root requires a directory"
+      evidence_root="$2"
+      shift 2
+      ;;
+    --row-id)
+      [[ "$#" -ge 2 ]] || die "--row-id requires a value"
+      row_id="$2"
+      shift 2
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+done
+[[ -n "$target" ]] || die "usage: $0 --target DIR [--conflict inline|rej] [--vcs-ref REF] [--receipt-out FILE] [--evidence-root DIR --row-id ID]"
+[[ -d "$target" ]] || die "target missing: $target"
+
+copier_bin="$(command -v copier || true)"
+[[ -n "$copier_bin" ]] || die "copier not found"
+copier_version="$("$copier_bin" --version 2>&1)" || die "unable to read Copier version"
+[[ "$copier_version" == "copier 9.17.1" ]] || die "Copier version mismatch: expected copier 9.17.1, got $copier_version"
+target="$(realpath "$target")"
+if [[ -n "$evidence_root" || -n "$row_id" ]]; then
+  [[ -n "$evidence_root" && -n "$row_id" ]] || die "--evidence-root and --row-id must be provided together"
+  [[ "$row_id" =~ ^[a-z0-9-]+$ ]] || die "invalid row ID: $row_id"
+  evidence_root="$(realpath -m "$evidence_root")"
+  [[ "$evidence_root" != "$target" && "$evidence_root" != "$target/"* ]] || die "evidence root must be outside disposable consumer target"
+  mkdir -p "$evidence_root"
+fi
+
+canonical="$target/.agents/skills/copier-conflict-fixture/SKILL.md"
+generated="$target/.claude/skills/copier-conflict-fixture/SKILL.md"
+allowed_reject="$target/.claude/skills/copier-conflict-fixture/SKILL.md.rej"
+project_owned="$target/.agents/skills/project-owned/SKILL.md"
+skip_state="$target/context/WORKING.md"
+
+[[ -f "$canonical" && ! -L "$canonical" ]] || die "unexpected Copier outcome: canonical source missing or wrong class"
+[[ -f "$generated" && ! -L "$generated" ]] || die "unexpected Copier outcome: generated projection missing or wrong class"
+[[ -f "$project_owned" && -f "$skip_state" ]] || die "project-owned or skip state fixture missing"
+project_hash_before="$(sha256sum "$project_owned" | awk '{print $1}')"
+skip_hash_before="$(sha256sum "$skip_state" | awk '{print $1}')"
+
+receipt_dir="$(mktemp -d)"
+trap 'rm -rf "$receipt_dir"' EXIT
+copier_command=("$copier_bin" update --defaults --trust)
+if [[ -n "$conflict_mode" ]]; then
+  copier_command+=(--conflict "$conflict_mode")
+fi
+if [[ -n "$vcs_ref" ]]; then
+  copier_command+=(--vcs-ref "$vcs_ref")
+fi
+copier_command+=("$target")
+set +e
+"${copier_command[@]}" >"$receipt_dir/copier.stdout" 2>"$receipt_dir/copier.stderr"
+copier_status=$?
+set -e
+if [[ "$copier_status" -ne 0 ]]; then
+  printf '%s\n' '--- Copier stdout ---' >&2
+  tail -40 "$receipt_dir/copier.stdout" >&2
+  printf '%s\n' '--- Copier stderr ---' >&2
+  tail -40 "$receipt_dir/copier.stderr" >&2
+  die "Copier exited $copier_status; stdout/stderr shown above"
+fi
+
+[[ -f "$canonical" && ! -L "$canonical" ]] || die "canonical ownership breach: unexpected Copier outcome"
+[[ -f "$generated" && ! -L "$generated" ]] || die "unexpected Copier outcome: generated projection missing"
+
+if grep -Eq '^(<<<<<<<|=======|>>>>>>>)' "$canonical"; then
+  die "canonical ownership conflict: unexpected Copier outcome"
+fi
+
+mapfile -t artifacts < <(find "$target" -type f \( -name '*.rej' -o -name '*.orig' \) -print | LC_ALL=C sort)
+for artifact_path in "${artifacts[@]}"; do
+  [[ "$artifact_path" == "$allowed_reject" ]] || die "unexpected Copier artifact: $artifact_path"
+done
+
+marker_open="$(grep -c '^<<<<<<<' "$generated" || true)"
+marker_middle="$(grep -c '^=======' "$generated" || true)"
+marker_close="$(grep -c '^>>>>>>>' "$generated" || true)"
+classification=""
+if [[ -f "$allowed_reject" ]]; then
+  classification="reject-artifact"
+elif [[ "$marker_open" -gt 0 && "$marker_middle" -gt 0 && "$marker_close" -gt 0 ]]; then
+  classification="conflict-markers"
+elif [[ "$marker_open" -ne 0 || "$marker_middle" -ne 0 || "$marker_close" -ne 0 ]]; then
+  die "partial marker set: unexpected Copier outcome"
+elif cmp -s "$canonical" "$generated"; then
+  classification="clean-overwrite"
+else
+  die "unexpected Copier outcome: generated bytes are neither clean nor conflicted"
+fi
+
+reject_count="${#artifacts[@]}"
+if [[ "$classification" == "reject-artifact" ]]; then
+  [[ "$reject_count" -eq 1 ]] || die "reject artifact cardinality mismatch: expected 1, got $reject_count"
+else
+  [[ "$reject_count" -eq 0 ]] || die "non-reject outcome carried reject artifacts: $reject_count"
+fi
+
+observation_json=""
+if [[ -n "$evidence_root" ]]; then
+  observed_source="$generated"
+  captured_name="pre-remediation.generated.SKILL.md"
+  reject_relative_path=""
+  if [[ "$classification" == "reject-artifact" ]]; then
+    observed_source="$allowed_reject"
+    captured_name="pre-remediation.reject.SKILL.md.rej"
+    reject_relative_path="${allowed_reject#"$target"/}"
+  fi
+  observed_source_relative="${observed_source#"$target"/}"
+  captured_relative="observations/$row_id/$captured_name"
+  captured_path="$evidence_root/$captured_relative"
+  [[ ! -e "$captured_path" && ! -L "$captured_path" ]] || die "captured evidence path already exists: $captured_relative"
+  mkdir -p "$(dirname "$captured_path")"
+  cp -- "$observed_source" "$captured_path"
+  chmod 444 "$captured_path"
+  cmp -s -- "$observed_source" "$captured_path" || die "source/captured bytes differ before remediation"
+  observation_json="$receipt_dir/observation.json"
+  python3 - "$observation_json" "$row_id" "$classification" "$observed_source_relative" "$captured_relative" "$observed_source" "$captured_path" "$marker_open" "$marker_middle" "$marker_close" "$reject_count" "$reject_relative_path" <<'PY'
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import stat
+import sys
+
+
+output = Path(sys.argv[1])
+source = Path(sys.argv[6])
+captured = Path(sys.argv[7])
+if source.is_symlink() or captured.is_symlink():
+    raise SystemExit("pre-remediation evidence must not be a symlink")
+source_data = source.read_bytes()
+captured_data = captured.read_bytes()
+source_hash = hashlib.sha256(source_data).hexdigest()
+captured_hash = hashlib.sha256(captured_data).hexdigest()
+captured_info = captured.stat()
+if source_data != captured_data or source_hash != captured_hash:
+    raise SystemExit("source/captured equality failed before remediation")
+if not stat.S_ISREG(captured_info.st_mode) or stat.S_IMODE(captured_info.st_mode) != 0o444:
+    raise SystemExit("captured evidence class/mode invalid")
+reject_relative = sys.argv[12] or None
+observation = {
+    "row_id": sys.argv[2],
+    "evidence_kind": "real-copier-update",
+    "observed_outcome": sys.argv[3],
+    "source_path": sys.argv[4],
+    "captured_path": sys.argv[5],
+    "class": "regular",
+    "mode": "0444",
+    "bytes": len(captured_data),
+    "sha256": captured_hash,
+    "marker_counts": {
+        "open": int(sys.argv[8]),
+        "middle": int(sys.argv[9]),
+        "close": int(sys.argv[10]),
+    },
+    "reject_artifact_count": int(sys.argv[11]),
+    "reject_relative_path": reject_relative,
+    "source_to_captured": {
+        "source_bytes": len(source_data),
+        "source_sha256": source_hash,
+        "captured_bytes": len(captured_data),
+        "captured_sha256": captured_hash,
+        "equal": True,
+        "before_source_mutation": True,
+    },
+    "capture_sequence": "before-remediation",
+}
+output.write_text(json.dumps(observation, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+fi
+
+if [[ "$classification" == "reject-artifact" ]]; then
+  rm -- "$allowed_reject"
+fi
+
+cp -- "$canonical" "$generated"
+
+python3 "$source_root/scripts/generate-skill-surfaces.py" --project-root "$target"
+python3 "$source_root/scripts/generate-skill-surfaces.py" --project-root "$target" --check
+python3 "$source_root/scripts/ci/check-skill-routes.py" --project-root "$target"
+
+cmp -s "$canonical" "$generated" || die "generated projection differs from canonical after remediation"
+if grep -REq '^(<<<<<<<|=======|>>>>>>>)' "$target/.claude/skills"; then
+  die "conflict marker remains after remediation"
+fi
+if find "$target" -type f \( -name '*.rej' -o -name '*.orig' \) -print -quit | grep -q .; then
+  die "unexpected reject/original artifact remains"
+fi
+project_hash_after="$(sha256sum "$project_owned" | awk '{print $1}')"
+skip_hash_after="$(sha256sum "$skip_state" | awk '{print $1}')"
+[[ "$project_hash_before" == "$project_hash_after" ]] || die "project-owned hash drift"
+[[ "$skip_hash_before" == "$skip_hash_after" ]] || die "skip state hash drift"
+post_remediation_sha256="$(sha256sum "$generated" | awk '{print $1}')"
+
+if [[ -n "$receipt_out" ]]; then
+  mkdir -p "$(dirname "$receipt_out")"
+  python3 - "$receipt_out" "$copier_bin" "$copier_version" "$copier_status" "$classification" "$receipt_dir/copier.stdout" "$receipt_dir/copier.stderr" "$post_remediation_sha256" "$observation_json" "${copier_command[@]}" <<'PY'
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+
+output = Path(sys.argv[1])
+stdout = Path(sys.argv[6]).read_bytes()
+stderr = Path(sys.argv[7]).read_bytes()
+receipt = {
+    "copier_path": str(Path(sys.argv[2]).resolve()),
+    "copier_version": sys.argv[3],
+    "update": {
+        "command": sys.argv[10:],
+        "status": int(sys.argv[4]),
+        "stdout_sha256": hashlib.sha256(stdout).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
+    },
+    "classification": sys.argv[5],
+    "remediation": "framework-wins",
+    "post_remediation_sha256": sys.argv[8],
+}
+if sys.argv[9]:
+    receipt["observation"] = json.loads(Path(sys.argv[9]).read_text(encoding="utf-8"))
+output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+fi
+
+printf 'copier update check: PASS classification=%s version=%s status=%s\n' "$classification" "$copier_version" "$copier_status"

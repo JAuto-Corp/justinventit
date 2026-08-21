@@ -1,0 +1,35 @@
+{
+  "authority_kind": "copier-history-content-authority",
+  "collision_mtime_ns": 1700000000000000000,
+  "paths": {
+    "template/.agents/skills/copier-conflict-fixture/SKILL.md": {
+      "v1": {
+        "bytes": 93,
+        "git_blob": "f164e7fd852c6e8bda1efb2f0ba133cc920c1d6b",
+        "sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+      },
+      "v2": {
+        "bytes": 93,
+        "git_blob": "23d2aefa90820e125fbdc4cfc2d5c06ae7224daa",
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+      }
+    },
+    "template/.claude/skills/copier-conflict-fixture/SKILL.md": {
+      "v1": {
+        "bytes": 93,
+        "git_blob": "f164e7fd852c6e8bda1efb2f0ba133cc920c1d6b",
+        "sha256": "6c38ee167e11e2d660d2fad355b9cf0e3238cd5eb72e3943fde9fe30339782ea"
+      },
+      "v2": {
+        "bytes": 93,
+        "git_blob": "23d2aefa90820e125fbdc4cfc2d5c06ae7224daa",
+        "sha256": "41af9a275b1c2b3bc46ab5ae0a5c01c7a99c83e2c9f67036365d7d97d8b16959"
+      }
+    }
+  },
+  "schema_version": 1,
+  "template_trees": {
+    "v1": "e1969e3c1728be334addb3ac02e0f3e0c8e078d3",
+    "v2": "f7c7ba917e712e6d308d98197ab7d70cc5c2a029"
+  }
+}

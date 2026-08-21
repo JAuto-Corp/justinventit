@@ -56,3 +56,9 @@ copier copy . /tmp/test-project -d stack=nextjs -d database=supabase
 # project's hook harness and the real Stop runner — this is the hook validation)
 scripts/ci/generate-matrix-check.sh [path/to/copier]
 ```
+
+## Portable frontend design
+
+Generated projects include the frontend-design skill at .agents/skills/frontend-design and a
+byte-identical physical Claude projection at .claude/skills/frontend-design. The canonical
+PROVENANCE.json records the upstream commit, license, authors, hashes, and both runtime routes.

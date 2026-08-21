@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://justinventit.dev/schemas/runtime-skill-receipt-v1.json",
+  "title": "JUSTINVENTIT runtime skill receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "node_version",
+    "codex_version",
+    "claude_version"
+  ],
+  "oneOf": [
+    {"$ref": "#/$defs/availabilityReceipt"},
+    {"$ref": "#/$defs/legacyFixtureReceipt"}
+  ],
+  "$defs": {
+    "hash256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitObject": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "nonempty": {"type": "string", "minLength": 1},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "class", "bytes", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "class": {"const": "regular"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/hash256"}
+      }
+    },
+    "codexArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "project_stderr", "control", "control_stderr"],
+      "properties": {
+        "project": {"$ref": "#/$defs/artifact"},
+        "project_stderr": {"$ref": "#/$defs/artifact"},
+        "control": {"$ref": "#/$defs/artifact"},
+        "control_stderr": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "claudeArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["debug", "transcript", "stdout", "stderr"],
+      "properties": {
+        "debug": {"$ref": "#/$defs/artifact"},
+        "transcript": {"$ref": "#/$defs/artifact"},
+        "stdout": {"$ref": "#/$defs/artifact"},
+        "stderr": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "markers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["remote_settings", "roots", "plugin_count", "loaded", "attachment"],
+      "properties": {
+        "remote_settings": {"$ref": "#/$defs/nonempty"},
+        "roots": {"$ref": "#/$defs/nonempty"},
+        "plugin_count": {"$ref": "#/$defs/nonempty"},
+        "loaded": {"$ref": "#/$defs/nonempty"},
+        "attachment": {"$ref": "#/$defs/nonempty"}
+      }
+    },
+    "claudeProject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status", "timeout_seconds", "kill_after_seconds", "session_id", "target_count",
+        "attachment_skill_count", "markers", "artifacts"
+      ],
+      "properties": {
+        "status": {"const": 1},
+        "timeout_seconds": {"const": 30},
+        "kill_after_seconds": {"const": 5},
+        "session_id": {"$ref": "#/$defs/nonempty"},
+        "target_count": {"const": 1},
+        "attachment_skill_count": {"type": "integer", "minimum": 1},
+        "markers": {"$ref": "#/$defs/markers"},
+        "artifacts": {"$ref": "#/$defs/claudeArtifacts"}
+      }
+    },
+    "claudeControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status", "timeout_seconds", "kill_after_seconds", "session_id", "target_count",
+        "attachment_skill_count", "markers", "artifacts"
+      ],
+      "properties": {
+        "status": {"const": 1},
+        "timeout_seconds": {"const": 30},
+        "kill_after_seconds": {"const": 5},
+        "session_id": {"$ref": "#/$defs/nonempty"},
+        "target_count": {"const": 0},
+        "attachment_skill_count": {"type": "integer", "minimum": 1},
+        "markers": {"$ref": "#/$defs/markers"},
+        "artifacts": {"$ref": "#/$defs/claudeArtifacts"}
+      }
+    },
+    "availabilityReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "receipt_kind", "observed_at", "candidate_head", "candidate_tree",
+        "generated_tree_sha256", "node_version", "codex_version", "claude_version", "isolation",
+        "codex_availability", "claude_availability", "claude_no_project"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "receipt_kind": {"const": "availability"},
+        "observed_at": {"$ref": "#/$defs/nonempty"},
+        "candidate_head": {"$ref": "#/$defs/gitObject"},
+        "candidate_tree": {"$ref": "#/$defs/gitObject"},
+        "generated_tree_sha256": {"$ref": "#/$defs/hash256"},
+        "node_version": {"const": "v22.23.2"},
+        "codex_version": {"const": "codex-cli 0.145.0"},
+        "claude_version": {"const": "2.1.232 (Claude Code)"},
+        "isolation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["codex_home", "claude_config_dir", "managed_roots_absent", "inherited_auth"],
+          "properties": {
+            "codex_home": {"const": "scratch"},
+            "claude_config_dir": {"const": "scratch"},
+            "managed_roots_absent": {"const": true},
+            "inherited_auth": {"const": false}
+          }
+        },
+        "codex_availability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status", "target_count", "no_project_target_count", "locator_start_marker",
+            "locator_end_marker", "observed_absolute_path", "derivation_root",
+            "derived_repository_path", "skill_bytes", "skill_sha256", "artifacts"
+          ],
+          "properties": {
+            "status": {"const": 0},
+            "target_count": {"const": 1},
+            "no_project_target_count": {"const": 0},
+            "locator_start_marker": {"$ref": "#/$defs/nonempty"},
+            "locator_end_marker": {"$ref": "#/$defs/nonempty"},
+            "observed_absolute_path": {"type": "string", "pattern": "^/.*frontend-design/SKILL\\.md$"},
+            "derivation_root": {"type": "string", "pattern": "^/"},
+            "derived_repository_path": {"const": ".agents/skills/frontend-design/SKILL.md"},
+            "skill_bytes": {"type": "integer", "minimum": 1},
+            "skill_sha256": {"$ref": "#/$defs/hash256"},
+            "artifacts": {"$ref": "#/$defs/codexArtifacts"}
+          }
+        },
+        "claude_availability": {"$ref": "#/$defs/claudeProject"},
+        "claude_no_project": {"$ref": "#/$defs/claudeControl"}
+      }
+    },
+    "legacyFixtureReceipt": {
+      "type": "object",
+      "not": {"required": ["receipt_kind"]},
+      "required": [
+        "schema_version", "node_version", "codex_version", "claude_version", "status",
+        "timeout_seconds", "kill_after_seconds", "session_id", "debug_sha256", "debug_bytes",
+        "stdout_sha256", "stdout_bytes", "stderr_sha256", "stderr_bytes", "transcript_sha256",
+        "transcript_bytes", "codex_no_project", "claude_no_project", "claude_invocation", "codex_native"
+      ]
+    }
+  }
+}

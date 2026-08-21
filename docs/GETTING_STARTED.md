@@ -91,3 +91,11 @@ After scaffolding, your first Claude Code session should:
 | Stop hook pipeline | Exit gate enforcement | Add project-specific checks |
 | State files | Work lifecycle tracking | Format is framework; content is yours |
 | Path-scoped rules | Domain rules loaded for matching files | Fully project-specific |
+
+### Portable frontend design guidance
+
+Scaffolding always emits frontend-design at .agents/skills/frontend-design and a physical Claude
+projection at .claude/skills/frontend-design. Check PROVENANCE.json for the pinned upstream
+commit, license, authors, hashes, and runtime routes. Run the source repository's generation
+matrix when maintaining the framework; generated consumers do not contain those source-only
+validators.

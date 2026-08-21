@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "receipt_kind": "availability",
+  "observed_at": "2026-08-17T00:00:00Z",
+  "candidate_head": "1111111111111111111111111111111111111111",
+  "candidate_tree": "2222222222222222222222222222222222222222",
+  "generated_tree_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+  "node_version": "v22.23.2",
+  "codex_version": "codex-cli 0.145.0",
+  "claude_version": "2.1.232 (Claude Code)",
+  "isolation": {
+    "codex_home": "scratch",
+    "claude_config_dir": "scratch",
+    "managed_roots_absent": true,
+    "inherited_auth": false
+  },
+  "codex_availability": {
+    "status": 0,
+    "target_count": 1,
+    "no_project_target_count": 0,
+    "locator_start_marker": "(file: ",
+    "locator_end_marker": ")",
+    "observed_absolute_path": "/ci/project/.agents/skills/frontend-design/SKILL.md",
+    "derivation_root": "/ci/project",
+    "derived_repository_path": ".agents/skills/frontend-design/SKILL.md",
+    "skill_bytes": 8260,
+    "skill_sha256": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd",
+    "artifacts": {
+      "project": {
+        "path": "artifacts/codex-project.json",
+        "class": "regular",
+        "bytes": 95,
+        "sha256": "e89c1117fb2be49f8ab9e52904a15395af959656bb256352751ce4bed0b5ab2c"
+      },
+      "project_stderr": {
+        "path": "artifacts/codex-project.stderr",
+        "class": "regular",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "control": {
+        "path": "artifacts/codex-control.json",
+        "class": "regular",
+        "bytes": 43,
+        "sha256": "8faf2c8c64dc477a26cf1495aa9320a22de1f9dd452ba6bb8fb04392b562eb27"
+      },
+      "control_stderr": {
+        "path": "artifacts/codex-control.stderr",
+        "class": "regular",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "claude_availability": {
+    "status": 1,
+    "timeout_seconds": 30,
+    "kill_after_seconds": 5,
+    "session_id": "8e535220-a4ce-47f3-a825-5f2c39b48212",
+    "target_count": 1,
+    "attachment_skill_count": 12,
+    "markers": {
+      "remote_settings": "Remote settings: Fetch failed (http_401) and no cached settings",
+      "roots": "Loading skills from:",
+      "plugin_count": "Total plugin skills loaded: 0 (0 duplicate/user-owned entries skipped)",
+      "loaded": "Loaded 1 unique skills",
+      "attachment": "Sending <integer> skills via attachment (initial)"
+    },
+    "artifacts": {
+      "debug": {
+        "path": "artifacts/claude-debug.log",
+        "class": "regular",
+        "bytes": 425,
+        "sha256": "7bb0224805091a5e66603cb727294897fc19be1c891e0574974fc5a58a7f6080"
+      },
+      "transcript": {
+        "path": "artifacts/claude-transcript.jsonl",
+        "class": "regular",
+        "bytes": 449,
+        "sha256": "ab604e47528ccee97110476369c20e15ed60530785262a311f40e136471cc430"
+      },
+      "stdout": {
+        "path": "artifacts/claude-stdout.txt",
+        "class": "regular",
+        "bytes": 40,
+        "sha256": "d50145fd739977392cf3b0bbf1b73f863d2fcdf831ffe5605f3981f879f57c27"
+      },
+      "stderr": {
+        "path": "artifacts/claude-stderr.txt",
+        "class": "regular",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "claude_no_project": {
+    "status": 1,
+    "timeout_seconds": 30,
+    "kill_after_seconds": 5,
+    "session_id": "11111111-2222-4333-8444-555555555555",
+    "target_count": 0,
+    "attachment_skill_count": 11,
+    "markers": {
+      "remote_settings": "Remote settings: Fetch failed (http_401) and no cached settings",
+      "roots": "Loading skills from:",
+      "plugin_count": "Total plugin skills loaded: 0 (0 duplicate/user-owned entries skipped)",
+      "loaded": "Loaded 0 unique skills",
+      "attachment": "Sending <integer> skills via attachment (initial)"
+    },
+    "artifacts": {
+      "debug": {
+        "path": "artifacts/claude-control-debug.log",
+        "class": "regular",
+        "bytes": 433,
+        "sha256": "9b4a7ad26bb4eec81dcb3520cd74babde7ef82163dad857c50cf17af2536c55f"
+      },
+      "transcript": {
+        "path": "artifacts/claude-control-transcript.jsonl",
+        "class": "regular",
+        "bytes": 439,
+        "sha256": "29057206a2572e048b1040c6ceeee3954124a911c255723ef8c889e08ac93965"
+      },
+      "stdout": {
+        "path": "artifacts/claude-control-stdout.txt",
+        "class": "regular",
+        "bytes": 40,
+        "sha256": "d50145fd739977392cf3b0bbf1b73f863d2fcdf831ffe5605f3981f879f57c27"
+      },
+      "stderr": {
+        "path": "artifacts/claude-control-stderr.txt",
+        "class": "regular",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

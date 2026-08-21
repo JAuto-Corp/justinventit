@@ -113,3 +113,13 @@ Extracted from [JAuto-Corp/customer-portal](https://github.com/JAuto-Corp/custom
 ## License
 
 MIT
+
+## Portable frontend design skill
+
+Every generated project includes the unnamespaced frontend-design skill. Its canonical source is
+.agents/skills/frontend-design; Claude receives a deterministic physical projection at
+.claude/skills/frontend-design. The pinned upstream payload, Apache-2.0 license, authors, hashes,
+and runtime routes are recorded in PROVENANCE.json.
+
+Framework updates own both copies. A real consumer should not edit the generated Claude
+projection or assume that source-repository recovery scripts were shipped into the consumer.

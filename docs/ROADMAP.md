@@ -187,3 +187,11 @@ provides the falsifier that prose review cannot.
 - [ ] Adversarial debugging mode (competing hypothesis agents)
 - [ ] Agentic Plan Caching (reuse plan templates across similar tasks)
 - [ ] Automated friction clustering (Factory.ai Signals pattern)
+
+### Portable frontend-design delivery — complete
+
+- One pinned canonical skill and license/provenance record.
+- Deterministic physical Claude projection plus independent route/cardinality checks.
+- Four-answer-set Copier generation coverage and source-owned update-conflict recovery.
+- Pinned ordinary-CI runtime availability receipts; authenticated invocation/read receipts remain
+  SHA-bound human verdict and merge-time evidence, not an inferred CI claim.

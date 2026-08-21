@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "skill": {
+    "name": "frontend-design",
+    "upstream": {
+      "repository": "anthropics/claude-plugins-official",
+      "commit": "d029127f7d29bdb8fd8902ac34dd7d5c8ba92b6e",
+      "path": "plugins/frontend-design/skills/frontend-design"
+    },
+    "equivalent_distribution": {
+      "repository": "anthropics/claude-code",
+      "plugin_name": "frontend-design",
+      "plugin_version": "1.1.0"
+    },
+    "authors": [
+      "Prithvi Rajasekaran",
+      "Alexander Bricken"
+    ],
+    "license": {
+      "spdx": "Apache-2.0",
+      "filename": "LICENSE.txt",
+      "frontmatter": "Complete terms in LICENSE.txt"
+    },
+    "files": {
+      "SKILL.md": {
+        "bytes": 8260,
+        "sha256": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd"
+      },
+      "LICENSE.txt": {
+        "bytes": 10174,
+        "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+      }
+    },
+    "runtime_routes": {
+      "codex": {
+        "mode": "canonical",
+        "path": ".agents/skills/frontend-design"
+      },
+      "claude": {
+        "mode": "physical-copy",
+        "path": ".claude/skills/frontend-design"
+      }
+    }
+  },
+  "toolchain": {
+    "copier": "9.17.1",
+    "node": "v22.23.2",
+    "codex": "codex-cli 0.145.0",
+    "claude": "2.1.232 (Claude Code)"
+  },
+  "scenario_crosswalk": {
+    "S01": ["expected-upstream-repository-drift", "payload-plus-lock-consistent-drift"],
+    "S02": ["copier-answer-solo-go", "projection-missing-entry"],
+    "S03": ["generator-regeneration-nondeterministic", "generator-check-mutates"],
+    "S04": ["projection-byte-drift", "projection-stale-entry", "projection-removed-entry"],
+    "S05": ["projection-directory-symlink", "projection-pointer-file", "projection-plugin-metadata"],
+    "S06": ["codex-route-parent-traversal", "claude-route-absolute"],
+    "S07": ["malformed-frontmatter", "canonical-license-missing", "jinja-expression-leak"],
+    "S08": ["codex-different-basename-same-name", "claude-same-basename-different-name", "nested-all-depth-duplicate"],
+    "S09": ["claude-command-conflict", "unsupported-project-codex-route", "namespaced-plugin-sighting-counted"],
+    "S10": ["copier-project-owned-drift", "copier-skip-state-drift"],
+    "S11": ["copier-clean-overwrite", "copier-conflict-markers", "copier-reject-artifact", "copier-unclassified-outcome"],
+    "S12": ["copier-missing", "copier-wrong-version"],
+    "S13": ["runtime-missing-codex-cli", "runtime-wrong-codex-version", "codex-no-project-control-present"],
+    "S14": ["runtime-missing-claude-cli", "runtime-wrong-claude-version", "claude-marker-drift"],
+    "S15": ["claude-invocation-body-truncated", "claude-invocation-body-appended"],
+    "S16": ["codex-native-record-missing", "codex-native-record-duplicate", "codex-body-truncated-or-appended"],
+    "S17": ["codex-client-supplied-skill-item", "codex-fallback-without-reruling"],
+    "S18": ["scope-forbidden-agents", "scope-forbidden-consumer-generator"],
+    "S19": ["rollback-partial-removal", "rollback-normalized-result-mismatch"],
+    "S20": ["scope-forbidden-customer-portal", "scope-forbidden-runtime-home"],
+    "R2A-S01": ["runtime-missing-node", "runtime-wrong-node-version"],
+    "R2A-S02": ["runtime-missing-codex-cli", "runtime-missing-claude-cli", "runtime-wrong-cli-version"],
+    "R2A-S03": ["claude-expected-auth-control-corrupt"],
+    "R2A-S04": ["claude-expected-auth-missing", "claude-unexpected-auth-success"],
+    "R2A-S05": ["claude-unexpected-exit", "claude-timeout-or-signal", "claude-nonzero-stderr"],
+    "R2A-S06": ["claude-missing-artifact", "claude-marker-drift", "claude-session-or-order-mismatch"],
+    "R2B-E01": ["claude-mixed-evidence-tuple"],
+    "R2B-S03": ["claude-expected-auth-control-corrupt", "claude-receipt-schema-invalid"],
+    "R2B-S05": ["claude-nonzero-stderr"],
+    "R2B-S06": ["claude-missing-stderr", "claude-artifact-wrong-class", "claude-transcript-cardinality"],
+    "R2B-S11": ["copier-clean-overwrite", "copier-conflict-markers", "copier-reject-artifact", "copier-canonical-conflict"]
+  }
+}
