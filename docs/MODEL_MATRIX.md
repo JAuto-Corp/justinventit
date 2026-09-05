@@ -357,6 +357,40 @@ both-tenses rule. `max_deferral` is never authored in any wave: it is derived fr
 inputs under SEAT_PROTOCOL §4's compositional constraints. Until Phase 3, implementations
 take interim per-fleet values; the CONSTRAINTS bind now, the data shape does not exist yet.
 
+### 3b. Review-arm tool contract and runtime attestation (2026-09-05, field-ratified)
+
+The one-shot review lane's invocation tool is **runtime-neutral**: one entry point
+(`scripts/review-arm.sh` in the consuming project; a forge-marked template artifact ported
+with the Phase-3 template rebuild, like `sol-review.sh`) with `--runtime claude|codex`,
+`run` (one arm) and `pair` (two concurrent arms on byte-identical prompt bytes with distinct
+session ids; exit 0 only if both qualify). Per arm it writes five immutable outputs
+(receipt, report, validation, timing, stderr) and appends one hub `complete` row
+(`HUB_DATA_MODEL.md` §3a) — the durable completion event, independent of any notification.
+
+**Runtime attestation is data checked by the tool, not prose.** A Claude arm's receipt
+QUALIFIES iff the required model key is present in `modelUsage` with `canonicalModel` equal
+to it, `contextWindow` equal to the tier's required window, and substantive output
+(> 64 tokens), AND every other entry is a harness auxiliary (<= 64 output tokens),
+recorded under `auxiliary_entries`, never hidden. A substantive second model, fallback,
+missing model, smaller window, or `is_error` is NON_QUALIFYING: exit 65, outputs kept, no
+automatic relaunch. A Codex arm qualifies iff `sol-review.sh` reports `schema_valid=yes` and
+a terminal verdict. *Origin: the Claude harness emits a ~16-token Haiku side call in every
+print-mode receipt regardless of flags; a literal "exactly one modelUsage entry" rule voided
+three consecutive Fable review pairs (2026-09-04/05) for a reason unrelated to review
+integrity. The rule keeps the property that matters — the named model did the review at the
+named context — and makes harness noise visible instead of fatal.* Gate lifecycle rule (a)
+applies: the tool's fixture suite demonstrates admission in both directions with a validity
+control (auxiliary admitted and recorded; substitute refused; known-good receipt green).
+
+Arm hygiene riding the tool: an arm has no mailbox and drains nothing (the mandatory seat
+drain fanned orchestrator broadcasts into blind audit contexts twice); it reads an isolated
+corpus copy the prompt names; its report ends in exactly `PASS`, `FAIL`, `BLOCK`, or
+`OBSTRUCTED` (OBSTRUCTED = the review could not be performed, never a verdict on the
+artifact); a BLOCK is never softened or re-run to a better answer; form-only findings are
+verified by the orchestrator by diffing revisions and need no new pair. Nested Claude arms
+from inside a Codex sandbox fail before the model (read-only fchmod / sqlite): arms launch
+from Claude-side seats or the orchestrator.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
