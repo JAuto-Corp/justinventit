@@ -32,6 +32,11 @@ def git(cwd: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def resolve(template: Path, ref: str) -> str:
+    """Full commit id a saved `_commit` value denotes (Copier may record an exact tag, a describe string or a SHA)."""
+    return git(template, "rev-parse", "--verify", f"{ref}^{{commit}}")
+
+
 def answers(project: Path) -> dict[str, str]:
     data: dict[str, str] = {}
     for line in (project / ".copier-answers.yml").read_text(encoding="utf-8").splitlines():
@@ -64,9 +69,9 @@ class CopierUpdateCycle(unittest.TestCase):
     def test_answers_file_records_commit_source_and_answers(self) -> None:
         self.copy_at_head()
         got = answers(self.project)
-        head = git(self.template, "rev-parse", "--short", "HEAD")
-        self.assertIn(head, got["_commit"], "resolved template commit must be recorded, not the requested ref")
-        self.assertNotIn(got["_commit"], ("None", "HEAD"))
+        self.assertNotIn(got["_commit"], ("None", "HEAD"), "the requested ref must not be recorded verbatim")
+        self.assertEqual(resolve(self.template, got["_commit"]), git(self.template, "rev-parse", "HEAD"),
+                         "saved _commit must resolve to the template commit that was rendered")
         self.assertEqual(got["_src_path"], str(self.template), "original source, not a temporary clone")
         for key, value in (("project_name", "updproj"), ("project_description", "persisted description"),
                            ("stack", "nextjs"), ("orchestration_tier", "solo")):
@@ -83,14 +88,15 @@ class CopierUpdateCycle(unittest.TestCase):
         self.assertIn("## Hooks\n", text)
         claude_jinja.write_text(text.replace("## Hooks\n", f"## Hooks\n\n{MARKER}\n", 1), encoding="utf-8")
         git(self.template, "commit", "-qam", "framework change after generation")
-        new_head = git(self.template, "rev-parse", "--short", "HEAD")
+        new_head = git(self.template, "rev-parse", "HEAD")
         result = run(["copier", "update", "--defaults", "--trust", "--vcs-ref", "HEAD"], self.project)
         self.assertEqual(result.returncode, 0, result.stderr[-800:])
         self.assertIn(MARKER, (self.project / "CLAUDE.md").read_text(encoding="utf-8"))
         self.assertIn("## Hand-written project section", agents.read_text(encoding="utf-8"))
         after = answers(self.project)
-        self.assertNotEqual(after["_commit"], before, "answers file must advance after update")
-        self.assertIn(new_head, after["_commit"])
+        self.assertNotEqual(resolve(self.template, after["_commit"]), resolve(self.template, before),
+                            "answers file must advance after update")
+        self.assertEqual(resolve(self.template, after["_commit"]), new_head)
         self.assertEqual(after["project_name"], "updproj")
         conflicts = [p for p in self.project.rglob("*") if p.is_file() and ".git" not in p.parts
                      and p.suffix in ("", ".md", ".yml", ".yaml", ".json", ".sh", ".py")
