@@ -4,6 +4,12 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 `template/docs/DELIVERY.md`; `requires` names what a consuming project must already have; rollback is
 `git revert <adoption commit>` (`-m 1` when that commit is a merge) unless stated otherwise.
 
+## Unreleased
+
+| id | kind | tier | files | requires | notes |
+|-|-|-|-|-|-|
+| `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja` | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract, seeded once and project-owned (`_skip_if_exists`, never prompted); CLAUDE.md = `@AGENTS.md` + Claude extras (framework-managed); later contract changes ship as rows here for projects to merge |
+
 ## jv-v0.1.0 — 2026-09-14
 
 First versioned release. Base: `main` after PR #36 (2dcc610) and PR #37.
@@ -20,5 +26,5 @@ First versioned release. Base: `main` after PR #36 (2dcc610) and PR #37.
 | `multi-skill-checks` | script | JV-internal | `scripts/generate-skill-surfaces.py`, `scripts/ci/check-skill-routes.py`, `scripts/ci/skill_inventory.py`, `scripts/ci/test-skill-multiskill.py`, matrix/receipt changes | — | template CI only; never overlaid |
 
 Known limits disclosed with this release: the runtime availability receipt measures `frontend-design` only and
-requires CI's exact CLI versions; the generated entry contract is Claude-first (`CLAUDE.md.jinja`) with only a
-minimal provider-neutral `AGENTS.md` pointer.
+requires CI's exact CLI versions; the generated entry contract was Claude-first in this release (superseded by
+`entry-contract` above).

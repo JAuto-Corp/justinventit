@@ -136,7 +136,8 @@ scan_commands() {
   [ -d "$dir/.claude/skills" ]   && roots+=("$dir/.claude/skills")
   [ -d "$dir/.claude/commands" ] && roots+=("$dir/.claude/commands")
   [ -f "$dir/CLAUDE.md" ]        && roots+=("$dir/CLAUDE.md")
-  [ "${#roots[@]}" -eq 0 ] && { echo "  (no skills/commands/CLAUDE.md to scan)"; return; }
+  [ -f "$dir/AGENTS.md" ]        && roots+=("$dir/AGENTS.md")
+  [ "${#roots[@]}" -eq 0 ] && { echo "  (no skills/commands/CLAUDE.md/AGENTS.md to scan)"; return; }
 
   while IFS= read -r tok; do
     [ -n "$tok" ] || continue
@@ -212,12 +213,16 @@ check_set() {
   if [ ! -f "$out/docs/SKILL_MODES.md" ]; then
     errs+=("(skill) docs/SKILL_MODES.md missing from generated project")
   fi
-  local entry
-  for entry in AGENTS.md CLAUDE.md; do
-    if [ ! -f "$out/$entry" ] || ! grep -q 'docs/SKILL_MODES.md' "$out/$entry"; then
-      errs+=("(skill) $entry does not instruct reading docs/SKILL_MODES.md")
-    fi
-  done
+  if [ ! -f "$out/AGENTS.md" ] || ! grep -q 'docs/SKILL_MODES.md' "$out/AGENTS.md"; then
+    errs+=("(skill) AGENTS.md does not instruct reading docs/SKILL_MODES.md")
+  fi
+  # CLAUDE.md inherits the contract through its import line; it must import, not restate.
+  if [ ! -f "$out/CLAUDE.md" ] || ! grep -qx '@AGENTS.md' "$out/CLAUDE.md"; then
+    errs+=("(entry) CLAUDE.md does not import @AGENTS.md")
+  fi
+  if grep -qE '^## (TDD Gate|Work Routing|Before Working)' "$out/CLAUDE.md"; then
+    errs+=("(entry) CLAUDE.md restates the contract instead of importing it")
+  fi
   # --- additional pinned canonical skills: one fixture each, same physical-route contract ---
   local extra_fixture extra_skill
   for extra_fixture in "$TEMPLATE_ROOT"/scripts/ci/fixtures/*.expected.json; do

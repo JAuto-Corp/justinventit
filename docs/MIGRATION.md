@@ -9,8 +9,8 @@ Adding justinventit to an existing codebase is the hardest adoption path — but
 ## Before You Start
 
 Understand what you have:
-- **Existing CLAUDE.md?** Copier OVERWRITES it (it is a framework-owned file). Save yours first and merge your codebase map and routing back in after the copy.
-- **Existing AGENTS.md?** Never overwritten (`_skip_if_exists`); the template's minimal pointer is seeded only when the file is absent. Add the `docs/SKILL_MODES.md` read-and-apply line to your own AGENTS.md if you adopt the vendored skills.
+- **Existing CLAUDE.md?** It is framework-owned: Copier prompts `Overwrite CLAUDE.md?` with default **Yes** (and `--overwrite` replaces it silently). Rename yours aside first, run a clean `copier copy`, then merge your Claude-specific extras back inside the generated file.
+- **Existing AGENTS.md?** Kept as-is and never prompted (`_skip_if_exists`): it is your canonical entry contract. To adopt the framework contract sections, render the template into a scratch directory (`copier copy --defaults -d project_name=<your-project> gh:JAuto-Corp/justinventit /tmp/jv-render`) and merge the sections you want from `/tmp/jv-render/AGENTS.md`; later contract changes appear as `entry-contract` rows in the framework CHANGES.md.
 - **Existing hooks?** Back them up. justinventit's hooks can coexist if they use different event matchers.
 - **Existing skills?** Move to `.claude/skills/domain/` — you create that directory yourself (the template does not generate it) and the framework will never touch it.
 - **Existing CI/CD?** justinventit doesn't override CI. It provides templates you can adopt.
@@ -25,14 +25,14 @@ copier copy gh:JAuto-Corp/justinventit .
 ```
 
 Review every generated file before committing. Key files to check:
-- `CLAUDE.md` — does the codebase map make sense?
+- `AGENTS.md` — does the codebase map make sense? (`CLAUDE.md` only imports it and adds Claude Code extras)
 - `.claude/hooks/session-start.sh` — does it conflict with existing hooks?
 - `.claude/hooks/stop/` — are the checks appropriate for your project?
 
 ### 2. Integrate Existing Knowledge
 
-If you have an existing CLAUDE.md, merge the best of both:
-- Keep your codebase map and project-specific routing
+If you have an existing CLAUDE.md, merge the best of both (the codebase map and routing now live in AGENTS.md):
+- Keep your codebase map and project-specific routing in AGENTS.md
 - Adopt the framework's TDD gate and before-working checklist
 - Move domain knowledge to path-scoped rules (`.claude/rules/` — a directory you create; it is not scaffolded)
 
@@ -84,7 +84,7 @@ Start with ATDD as documentation, not automation. Write SCENARIOS.md as Gherkin 
 This is the most common brownfield problem. Strategy:
 1. Move domain knowledge to `.claude/rules/` with path scoping
 2. Move best practices to `.claude/skills/domain/`
-3. Keep only the codebase map and routing table in CLAUDE.md
+3. Keep only the codebase map and routing table in AGENTS.md; CLAUDE.md imports it
 4. Target: under 200 lines
 
 ### "My hooks are complex and custom"

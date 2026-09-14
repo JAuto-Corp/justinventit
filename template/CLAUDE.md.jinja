@@ -1,101 +1,23 @@
-# {{ project_name }} — Development Guide
-
-## Codebase Map
-
-```
-# TODO: Fill in your project's directory structure after first session
-# Example:
-# src/           Application source code
-# tests/         Test suite
-# docs/          Documentation
-```
-
-{% if project_description %}
-{{ project_description }}
-{% endif %}
+# {{ project_name }} — Claude Code extras
 
 <!-- forge:start — DO NOT EDIT between forge markers (updated by copier update) -->
 
-## Before Working
+@AGENTS.md
 
-1. Read `docs/PLAYBOOK.md` — session entry point, identifies active lifecycle phase
-2. If in execution phase: Read `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase SPEC.md
-3. Sync: `git fetch origin && git log --oneline HEAD..origin/$(git branch --show-current) | head -5`
+> `AGENTS.md` (imported above) is the canonical entry contract for every runtime. This file adds only what is
+> specific to Claude Code and never restates the contract.
 
-## TDD Gate (Non-Negotiable)
+## Slash commands
 
-**No code without scenarios. No scenarios without acceptance criteria.**
-
-| Step | Output | Gate |
-|-|-|-|
-| 1. Plan | SPEC.md + SCENARIOS.md | Planning outputs exist |
-| 2. RED | Scenario runs and FAILS | Failure = correct (missing impl) |
-| 3. GREEN | Implementation code, scenario PASSES | `{{ type_check_command }}` passes |
-| 4. VALIDATE | `/verify:complete` passes | Hard block on missing scenarios |
-
-**Scope classification:**
-
-| Trigger (ANY match) | Scope | TDD Required? |
-|-|-|-|
-| New DB tables/columns | Standard+ | Yes |
-| New API routes | Standard+ | Yes |
-| New UI pages/major components | Standard+ | Yes |
-| 4+ files modified | Standard+ | Yes |
-| Single-file bug fix, no new surface area | Quick | No |
-
-## Work Routing
-
-| Source | Route |
+| Contract step | Claude Code command |
 |-|-|
-| Quick fix (single-file, no new surface area) | Fix → Commit with `Fixes #N` |
-| Standard+ (see TDD Gate scope triggers) | SPEC → SCENARIOS → RED → GREEN → VALIDATE |
-| External concern | Append to `context/DISCOVERIES.md` → keep working |
+| Design the work | `/scope` |
+| Verify the work / TDD Gate step 4 (VALIDATE) | `/check`, `/verify:complete` |
+| Session transitions (`work` skill) | `/work:handoff`, `/work:pause`, `/work:continue` |
 
-For dispatch/handoff summaries and scoped evidence comparison, use `docs/DELIVERY.md`.
-It consolidates the work reference; existing entry, review and effect gates still apply.
+## Hooks
 
-Before using `ponytail` or `caveman`, read `docs/SKILL_MODES.md` and apply the mode it sets for your
-responsibility. Upstream defaults do not apply: `caveman` runs `lite` for routine updates and never compresses
-exact facts, code, errors, numbers, warnings, handoffs, verdicts or records; `ponytail` narrows implementations,
-never requirements, evidence or gates.
-
-## Before Writing Code
-
-> Before implementing 20+ lines, invoke the matching best-practices skill.
-> If a skill's information is wrong or outdated, update the skill immediately.
-
-## Development Protocol
-
-For each PROGRESS.md item: implement → check off → commit. If exit landmarks met → Signal `[PHASE_COMPLETE]`.
+The stop pipeline (`.claude/hooks/stop/`) enforces the TDD gate and reads the `[PHASE_COMPLETE]` signal;
+guards run on write and migration tool calls. Skills are read from `.claude/skills/` (the generated projection).
 
 <!-- forge:end -->
-
-## Git Workflow
-
-**Branch Strategy**: `{{ main_branch }}`{% if staging_branch %} (production), `{{ staging_branch }}` (integration){% endif %}, `feature/*` (work branches)
-
-{% if staging_branch %}
-**Merge path**: `feature/*` → PR to `{{ staging_branch }}` → PR from `{{ staging_branch }}` to `{{ main_branch }}`. Never merge directly to `{{ main_branch }}`.
-{% else %}
-**Merge path**: `feature/*` → PR to `{{ main_branch }}`.
-{% endif %}
-
-> **Agents commit, humans push.** Create commits freely, but request user confirmation before pushing or merging.
-
-## Essential Commands
-
-```bash
-# Validation
-{{ type_check_command }}              # Type check
-{{ build_command }}                    # Full build
-{% if unit_testing != 'none' %}
-# Tests
-# TODO: Add your test command
-{% endif %}
-```
-
-## Session State Management
-
-**State files** (read in order): `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase `PROGRESS.md`
-
-Invoke `work` skill for transitions (`/work:handoff`, `/work:pause`, `/work:continue`).
