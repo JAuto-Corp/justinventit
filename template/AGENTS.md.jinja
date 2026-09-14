@@ -2,6 +2,8 @@
 
 This file is the canonical entry contract for every runtime (Codex reads it natively; Claude Code imports it
 from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below depends on a particular runtime.
+Seeded once by justinventit and project-owned from then on: `copier update` never rewrites it, and contract
+changes arrive as `entry-contract` rows in the framework's CHANGES.md for the project to merge.
 
 ## Codebase Map
 
@@ -16,8 +18,6 @@ from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below de
 {% if project_description %}
 {{ project_description }}
 {% endif %}
-
-<!-- forge:start — DO NOT EDIT between forge markers (updated by copier update) -->
 
 ## Before Working
 
@@ -34,7 +34,9 @@ from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below de
 | 1. Plan | SPEC.md + SCENARIOS.md | Planning outputs exist |
 | 2. RED | Scenario runs and FAILS | Failure = correct (missing impl) |
 | 3. GREEN | Implementation code, scenario PASSES | `{{ type_check_command }}` passes |
-| 4. VALIDATE | the `verify` skill's complete check passes | Hard block on missing scenarios |
+| 4. VALIDATE | acceptance checks pass: every scenario executed, type check and build green | Hard block on missing scenarios |
+
+Runtime-specific commands for these steps are mapped in `CLAUDE.md` (Claude Code); other runtimes run the checks directly.
 
 **Scope classification:**
 
@@ -66,14 +68,13 @@ immediately.
 
 Before using `ponytail` or `caveman`, read `docs/SKILL_MODES.md` and apply the mode it sets for your
 responsibility. Upstream defaults do not apply: `caveman` runs `lite` for routine updates and never compresses
-exact facts, code, errors, numbers, warnings, handoffs, verdicts or records; `ponytail` narrows implementations,
-never requirements, evidence or gates.
+exact facts, code, errors, numbers, ordering, requested detail, warnings, handoffs, verdicts or records; `ponytail`
+narrows implementations, never requirements, evidence or gates.
 
 ## Development Protocol
 
 For each PROGRESS.md item: implement → check off → commit. If exit landmarks met → Signal `[PHASE_COMPLETE]`.
 
-<!-- forge:end -->
 
 ## Git Workflow
 
@@ -103,4 +104,4 @@ For each PROGRESS.md item: implement → check off → commit. If exit landmarks
 
 **State files** (read in order): `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase `PROGRESS.md`
 
-Use the `work` skill for transitions (handoff, pause, continue).
+Session transitions (handoff, pause, continue) follow `docs/PLAYBOOK.md`; the Claude Code command map is in `CLAUDE.md`.

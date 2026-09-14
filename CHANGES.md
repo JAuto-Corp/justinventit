@@ -8,7 +8,7 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja` | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract; CLAUDE.md = `@AGENTS.md` + Claude extras; AGENTS.md is framework-managed (no longer `_skip_if_exists`) |
+| `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja` | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract, seeded once and project-owned (`_skip_if_exists`, never prompted); CLAUDE.md = `@AGENTS.md` + Claude extras (framework-managed); later contract changes ship as rows here for projects to merge |
 
 ## jv-v0.1.0 — 2026-09-14
 

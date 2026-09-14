@@ -155,28 +155,45 @@ class EntryPointers(unittest.TestCase):
             self.assertIn(section, self.AGENTS, section)
         self.assertNotRegex(self.AGENTS, r"`/[a-z]", "AGENTS.md must not use Claude slash-command syntax")
 
-    def test_claude_md_imports_and_does_not_restate(self) -> None:
-        lines = [line for line in self.CLAUDE.splitlines() if line.strip()]
-        self.assertEqual(lines[1], "@AGENTS.md", "second non-empty line must be the import")
+    def test_claude_md_imports_inside_forge_markers_and_does_not_restate(self) -> None:
+        lines = self.CLAUDE.splitlines()
+        self.assertIn("@AGENTS.md", lines)
+        start = next(i for i, l in enumerate(lines) if l.startswith("<!-- forge:start"))
+        end = next(i for i, l in enumerate(lines) if l.startswith("<!-- forge:end"))
+        self.assertLess(start, lines.index("@AGENTS.md"))
+        self.assertLess(lines.index("@AGENTS.md"), end)
         for restated in ("## TDD Gate", "## Work Routing", "SKILL_MODES.md"):
             self.assertNotIn(restated, self.CLAUDE, restated)
         self.assertIn("/verify:complete", self.CLAUDE)
+        for token in ("/scope", "/check", "/verify:complete", "/work:handoff", "/work:pause", "/work:continue"):
+            base, _, sub = token[1:].partition(":")
+            path = TEMPLATE / ".claude/commands" / (f"{base}/{sub}.md" if sub else f"{base}.md")
+            self.assertTrue(path.is_file() or (TEMPLATE / ".claude/commands" / base).is_dir(), token)
+
+    def test_agents_md_is_seeded_once_and_project_owned(self) -> None:
+        self.assertNotIn("forge:start", self.AGENTS)
+        copier = (ROOT / "copier.yml").read_text(encoding="utf-8")
+        skip = copier[copier.index("_skip_if_exists:"):copier.index("_exclude:")]
+        self.assertIn('- "AGENTS.md"', skip)
 
     def test_mode_policy_sets_lite_default_for_caveman(self) -> None:
         text = (TEMPLATE / "docs/SKILL_MODES.md").read_text(encoding="utf-8")
         self.assertIn("`lite` for routine status updates", text)
 
     @unittest.skipUnless(shutil.which("copier"), "copier CLI not installed")
-    def test_copier_refuses_to_clobber_an_existing_agents_md_without_overwrite(self) -> None:
+    def test_copier_copy_even_with_overwrite_keeps_an_existing_agents_md(self) -> None:
+        # Copier's interactive conflict prompt defaults to Yes, so `_skip_if_exists` is the only mechanical
+        # protection; proving it under --overwrite (the strongest clobber mode) covers the interactive path too.
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp)
             original = "# hand-authored entry contract\n"
             (target / "AGENTS.md").write_text(original, encoding="utf-8")
             result = subprocess.run(
-                ["copier", "copy", "--defaults", "--vcs-ref", "HEAD", "-d", "project_name=keeptest",
+                ["copier", "copy", "--defaults", "--overwrite", "--vcs-ref", "HEAD", "-d", "project_name=keeptest",
                  str(ROOT), str(target)], text=True, capture_output=True, timeout=300, stdin=subprocess.DEVNULL)
+            self.assertEqual(result.returncode, 0, result.stderr[-800:])
             self.assertEqual((target / "AGENTS.md").read_text(encoding="utf-8"), original)
-            self.assertNotEqual(result.returncode, 0, "copier must refuse to overwrite without --overwrite")
+            self.assertIn("\n@AGENTS.md\n", (target / "CLAUDE.md").read_text(encoding="utf-8"))
 
     @unittest.skipUnless(shutil.which("copier"), "copier CLI not installed")
     def test_fresh_render_seeds_contract_and_import(self) -> None:

@@ -9,8 +9,8 @@ Adding justinventit to an existing codebase is the hardest adoption path — but
 ## Before You Start
 
 Understand what you have:
-- **Existing CLAUDE.md?** Copier OVERWRITES it (it is a framework-owned file). Save yours first and merge your codebase map and routing back in after the copy.
-- **Existing AGENTS.md?** It is the canonical entry contract and framework-managed like CLAUDE.md: Copier refuses to overwrite it unless you pass `--overwrite`. Save yours, let Copier render the framework contract, then merge your project sections back outside the forge markers.
+- **Existing CLAUDE.md?** It is framework-owned: Copier prompts `Overwrite CLAUDE.md?` with default **Yes** (and `--overwrite` replaces it silently). Rename yours aside first, run a clean `copier copy`, then merge your Claude-specific extras back inside the generated file.
+- **Existing AGENTS.md?** Kept as-is and never prompted (`_skip_if_exists`): it is your canonical entry contract. To adopt the framework contract sections, render the template into a scratch directory (`copier copy --defaults gh:JAuto-Corp/justinventit /tmp/jv-render`) and merge the sections you want from `/tmp/jv-render/AGENTS.md`; later contract changes appear as `entry-contract` rows in the framework CHANGES.md.
 - **Existing hooks?** Back them up. justinventit's hooks can coexist if they use different event matchers.
 - **Existing skills?** Move to `.claude/skills/domain/` — you create that directory yourself (the template does not generate it) and the framework will never touch it.
 - **Existing CI/CD?** justinventit doesn't override CI. It provides templates you can adopt.

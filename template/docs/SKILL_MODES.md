@@ -18,7 +18,7 @@ admitted blocking finding because its repair is inconvenient.
 Caveman compresses wording only. Never compress into ambiguity: exact facts, code, error text, numbers, ordering,
 detail the reader asked for, safety or effect warnings, handoffs, verdicts, and durable records are written in full.
 
-Both runtimes reach this file through ordinary entry: Codex via the generated `AGENTS.md` pointer, Claude Code via
-`CLAUDE.md`. Upstream Caveman defaults to `full`; the portable default above is `lite`, so a runtime that loads the
+Both runtimes reach this file through ordinary entry: Codex via the generated `AGENTS.md` contract (project-owned after
+seeding), Claude Code via `CLAUDE.md`, which imports it. Upstream Caveman defaults to `full`; the portable default above is `lite`, so a runtime that loads the
 skill without this file would run at the upstream default. Projects may override modes in their own entry contract;
 this file is the portable default, not a gate.

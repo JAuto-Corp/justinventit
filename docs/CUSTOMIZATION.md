@@ -8,7 +8,8 @@ justinventit uses Copier's three-way merge for updates. Understanding the bounda
 
 ### Framework Content (updated by `copier update`)
 
-Files between `<!-- forge:start -->` and `<!-- forge:end -->` markers in CLAUDE.md:
+Files between `<!-- forge:start -->` and `<!-- forge:end -->` markers in CLAUDE.md (AGENTS.md carries no markers: it is
+seeded once with the contract and project-owned afterwards; contract changes arrive as CHANGES.md rows to merge):
 
 ```markdown
 <!-- forge:start — DO NOT EDIT between forge markers -->

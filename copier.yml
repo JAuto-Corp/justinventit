@@ -223,9 +223,10 @@ staging_branch:
 # markers in CLAUDE.md protect *content within a framework-managed file*; these
 # rules protect *whole files the framework must never own*.
 #
-# NOTE: AGENTS.md and CLAUDE.md are framework-managed entry files (forge markers, updated by
-# `copier update`); they are deliberately NOT here. Copier refuses to overwrite an existing
-# file unless --overwrite/--force is given, which is the brownfield protection (docs/MIGRATION.md).
+# NOTE: Copier's interactive conflict prompt ("Overwrite X?") defaults to YES, so `_skip_if_exists`
+# is the ONLY mechanical protection for a file a brownfield project already owns. CLAUDE.md is
+# framework-managed (forge markers, rewritten by `copier update`); AGENTS.md is seeded once and
+# project-owned (listed below) — contract changes ship as CHANGES.md rows for the project to merge.
 #
 # `_skip_if_exists`: file IS rendered on first `copier copy`, then NEVER
 #   overwritten on subsequent `copier update` if it already exists. Use for
@@ -249,6 +250,9 @@ _skip_if_exists:
   # --- Dev-log data dir (L1 coherence anchor — append-only event stream + derived views) ---
   - "context/devlog/**"           # threads / decisions / design-intent / user-actions / findings
   - "context/devlog/*"
+
+  # --- Canonical entry contract (seeded once with the full contract; project-owned afterwards; never prompted) ---
+  - "AGENTS.md"
 
   # --- Copier answers (seeded once; updated in place by Copier itself, never re-templated) ---
   - ".copier-answers.yml"

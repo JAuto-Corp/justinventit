@@ -18,9 +18,10 @@ discipline and Ponytail boot policy belong in the JV portable loop with ONE poin
 
 Ownership is not physical location: JA may hold JV-generated framework surfaces (for example projected skill
 directories) for runtime discovery, and those stay JV-owned and JV-versioned even inside the JA tree. JA-owned paths
-are the product's own and no JV release writes to them. A brownfield project's existing `AGENTS.md` is never
-overwritten without an explicit `--overwrite`; it merges the framework contract sections into its own file
-(docs/MIGRATION.md) and adds the `docs/SKILL_MODES.md` read-and-apply line itself if it adopts the vendored skills.
+are the product's own and no JV release writes to them. A project's `AGENTS.md` is seeded once and then
+project-owned (`_skip_if_exists`, never prompted); it merges framework contract sections from a scratch render and
+from CHANGES.md `entry-contract` rows, and adds the `docs/SKILL_MODES.md` read-and-apply line itself if it adopts
+the vendored skills.
 
 - Product code, schema, migrations, tests, the product's own generated artifacts (types, barrels, route catalog),
   and domain truth (AGENTS.md § Product domain routing).
@@ -43,6 +44,6 @@ overwritten without an explicit `--overwrite`; it merges the framework contract 
 - No copied framework machinery, no hook/engine/plugin ecosystems, no second status store, no gate change by overlay.
 - Known JV-internal inconsistencies stay inside JV until fixed: generated four-step contract vs the documented 0–8 loop;
   check `06-harness-sensitivity` specified but not shipped. The generated entry contract is now provider-neutral
-  (`AGENTS.md` canonical, `CLAUDE.md` imports it and carries only Claude Code extras). The
+  (`AGENTS.md` canonical and project-owned after seeding, `CLAUDE.md` imports it and carries only Claude Code extras). The
   runtime availability receipt still measures `frontend-design` only and requires CI's exact CLI versions; this branch
   only makes its probe project carry every pinned skill.
