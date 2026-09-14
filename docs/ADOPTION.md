@@ -30,9 +30,11 @@ project's own gate decision. Known JV-internal inconsistencies (generated four-s
 loop; check `06-harness-sensitivity` specified but not shipped; Claude-only generated entry) are JV roadmap items and
 are never exported to a project through an overlay.
 
-`copier update` is not an adoption path yet: the template's `.copier-answers.yml.jinja` records only `_commit` and
-`_src_path` and does not persist answers, and the answers file is under `_skip_if_exists`. Until the template persists
-answers and is run with `--vcs-ref jv-vX.Y.Z`, every project, generated or not, uses the PR path above.
+`copier update` is an adoption path for projects generated from a git-tracked template source (a URL such as
+`gh:JAuto-Corp/justinventit` or a stable local clone path): the answers file records the resolved template commit,
+the source and every answer, so `copier update --vcs-ref jv-vX.Y.Z` performs Copier's three-way merge, keeps
+project-owned files (`_skip_if_exists`) untouched and advances `_commit`. Projects not generated from the template
+use the PR path above; converting them is not required.
 
 ## Record: committed, not a PR description
 
