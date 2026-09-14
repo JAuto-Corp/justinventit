@@ -18,7 +18,9 @@ discipline and Ponytail boot policy belong in the JV portable loop with ONE poin
 
 Ownership is not physical location: JA may hold JV-generated framework surfaces (for example projected skill
 directories) for runtime discovery, and those stay JV-owned and JV-versioned even inside the JA tree. JA-owned paths
-are the product's own and no JV release writes to them.
+are the product's own and no JV release writes to them. A brownfield project therefore keeps its own `AGENTS.md` (the
+template's pointer is seeded only when the file is absent) and adds the `docs/SKILL_MODES.md` read-and-apply line
+itself if it adopts the vendored skills.
 
 - Product code, schema, migrations, tests, the product's own generated artifacts (types, barrels, route catalog),
   and domain truth (AGENTS.md § Product domain routing).
