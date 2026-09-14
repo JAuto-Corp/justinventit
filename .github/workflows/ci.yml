@@ -64,6 +64,9 @@ jobs:
       - name: Copier answers persistence and update-cycle tests
         run: python3 scripts/ci/test-copier-update.py
 
+      - name: Runtime receipt multi-skill schema tests
+        run: python3 scripts/ci/test-runtime-receipt-multiskill.py
+
       - name: Generate matrix + coherence assertions
         run: bash scripts/ci/generate-matrix-check.sh "$(command -v copier)"
 

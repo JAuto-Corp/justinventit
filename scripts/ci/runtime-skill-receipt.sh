@@ -281,12 +281,23 @@ acquire_ci_receipt() {
   python3 "$source_root/scripts/ci/check-skill-routes.py" --project-root "$project"
 
   local codex_status codex_control_status claude_status claude_control_status
+  # additional pinned skills (everything but frontend-design) get their own Codex probe; Claude's single run lists them all
+  local additional_skills
+  additional_skills="$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import skill_inventory as s; print(",".join(n for n in s.pinned_skill_names(sys.argv[2]) if n != "frontend-design"))' "$source_root/scripts/ci" "$source_root/scripts/ci/fixtures")"
   set +e
   (
     cd "$project"
     env -u OPENAI_API_KEY -u CODEX_API_KEY HOME="$receipt_scratch/home" CODEX_HOME="$receipt_scratch/codex-home" codex debug prompt-input '$frontend-design availability probe only'
   ) >"$receipt_raw/codex-project.json" 2>"$receipt_raw/codex-project.stderr"
   codex_status=$?
+  local extra_skill extra_status_list=""
+  for extra_skill in ${additional_skills//,/ }; do
+    (
+      cd "$project"
+      env -u OPENAI_API_KEY -u CODEX_API_KEY HOME="$receipt_scratch/home" CODEX_HOME="$receipt_scratch/codex-home" codex debug prompt-input "\$${extra_skill} availability probe only"
+    ) >"$receipt_raw/codex-project-${extra_skill}.json" 2>"$receipt_raw/codex-project-${extra_skill}.stderr"
+    extra_status_list="${extra_status_list}${extra_skill}=$?,"
+  done
   (
     cd "$control"
     env -u OPENAI_API_KEY -u CODEX_API_KEY HOME="$receipt_scratch/control-home" CODEX_HOME="$receipt_scratch/control-codex-home" codex debug prompt-input 'availability probe only'
@@ -315,6 +326,7 @@ acquire_ci_receipt() {
   cmp -s -- "${project_transcripts[0]}" "$receipt_raw/claude-transcript.jsonl" || die "Claude project transcript archive mismatch"
   cmp -s -- "${control_transcripts[0]}" "$receipt_raw/claude-control-transcript.jsonl" || die "Claude control transcript archive mismatch"
 
+  JV_ADDITIONAL_SKILLS="$additional_skills" JV_ADDITIONAL_STATUS="$extra_status_list" \
   python3 - "$source_root" "$receipt_scratch" "$codex_status" "$codex_control_status" "$claude_status" "$claude_control_status" <<'PY'
 from __future__ import annotations
 
@@ -337,7 +349,15 @@ scratch = Path(sys.argv[2]).resolve()
 raw = scratch / "raw"
 project = scratch / "project"
 sys.path.insert(0, str(source_root / "scripts/ci"))
-from skill_inventory import loaded_skills_pattern, project_skill_count  # noqa: E402
+from skill_inventory import loaded_skills_marker, loaded_skills_pattern, project_skill_count  # noqa: E402
+import os  # noqa: E402
+
+additional_names = [n for n in os.environ.get("JV_ADDITIONAL_SKILLS", "").split(",") if n]
+additional_status = {
+    kv.split("=")[0]: int(kv.split("=")[1])
+    for kv in os.environ.get("JV_ADDITIONAL_STATUS", "").split(",") if kv
+}
+additional_claude_counts: dict[str, int] = {}
 
 pinned_total = project_skill_count(project, source_root / "scripts/ci/fixtures")
 if pinned_total < 1:
@@ -465,6 +485,14 @@ def validate_claude(prefix: str, config_name: str, expected_project: Path, targe
         raise ReceiptError(f"claude {prefix}frontend-design target count mismatch: {target_count}")
     if ":frontend-design:" in content:
         raise ReceiptError(f"claude {prefix}namespaced frontend-design unexpectedly present")
+    for extra in additional_names:
+        extra_count = sum(1 for line in content.splitlines() if line.startswith(f"- {extra}:"))
+        if extra_count != (1 if target_expected else 0):
+            raise ReceiptError(f"claude {prefix}{extra} target count mismatch: {extra_count}")
+        if f":{extra}:" in content:
+            raise ReceiptError(f"claude {prefix}namespaced {extra} unexpectedly present")
+        if target_expected:
+            additional_claude_counts[extra] = extra_count
     session = listing.get("sessionId")
     if (
         listing_index >= error_index
@@ -490,7 +518,7 @@ def validate_claude(prefix: str, config_name: str, expected_project: Path, targe
             "remote_settings": common_markers[0],
             "roots": common_markers[1],
             "plugin_count": common_markers[2],
-            "loaded": loaded_pattern,
+            "loaded": loaded_skills_marker(pinned_total if target_expected else 0),
             "attachment": "Sending <integer> skills via attachment (initial)",
         },
         "artifacts": artifacts,
@@ -534,6 +562,40 @@ claude = validate_claude("", "claude-config", project, True)
 claude_control = validate_claude(
     "control-", "control-claude-config", scratch / "no-project-control", False
 )
+control_text = codex_control.read_text(encoding="utf-8")
+additional_entries: dict[str, dict] = {}
+for extra in additional_names:
+    if additional_status.get(extra) != 0:
+        raise ReceiptError(f"codex {extra} debug prompt-input exit mismatch: {additional_status.get(extra)!r}")
+    extra_out = raw / f"codex-project-{extra}.json"
+    extra_pattern = re.compile(r"\(file: (?P<path>/[^)]+/\.agents/skills/" + re.escape(extra) + r"/SKILL\.md)\)")
+    extra_expected = project / ".agents/skills" / extra / "SKILL.md"
+    found = extra_pattern.findall(extra_out.read_text(encoding="utf-8"))
+    if found != [str(extra_expected)]:
+        raise ReceiptError(f"codex {extra} locator marker/cardinality changed: {found!r}")
+    if extra_pattern.findall(control_text):
+        raise ReceiptError(f"codex no-project control found {extra}")
+    fm = sum(1 for s in (project / ".agents/skills").rglob("SKILL.md")
+             if re.search(r"(?m)^name: " + re.escape(extra) + r"$", s.read_text(encoding="utf-8")))
+    if fm != 1:
+        raise ReceiptError(f"codex generated-tree frontmatter cardinality mismatch for {extra}: {fm}")
+    extra_bytes = extra_expected.read_bytes()
+    additional_entries[extra] = {
+        "codex": {
+            "status": additional_status[extra],
+            "target_count": 1,
+            "no_project_target_count": 0,
+            "observed_absolute_path": found[0],
+            "derived_repository_path": f".agents/skills/{extra}/SKILL.md",
+            "skill_bytes": len(extra_bytes),
+            "skill_sha256": hashlib.sha256(extra_bytes).hexdigest(),
+            "artifacts": {
+                "project": file_record(extra_out, f"codex {extra} project output"),
+                "project_stderr": file_record(raw / f"codex-project-{extra}.stderr", f"codex {extra} project stderr", allow_empty=True),
+            },
+        },
+        "claude_target_count": additional_claude_counts[extra],
+    }
 skill_bytes = expected_skill.read_bytes()
 head = subprocess.run(
     ["git", "rev-parse", "HEAD"], cwd=source_root, text=True, capture_output=True, check=True
@@ -573,6 +635,8 @@ receipt = {
     "claude_availability": claude,
     "claude_no_project": claude_control,
 }
+if additional_entries:
+    receipt["additional_skills"] = additional_entries
 receipt_path = raw / "claude-receipt.json"
 receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 file_record(receipt_path, "machine receipt")
