@@ -263,8 +263,15 @@ acquire_ci_receipt() {
   project="$receipt_scratch/project"
   control="$receipt_scratch/no-project-control"
   mkdir -p "$receipt_raw" "$project/.agents/skills" "$project/.claude/skills" "$control" "$receipt_scratch/home" "$receipt_scratch/codex-home" "$receipt_scratch/control-home" "$receipt_scratch/control-codex-home" "$receipt_scratch/claude-config" "$receipt_scratch/control-claude-config"
-  cp -R "$source_root/template/.agents/skills/frontend-design" "$project/.agents/skills/"
-  cp -R "$source_root/template/.claude/skills/frontend-design" "$project/.claude/skills/"
+  # Every pinned canonical skill travels with the probe project so the multi-skill projection/route checks hold;
+  # the receipt itself still measures frontend-design availability only.
+  local pinned_fixture pinned_skill
+  for pinned_fixture in "$source_root"/scripts/ci/fixtures/*.expected.json; do
+    pinned_skill="$(python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("skill") or {}).get("name",""))' "$pinned_fixture")"
+    [[ -n "$pinned_skill" ]] || continue
+    cp -R "$source_root/template/.agents/skills/$pinned_skill" "$project/.agents/skills/"
+    cp -R "$source_root/template/.claude/skills/$pinned_skill" "$project/.claude/skills/"
+  done
   python3 "$source_root/scripts/generate-skill-surfaces.py" --project-root "$project" --check
   python3 "$source_root/scripts/ci/check-skill-routes.py" --project-root "$project"
 

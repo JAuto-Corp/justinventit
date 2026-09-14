@@ -205,6 +205,20 @@ check_set() {
     if ! python3 "$TEMPLATE_ROOT/scripts/ci/check-skill-routes.py" --project-root "$out" >"$TMP_ROOT/$name.skill-routes.log" 2>&1; then
       errs+=("(skill) runtime route/authority check failed")
     fi
+
+  # --- additional pinned canonical skills: one fixture each, same physical-route contract ---
+  local extra_fixture extra_skill
+  for extra_fixture in "$TEMPLATE_ROOT"/scripts/ci/fixtures/*.expected.json; do
+    extra_skill="$(jq -r '.skill.name // empty' "$extra_fixture")"
+    [ -n "$extra_skill" ] && [ "$extra_skill" != "frontend-design" ] || continue
+    if [ ! -d "$out/.agents/skills/$extra_skill" ] || [ ! -d "$out/.claude/skills/$extra_skill" ]; then
+      errs+=("(skill) $extra_skill canonical or Claude projection missing")
+    elif ! diff -rq "$out/.agents/skills/$extra_skill" "$out/.claude/skills/$extra_skill" >/dev/null; then
+      errs+=("(skill) .agents/skills/$extra_skill and .claude/skills/$extra_skill differ")
+    elif [ "$(sha256sum "$out/.agents/skills/$extra_skill/SKILL.md" | awk '{print $1}')" != "$(jq -r '.skill.files["SKILL.md"].sha256' "$extra_fixture")" ]; then
+      errs+=("(skill) canonical $extra_skill SKILL.md differs from expected fixture")
+    fi
+  done
   fi
 
   # --- (a) no leaked .jinja files ---
