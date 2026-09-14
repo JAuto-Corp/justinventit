@@ -146,40 +146,53 @@ class Selection(unittest.TestCase):
 
 
 class EntryPointers(unittest.TestCase):
-    def test_both_entries_instruct_reading_the_mode_policy(self) -> None:
-        for name in ("AGENTS.md.jinja", "CLAUDE.md.jinja"):
-            text = (TEMPLATE / name).read_text(encoding="utf-8")
-            self.assertIn("read `docs/SKILL_MODES.md`", text, name)
-            self.assertIn("apply", text, name)
-        self.assertTrue((TEMPLATE / "docs/SKILL_MODES.md").is_file())
+    AGENTS = (TEMPLATE / "AGENTS.md.jinja").read_text(encoding="utf-8")
+    CLAUDE = (TEMPLATE / "CLAUDE.md.jinja").read_text(encoding="utf-8")
 
-    def test_agents_md_is_never_overwritten_in_brownfield_projects(self) -> None:
-        copier = (ROOT / "copier.yml").read_text(encoding="utf-8")
-        skip = copier[copier.index("_skip_if_exists:"):copier.index("_exclude:")]
-        self.assertIn('- "AGENTS.md"', skip)
+    def test_agents_md_is_the_canonical_contract(self) -> None:
+        for section in ("## Before Working", "## TDD Gate", "## Work Routing", "## Skills", "## Git Workflow",
+                        "read `docs/SKILL_MODES.md`", "`caveman` runs `lite`"):
+            self.assertIn(section, self.AGENTS, section)
+        self.assertNotRegex(self.AGENTS, r"`/[a-z]", "AGENTS.md must not use Claude slash-command syntax")
+
+    def test_claude_md_imports_and_does_not_restate(self) -> None:
+        lines = [line for line in self.CLAUDE.splitlines() if line.strip()]
+        self.assertEqual(lines[1], "@AGENTS.md", "second non-empty line must be the import")
+        for restated in ("## TDD Gate", "## Work Routing", "SKILL_MODES.md"):
+            self.assertNotIn(restated, self.CLAUDE, restated)
+        self.assertIn("/verify:complete", self.CLAUDE)
+
+    def test_mode_policy_sets_lite_default_for_caveman(self) -> None:
+        text = (TEMPLATE / "docs/SKILL_MODES.md").read_text(encoding="utf-8")
+        self.assertIn("`lite` for routine status updates", text)
 
     @unittest.skipUnless(shutil.which("copier"), "copier CLI not installed")
-    def test_copier_copy_keeps_an_existing_agents_md(self) -> None:
+    def test_copier_refuses_to_clobber_an_existing_agents_md_without_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp)
             original = "# hand-authored entry contract\n"
             (target / "AGENTS.md").write_text(original, encoding="utf-8")
             result = subprocess.run(
-                ["copier", "copy", "--defaults", "--overwrite", "--vcs-ref", "HEAD",
-                 "-d", "project_name=skiptest", str(ROOT), str(target)],
-                text=True, capture_output=True, timeout=300)
-            self.assertEqual(result.returncode, 0, result.stderr[-800:])
+                ["copier", "copy", "--defaults", "--vcs-ref", "HEAD", "-d", "project_name=keeptest",
+                 str(ROOT), str(target)], text=True, capture_output=True, timeout=300, stdin=subprocess.DEVNULL)
             self.assertEqual((target / "AGENTS.md").read_text(encoding="utf-8"), original)
-            self.assertTrue((target / "CLAUDE.md").is_file())
+            self.assertNotEqual(result.returncode, 0, "copier must refuse to overwrite without --overwrite")
 
-    def test_pointers_carry_the_caveman_carve_out_inline(self) -> None:
-        for name in ("AGENTS.md.jinja", "CLAUDE.md.jinja"):
-            text = (TEMPLATE / name).read_text(encoding="utf-8")
-            self.assertIn("`caveman` runs `lite`", text, name)
-
-    def test_mode_policy_sets_lite_default_for_caveman(self) -> None:
-        text = (TEMPLATE / "docs/SKILL_MODES.md").read_text(encoding="utf-8")
-        self.assertIn("`lite` for routine status updates", text)
+    @unittest.skipUnless(shutil.which("copier"), "copier CLI not installed")
+    def test_fresh_render_seeds_contract_and_import(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp)
+            result = subprocess.run(
+                ["copier", "copy", "--defaults", "--vcs-ref", "HEAD", "-d", "project_name=freshtest",
+                 str(ROOT), str(target)], text=True, capture_output=True, timeout=300, stdin=subprocess.DEVNULL)
+            self.assertEqual(result.returncode, 0, result.stderr[-800:])
+            agents = (target / "AGENTS.md").read_text(encoding="utf-8")
+            claude = (target / "CLAUDE.md").read_text(encoding="utf-8")
+            self.assertIn("# freshtest — Agent Entry Contract", agents)
+            self.assertIn("## TDD Gate", agents)
+            self.assertNotIn("{{", agents); self.assertNotIn("{%", agents)
+            self.assertIn("\n@AGENTS.md\n", claude)
+            self.assertNotIn("## TDD Gate", claude)
 
 
 if __name__ == "__main__":
