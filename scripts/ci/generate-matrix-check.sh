@@ -220,7 +220,7 @@ check_set() {
   if [ ! -f "$out/CLAUDE.md" ] || ! grep -qx '@AGENTS.md' "$out/CLAUDE.md"; then
     errs+=("(entry) CLAUDE.md does not import @AGENTS.md")
   fi
-  if grep -qE '^## (TDD Gate|Work Routing|Before Working)' "$out/CLAUDE.md"; then
+  if grep -qE '^## (TDD Gate|Development Loop|Work Routing|Before Working)' "$out/CLAUDE.md"; then
     errs+=("(entry) CLAUDE.md restates the contract instead of importing it")
   fi
   # --- additional pinned canonical skills: one fixture each, same physical-route contract ---

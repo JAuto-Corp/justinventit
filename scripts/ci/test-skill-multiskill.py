@@ -150,12 +150,12 @@ class EntryPointers(unittest.TestCase):
     CLAUDE = (TEMPLATE / "CLAUDE.md.jinja").read_text(encoding="utf-8")
 
     def test_agents_md_is_the_canonical_contract(self) -> None:
-        for section in ("## Before Working", "## TDD Gate", "## Work Routing", "## Skills", "## Git Workflow",
+        for section in ("## Before Working", "## Development Loop", "## Work Routing", "## Skills", "## Git Workflow",
                         "read `docs/SKILL_MODES.md`", "`caveman` runs `lite`"):
             self.assertIn(section, self.AGENTS, section)
         self.assertNotRegex(self.AGENTS, r"`/[a-z]", "AGENTS.md must not use Claude slash-command syntax")
-        validate = next(l for l in self.AGENTS.splitlines() if l.startswith("| 4. VALIDATE"))
-        self.assertIn("verify/complete.md", validate, "VALIDATE must bind every runtime to the same complete gate")
+        review = next(l for l in self.AGENTS.splitlines() if l.startswith("| 5 | review |"))
+        self.assertIn("verify/complete.md", review, "the review stage must bind every runtime to the same complete gate")
         self.assertTrue((TEMPLATE / ".claude/skills/orchestrators/verify/complete.md").is_file())
         transitions = next(l for l in self.AGENTS.splitlines() if l.startswith("Session transitions"))
         self.assertIn(".claude/skills/orchestrators/work/", transitions)
@@ -171,7 +171,7 @@ class EntryPointers(unittest.TestCase):
         end = next(i for i, l in enumerate(lines) if l.startswith("<!-- forge:end"))
         self.assertLess(start, lines.index("@AGENTS.md"))
         self.assertLess(lines.index("@AGENTS.md"), end)
-        for restated in ("## TDD Gate", "## Work Routing", "SKILL_MODES.md"):
+        for restated in ("## TDD Gate", "## Development Loop", "## Work Routing", "SKILL_MODES.md"):
             self.assertNotIn(restated, self.CLAUDE, restated)
         self.assertIn("/verify:complete", self.CLAUDE)
         for token in ("/scope", "/check", "/verify:complete", "/work:handoff", "/work:pause", "/work:continue"):
@@ -179,6 +179,25 @@ class EntryPointers(unittest.TestCase):
             # A bare token needs a wrapper FILE; a namespace directory alone does not resolve it.
             path = TEMPLATE / ".claude/commands" / (f"{base}/{sub}.md" if sub else f"{base}.md")
             self.assertTrue(path.is_file(), token)
+
+    @staticmethod
+    def _stage_table(text: str, first_cell_is_number: bool) -> list[tuple[int, str]]:
+        rows = []
+        for line in text.splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 2 and cells[0].isdigit():
+                rows.append((int(cells[0]), cells[1].strip("*` ")))
+        return rows
+
+    def test_generated_loop_matches_dev_loop_stage_sequence(self) -> None:
+        spec = (ROOT / "docs/DEV_LOOP.md").read_text(encoding="utf-8")
+        spec_table = spec[spec.index("## 1. The loop"):spec.index("## 1a.")]
+        expected = self._stage_table(spec_table, True)
+        got = self._stage_table(self.AGENTS[self.AGENTS.index("## Development Loop"):self.AGENTS.index("**Scope classification:**")], True)
+        self.assertEqual([n for n, _ in expected], list(range(9)), "DEV_LOOP §1 must number stages 0-8")
+        self.assertEqual(got, expected, "generated contract stages must match DEV_LOOP §1 in order and name")
+        row7 = next(l for l in self.AGENTS.splitlines() if l.startswith("| 7 | document |"))
+        self.assertIn("no-doc-impact", row7)
 
     def test_agents_md_is_seeded_once_and_project_owned(self) -> None:
         self.assertNotIn("forge:start", self.AGENTS)
@@ -216,10 +235,10 @@ class EntryPointers(unittest.TestCase):
             agents = (target / "AGENTS.md").read_text(encoding="utf-8")
             claude = (target / "CLAUDE.md").read_text(encoding="utf-8")
             self.assertIn("# freshtest — Agent Entry Contract", agents)
-            self.assertIn("## TDD Gate", agents)
+            self.assertIn("## Development Loop", agents)
             self.assertNotIn("{{", agents); self.assertNotIn("{%", agents)
             self.assertIn("\n@AGENTS.md\n", claude)
-            self.assertNotIn("## TDD Gate", claude)
+            self.assertNotIn("## Development Loop", claude)
 
 
 if __name__ == "__main__":
