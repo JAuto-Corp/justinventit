@@ -1,0 +1,11 @@
+# {{ project_name }} — agent entry (provider-neutral pointer)
+
+Canonical skills live in `.agents/skills/<name>/SKILL.md`; Codex reads them there and Claude Code reads the
+byte-identical generated projection in `.claude/skills/<name>/`. Do not edit the projection by hand.
+
+Before using `ponytail` or `caveman`, read `docs/SKILL_MODES.md` and apply the mode it sets for your
+responsibility. The upstream defaults do not apply here: `caveman` runs `lite` for routine updates and never
+compresses exact facts, code, errors, numbers, ordering, requested detail, warnings, handoffs, verdicts or records;
+`ponytail` narrows implementations, never requirements, evidence or gates.
+
+Claude Code additionally routes through `CLAUDE.md`; other runtimes start here.

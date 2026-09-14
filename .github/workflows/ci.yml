@@ -58,6 +58,9 @@ jobs:
       - name: Ensure jq is available
         run: jq --version || sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Multi-skill projection, route and receipt-count tests
+        run: python3 scripts/ci/test-skill-multiskill.py
+
       - name: Generate matrix + coherence assertions
         run: bash scripts/ci/generate-matrix-check.sh "$(command -v copier)"
 

@@ -13,7 +13,6 @@ import stat
 import sys
 
 
-SKILL_NAME = "frontend-design"
 EXPECTED_ENTRIES = ("LICENSE.txt", "PROVENANCE.json", "SKILL.md")
 
 
@@ -69,13 +68,20 @@ def frontmatter(path: Path) -> dict[str, str]:
     except ValueError as exc:
         raise ProjectionError("malformed YAML frontmatter: closing delimiter missing") from exc
     fields: dict[str, str] = {}
+    current: str | None = None
     for line in lines[1:closing]:
         if not line.strip():
+            continue
+        if line[0] in " \t" and current is not None:
+            # folded/literal block scalar continuation (YAML `>` / `|`)
+            fields[current] = (fields[current] + " " + line.strip()).strip()
             continue
         if ":" not in line:
             raise ProjectionError(f"malformed YAML frontmatter line: {line!r}")
         key, value = line.split(":", 1)
-        fields[key.strip()] = value.strip()
+        current = key.strip()
+        value = value.strip()
+        fields[current] = "" if value in (">", "|", ">-", "|-") else value
     return fields
 
 
@@ -92,13 +98,43 @@ def regular_nonexecutable(path: Path, label: str) -> None:
         raise ProjectionError(f"{label} has executable permission mode")
 
 
-def validate_canonical(root: Path) -> tuple[Path, dict]:
-    fixture_path = root / "scripts/ci/fixtures/frontend-design.expected.json"
-    if not fixture_path.is_file():
-        fixture_path = Path(__file__).resolve().parent / "ci/fixtures/frontend-design.expected.json"
+MANDATORY_SKILL = "frontend-design"
+
+
+def fixture_paths(root: Path) -> list[Path]:
+    """Every pinned canonical skill has one scripts/ci/fixtures/<name>.expected.json.
+
+    At the template source root every fixture is validated. In a generated or fixture project
+    (no scripts/ci/fixtures), the mandatory skill is always validated and other pinned skills
+    only when the project carries their canonical directory.
+    """
+    fixtures_dir = root / "scripts/ci/fixtures"
+    strict = fixtures_dir.is_dir()
+    if not strict:
+        fixtures_dir = Path(__file__).resolve().parent / "ci/fixtures"
+    paths = [path for path in sorted(fixtures_dir.glob("*.expected.json"))
+             if isinstance(load_json(path).get("skill"), dict)]
+    if not strict:
+        surfaces = surface_root(root)
+        # A pinned skill is in scope when EITHER runtime route exists in any form (dir, file, dangling
+        # symlink); the complete canonical+projection pair is then required, so a half-present skill fails.
+        def in_scope(path: Path) -> bool:
+            name = load_json(path)["skill"]["name"]
+            return any(route.exists() or route.is_symlink()
+                       for route in (surfaces / ".agents/skills" / name, surfaces / ".claude/skills" / name))
+        paths = [path for path in paths if path.name == f"{MANDATORY_SKILL}.expected.json" or in_scope(path)]
+    if not paths:
+        raise ProjectionError("no pinned skill fixture found")
+    return paths
+
+
+def validate_canonical(root: Path, fixture_path: Path) -> tuple[Path, dict]:
     fixture = load_json(fixture_path)
+    skill_name = fixture["skill"]["name"]
+    if fixture_path.name != f"{skill_name}.expected.json":
+        raise ProjectionError("expected fixture filename does not match its skill name")
     surfaces = surface_root(root)
-    source = surfaces / ".agents/skills" / SKILL_NAME
+    source = surfaces / ".agents/skills" / skill_name
     if source.is_symlink() or not source.is_dir():
         raise ProjectionError("canonical skill directory missing or symlinked")
     actual_entries = tuple(sorted(item.name for item in source.iterdir()))
@@ -110,12 +146,13 @@ def validate_canonical(root: Path) -> tuple[Path, dict]:
         regular_nonexecutable(source / name, f"canonical {name}")
 
     fields = frontmatter(source / "SKILL.md")
-    if fields.get("name") != SKILL_NAME:
+    if fields.get("name") != skill_name:
         raise ProjectionError("canonical skill frontmatter name mismatch")
     if not fields.get("description"):
         raise ProjectionError("canonical skill frontmatter description is empty")
     expected = expected_provenance(fixture)
     if fields.get("license") != expected["license"]["frontmatter"]:
+        # frontmatter None means the upstream skill carries no license line; LICENSE.txt and PROVENANCE.json hold it
         raise ProjectionError("canonical skill license frontmatter mismatch")
     license_name = expected["license"]["filename"]
     if Path(license_name).is_absolute() or len(Path(license_name).parts) != 1:
@@ -132,10 +169,10 @@ def validate_canonical(root: Path) -> tuple[Path, dict]:
     return source, fixture
 
 
-def paired_skills(root: Path, canonical_frontend: Path) -> list[tuple[Path, Path]]:
+def paired_skills(root: Path, canonical: Path) -> list[tuple[Path, Path]]:
     surfaces = surface_root(root)
     projection_root = surfaces / ".claude/skills"
-    return [(canonical_frontend, projection_root / SKILL_NAME)]
+    return [(canonical, projection_root / canonical.name)]
 
 
 def projection_differences(source: Path, target: Path) -> list[str]:
@@ -203,8 +240,10 @@ def main() -> int:
     args = parse_args()
     root = args.project_root.resolve()
     try:
-        source, _fixture = validate_canonical(root)
-        pairs = paired_skills(root, source)
+        pairs: list[tuple[Path, Path]] = []
+        for fixture_path in fixture_paths(root):
+            source, _fixture = validate_canonical(root, fixture_path)
+            pairs.extend(paired_skills(root, source))
         if args.check:
             failures = [
                 failure
