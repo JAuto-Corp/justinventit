@@ -25,19 +25,25 @@ changes arrive as `entry-contract` rows in the framework's CHANGES.md for the pr
 2. If in execution phase: Read `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase SPEC.md
 3. Sync: `git fetch origin && git log --oneline HEAD..origin/$(git branch --show-current) | head -5`
 
-## TDD Gate (Non-Negotiable)
+## Development Loop (Non-Negotiable)
 
-**No code without scenarios. No scenarios without acceptance criteria.**
+**No code without scenarios. No scenarios without acceptance criteria.** One loop for every runtime; the same
+stages as the framework's `DEV_LOOP.md` §1, in this order:
 
-| Step | Output | Gate |
+| # | Stage | Exit condition |
 |-|-|-|
-| 1. Plan | SPEC.md + SCENARIOS.md | Planning outputs exist |
-| 2. RED | Scenario runs and FAILS | Failure = correct (missing impl) |
-| 3. GREEN | Implementation code, scenario PASSES | `{{ type_check_command }}` passes |
-| 4. VALIDATE | the complete gate in `.claude/skills/orchestrators/verify/complete.md` passes: scenario evidence (RED then GREEN), SPEC adherence line by line, audits and best-practice checks, `{{ type_check_command }}`, build | Hard block on missing scenarios |
+| 0 | draft red-team | premise checklist recorded on the design artifact (diagnosis grounded in cited evidence; cheaper or more reversible alternative considered and why not; consumers named and actually read); a FULL independent pass when any trigger holds: the artifact changes policy, protocol or gate behavior; it is consumed by more than one seat or runtime; it is irreversible or migration-bearing; its planned surface is Standard+ (new tables/routes/pages, 4+ files, planned migrations, or planned changes to scenario seeds/factory helpers). Escalate to a full pass on any uncertainty, either party, and BEFORE integration if the eventual diff crosses into Standard+ despite a checklist-tier draft |
+| 1 | scope | SPEC.md + SCENARIOS.md exist; every named API, number or consumer claim is cited or refused |
+| 2 | spec-audit | independent fresh-context audit; every blocker dispositioned |
+| 3 | RED | scenarios run and FAIL: runner exit non-zero, recorded (Quick scope may satisfy RED as the same change) |
+| 4 | GREEN | implementation; the same runner exits zero; `{{ type_check_command }}` passes |
+| 5 | review | no unresolved actionable finding; the complete gate in `.claude/skills/orchestrators/verify/complete.md` passes: scenario evidence (RED-observed then GREEN for Standard+, mandatory; Quick scope may instead show tests added or modified in the same change and passing — the same-change exemption), SPEC adherence line by line, audits and best-practice checks, `{{ type_check_command }}`, build; hard block on missing scenarios |
+| 6 | integrate | checks green on the current head; only the integrator merges |
+| 7 | document | doc delta, or an explicit `no-doc-impact: <reason>` line in the PR body; fails like a test gate |
+| 8 | capture | every discovery has a durable record (issue, hub or `context/DISCOVERIES.md`); nothing lives only in a session |
 
-The gate definition is the same file for every runtime; Claude Code runs it as a command (map in `CLAUDE.md`), other
-runtimes read the file and perform each section.
+The gate definitions are the same files for every runtime; Claude Code runs them as commands (map in `CLAUDE.md`),
+other runtimes read the files and perform each section.
 
 **Scope classification:**
 
@@ -53,9 +59,9 @@ runtimes read the file and perform each section.
 
 | Source | Route |
 |-|-|
-| Quick fix (single-file, no new surface area) | Fix → Commit with `Fixes #N` |
-| Standard+ (see TDD Gate scope triggers) | SPEC → SCENARIOS → RED → GREEN → VALIDATE |
-| External concern | Append to `context/DISCOVERIES.md` → keep working |
+| Quick fix (single-file, no new surface area) | Fix → Commit with `Fixes #N` → document (or `no-doc-impact`) → capture |
+| Standard+ (see scope triggers) | stages 0–8: scope → spec-audit → RED → GREEN → review → integrate → document → capture |
+| External concern | Append to `context/DISCOVERIES.md` (stage 8) → keep working |
 
 For dispatch/handoff summaries and scoped evidence comparison, use `docs/DELIVERY.md`.
 It consolidates the work reference; existing entry, review and effect gates still apply.

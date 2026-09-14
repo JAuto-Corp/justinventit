@@ -18,6 +18,8 @@
 | 8 | capture | any seat | hub `capture` verb (alias over `finding`/`journal`/`doc` with external-tracker refs — `HUB_DATA_MODEL.md` §3) | nothing left only-in-context: every discovery has a hub record |
 
 Stages 3-5 iterate via the chain (`go ⇄ check` relay, convergence math in the chain skill).
+The generated project contract (`template/AGENTS.md.jinja` § Development Loop) carries this same stage sequence;
+`scripts/ci/test-skill-multiskill.py` asserts the two tables agree in order and names.
 Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test gate fails.
 
 ## 1a. Stage-0 protocol (draft red-team — USER RULING 2026-07-28)
