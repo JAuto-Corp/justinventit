@@ -65,6 +65,13 @@ class Inventory(unittest.TestCase):
             "project: 1, additional: 0, legacy commands: 0)")
         self.assertIn("Loaded 3 unique skills (3 unconditional", skill_inventory.loaded_skills_marker(3))
 
+    # Captured verbatim from Claude Code 2.1.270 --debug against a three-skill project (skills-probes-20260914).
+    CAPTURED_CLAUDE_DEBUG_LINE = 'Loaded 3 unique skills (3 unconditional, 0 conditional, managed: 0, user: 0, project: 3, additional: 0, legacy commands: 0)'
+
+    def test_loaded_total_regex_matches_a_captured_real_debug_line(self) -> None:
+        self.assertEqual(skill_inventory.loaded_skills_total(self.CAPTURED_CLAUDE_DEBUG_LINE), 3)
+        self.assertEqual(skill_inventory.loaded_skills_marker(3), self.CAPTURED_CLAUDE_DEBUG_LINE)
+
     def test_loaded_total_regex_is_self_consistent(self) -> None:
         self.assertEqual(skill_inventory.loaded_skills_total(skill_inventory.loaded_skills_marker(1)), 1)
         self.assertEqual(skill_inventory.loaded_skills_total(skill_inventory.loaded_skills_marker(3)), 3)
@@ -150,6 +157,20 @@ class EntryPointers(unittest.TestCase):
         copier = (ROOT / "copier.yml").read_text(encoding="utf-8")
         skip = copier[copier.index("_skip_if_exists:"):copier.index("_exclude:")]
         self.assertIn('- "AGENTS.md"', skip)
+
+    @unittest.skipUnless(shutil.which("copier"), "copier CLI not installed")
+    def test_copier_copy_keeps_an_existing_agents_md(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp)
+            original = "# hand-authored entry contract\n"
+            (target / "AGENTS.md").write_text(original, encoding="utf-8")
+            result = subprocess.run(
+                ["copier", "copy", "--defaults", "--overwrite", "--vcs-ref", "HEAD",
+                 "-d", "project_name=skiptest", str(ROOT), str(target)],
+                text=True, capture_output=True, timeout=300)
+            self.assertEqual(result.returncode, 0, result.stderr[-800:])
+            self.assertEqual((target / "AGENTS.md").read_text(encoding="utf-8"), original)
+            self.assertTrue((target / "CLAUDE.md").is_file())
 
     def test_pointers_carry_the_caveman_carve_out_inline(self) -> None:
         for name in ("AGENTS.md.jinja", "CLAUDE.md.jinja"):
