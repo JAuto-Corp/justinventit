@@ -5,6 +5,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/utils.sh"
+source "$SCRIPT_DIR/lib/contract-version.sh"
 
 REPO_ROOT=$(get_repo_root)
 STATE_DIR=$(get_state_dir)
@@ -43,6 +44,8 @@ if [ -f "$STATE_DIR/WORKING.md" ]; then
     tail -n +"$LAST_BLOCK" "$STATE_DIR/WORKING.md" | head -6
   fi
 fi
+
+contract_version_warning "$REPO_ROOT/AGENTS.md" "$REPO_ROOT/CLAUDE.md" || true
 
 echo ""
 echo "=== END ==="
