@@ -167,8 +167,9 @@ class EntryPointers(unittest.TestCase):
         self.assertIn("/verify:complete", self.CLAUDE)
         for token in ("/scope", "/check", "/verify:complete", "/work:handoff", "/work:pause", "/work:continue"):
             base, _, sub = token[1:].partition(":")
+            # A bare token needs a wrapper FILE; a namespace directory alone does not resolve it.
             path = TEMPLATE / ".claude/commands" / (f"{base}/{sub}.md" if sub else f"{base}.md")
-            self.assertTrue(path.is_file() or (TEMPLATE / ".claude/commands" / base).is_dir(), token)
+            self.assertTrue(path.is_file(), token)
 
     def test_agents_md_is_seeded_once_and_project_owned(self) -> None:
         self.assertNotIn("forge:start", self.AGENTS)
