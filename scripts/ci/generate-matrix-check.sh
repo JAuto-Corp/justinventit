@@ -220,6 +220,13 @@ check_set() {
   if [ ! -f "$out/CLAUDE.md" ] || ! grep -qx '@AGENTS.md' "$out/CLAUDE.md"; then
     errs+=("(entry) CLAUDE.md does not import @AGENTS.md")
   fi
+  # rendered pair must carry the same entry-contract version (the drift guard's baseline)
+  local have_v expect_v
+  have_v="$(grep -oE '<!-- jv-entry-contract: [0-9]+ -->' "$out/AGENTS.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+  expect_v="$(grep -oE '<!-- jv-entry-contract-expected: [0-9]+ -->' "$out/CLAUDE.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+  if [ -z "$have_v" ] || [ -z "$expect_v" ] || [ "$have_v" != "$expect_v" ]; then
+    errs+=("(entry) AGENTS.md contract version '$have_v' and CLAUDE.md expected version '$expect_v' disagree or are missing")
+  fi
   if grep -qE '^## (TDD Gate|Development Loop|Work Routing|Before Working)' "$out/CLAUDE.md"; then
     errs+=("(entry) CLAUDE.md restates the contract instead of importing it")
   fi

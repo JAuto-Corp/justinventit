@@ -217,6 +217,34 @@ class EntryPointers(unittest.TestCase):
         self.assertIn("Standard+, mandatory", row5)
         self.assertIn("verify/complete.md", row5)
 
+    def test_contract_version_markers_agree_in_the_template(self) -> None:
+        import re
+        have = re.search(r"<!-- jv-entry-contract: (\d+) -->", self.AGENTS)
+        expect = re.search(r"<!-- jv-entry-contract-expected: (\d+) -->", self.CLAUDE)
+        self.assertIsNotNone(have); self.assertIsNotNone(expect)
+        self.assertEqual(have.group(1), expect.group(1), "JV must not ship mismatched contract versions")
+        lines = self.CLAUDE.splitlines()
+        start = next(i for i, l in enumerate(lines) if l.startswith("<!-- forge:start"))
+        end = next(i for i, l in enumerate(lines) if l.startswith("<!-- forge:end"))
+        idx = next(i for i, l in enumerate(lines) if "jv-entry-contract-expected" in l)
+        self.assertTrue(start < idx < end, "expected-version marker must be framework-managed")
+
+    def test_contract_version_hook_warns_only_on_mismatch(self) -> None:
+        hook = TEMPLATE / ".claude/hooks/lib/contract-version.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "AGENTS.md").write_text("# x\n<!-- jv-entry-contract: 1 -->\n", encoding="utf-8")
+            (d / "CLAUDE.md").write_text("@AGENTS.md\n<!-- jv-entry-contract-expected: 1 -->\n", encoding="utf-8")
+            same = subprocess.run(["bash", str(hook), str(d / "AGENTS.md"), str(d / "CLAUDE.md")], text=True, capture_output=True, timeout=30)
+            self.assertEqual(same.returncode, 0); self.assertEqual(same.stdout.strip(), "")
+            (d / "CLAUDE.md").write_text("@AGENTS.md\n<!-- jv-entry-contract-expected: 2 -->\n", encoding="utf-8")
+            drift = subprocess.run(["bash", str(hook), str(d / "AGENTS.md"), str(d / "CLAUDE.md")], text=True, capture_output=True, timeout=30)
+            self.assertEqual(drift.returncode, 0, "the guard never blocks")
+            self.assertIn("WARNING: AGENTS.md carries entry contract v1 but CLAUDE.md expects v2", drift.stdout)
+            (d / "AGENTS.md").write_text("# no marker at all\n", encoding="utf-8")
+            none = subprocess.run(["bash", str(hook), str(d / "AGENTS.md"), str(d / "CLAUDE.md")], text=True, capture_output=True, timeout=30)
+            self.assertEqual(none.returncode, 0); self.assertEqual(none.stdout.strip(), "", "silent when a marker is absent")
+
     def test_agents_md_is_seeded_once_and_project_owned(self) -> None:
         self.assertNotIn("forge:start", self.AGENTS)
         copier = (ROOT / "copier.yml").read_text(encoding="utf-8")

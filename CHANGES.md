@@ -6,8 +6,13 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 
 ## Unreleased
 
+Bump rule: any change to the generated entry contract's stages, gates or routing bumps `jv-entry-contract` in
+`template/AGENTS.md.jinja` and `jv-entry-contract-expected` in `template/CLAUDE.md.jinja` together and adds an
+`entry-contract` row here; the generated session-start hook warns (never blocks) when a project's AGENTS.md lags.
+
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
+| `contract-version` | hook | R1 | `template/.claude/hooks/lib/contract-version.sh`, `session-start.sh.jinja`, entry markers | generated hooks | one non-blocking warning line when AGENTS.md's `jv-entry-contract` differs from CLAUDE.md's expected version; matrix check asserts the rendered pair agrees |
 | `loop-parity` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja`, `docs/DEV_LOOP.md` | an entry contract the project owns | the generated contract carries DEV_LOOP's stages 0–8 (review carries the complete gate; document = doc delta or explicit `no-doc-impact`; capture) instead of a 4-step gate; parity test guards re-divergence; no stage-0 full-pass ceremony added (premise checklist by default) |
 | `answers-persistence` | config | R1 | `template/.copier-answers.yml.jinja`, `copier.yml` | a project generated from a git-tracked template source | canonical `_copier_answers` file (resolved `_commit`, original `_src_path`, all answers); answers file no longer `_skip_if_exists`, so `copier update` works and advances `_commit` |
 | `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja` | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract, seeded once and project-owned (`_skip_if_exists`, never prompted); CLAUDE.md = `@AGENTS.md` + Claude extras (framework-managed); later contract changes ship as rows here for projects to merge |
