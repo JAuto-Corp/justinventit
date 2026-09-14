@@ -254,8 +254,8 @@ _skip_if_exists:
   # --- Canonical entry contract (seeded once with the full contract; project-owned afterwards; never prompted) ---
   - "AGENTS.md"
 
-  # --- Copier answers (seeded once; updated in place by Copier itself, never re-templated) ---
-  - ".copier-answers.yml"
+  # --- NOT the Copier answers file: Copier rewrites .copier-answers.yml on every copy/update to record the
+  #     resolved template commit and the answers; listing it here left `_commit` stale after updates. ---
 
 _exclude:
   # --- Copier / VCS defaults (must re-list because _exclude replaces the built-in set) ---

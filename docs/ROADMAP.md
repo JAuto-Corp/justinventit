@@ -130,7 +130,7 @@ provides the falsifier that prose review cannot.
 
 ### Copier — Robustness
 - [x] End-to-end test: `copier copy` with each stack → validate output · `scripts/ci/generate-matrix-check.sh` — 4 answer sets (go/nextjs/fastapi/rust) with coherence assertions (a)–(f)
-- [ ] `copier update` test: modify template → update project → verify three-way merge — **no such test exists**
+- [x] `copier update` test: modify template → update project → verify three-way merge · `scripts/ci/test-copier-update.py` (real copy at HEAD, marker commit in a clone, real `copier update`, project edits preserved, `_commit` advanced)
 - [ ] Forge markers (`<!-- forge:start/end -->`) validated in CLAUDE.md output — markers are emitted (`template/CLAUDE.md.jinja`) but **nothing asserts them**; the validation is the deliverable, not the markers
 - [ ] Empty directory handling (Git doesn't track empty dirs — use .gitkeep) — **no `.gitkeep` anywhere in `template/`**
 
