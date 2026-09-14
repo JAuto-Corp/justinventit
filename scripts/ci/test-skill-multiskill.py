@@ -154,6 +154,15 @@ class EntryPointers(unittest.TestCase):
                         "read `docs/SKILL_MODES.md`", "`caveman` runs `lite`"):
             self.assertIn(section, self.AGENTS, section)
         self.assertNotRegex(self.AGENTS, r"`/[a-z]", "AGENTS.md must not use Claude slash-command syntax")
+        validate = next(l for l in self.AGENTS.splitlines() if l.startswith("| 4. VALIDATE"))
+        self.assertIn("verify/complete.md", validate, "VALIDATE must bind every runtime to the same complete gate")
+        self.assertTrue((TEMPLATE / ".claude/skills/orchestrators/verify/complete.md").is_file())
+        transitions = next(l for l in self.AGENTS.splitlines() if l.startswith("Session transitions"))
+        self.assertIn(".claude/skills/orchestrators/work/", transitions)
+        for wf in ("start.md", "continue.md", "pause.md", "handoff.md", "done.md"):
+            self.assertTrue((TEMPLATE / ".claude/skills/orchestrators/work" / wf).is_file(), wf)
+        playbook = (TEMPLATE / "docs/PLAYBOOK.md.jinja").read_text(encoding="utf-8")
+        self.assertNotIn("CLAUDE.md codebase map", playbook)
 
     def test_claude_md_imports_inside_forge_markers_and_does_not_restate(self) -> None:
         lines = self.CLAUDE.splitlines()

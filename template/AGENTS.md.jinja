@@ -34,9 +34,10 @@ changes arrive as `entry-contract` rows in the framework's CHANGES.md for the pr
 | 1. Plan | SPEC.md + SCENARIOS.md | Planning outputs exist |
 | 2. RED | Scenario runs and FAILS | Failure = correct (missing impl) |
 | 3. GREEN | Implementation code, scenario PASSES | `{{ type_check_command }}` passes |
-| 4. VALIDATE | acceptance checks pass: every scenario executed, type check and build green | Hard block on missing scenarios |
+| 4. VALIDATE | the complete gate in `.claude/skills/orchestrators/verify/complete.md` passes: scenario evidence (RED then GREEN), SPEC adherence line by line, audits and best-practice checks, `{{ type_check_command }}`, build | Hard block on missing scenarios |
 
-Runtime-specific commands for these steps are mapped in `CLAUDE.md` (Claude Code); other runtimes run the checks directly.
+The gate definition is the same file for every runtime; Claude Code runs it as a command (map in `CLAUDE.md`), other
+runtimes read the file and perform each section.
 
 **Scope classification:**
 
@@ -103,4 +104,5 @@ For each PROGRESS.md item: implement → check off → commit. If exit landmarks
 
 **State files** (read in order): `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase `PROGRESS.md`
 
-Session transitions (handoff, pause, continue) follow `docs/PLAYBOOK.md`; the Claude Code command map is in `CLAUDE.md`.
+Session transitions follow the workflows in `.claude/skills/orchestrators/work/` (`start.md`, `continue.md`,
+`pause.md`, `handoff.md`, `done.md`); the Claude Code command map is in `CLAUDE.md`.
