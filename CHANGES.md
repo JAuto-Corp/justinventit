@@ -12,6 +12,8 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
+| `receipt-multiskill` | script | JV-internal | `scripts/ci/runtime-skill-receipt.sh`, receipt schema/validator, `scripts/ci/test-runtime-receipt-multiskill.py` | — | CI availability receipt covers every pinned skill (additive `additional_skills`); never overlaid |
+| `check06-status` | doc | R0 | `docs/TDD_GATE.md`, `docs/ROADMAP.md` | — | check `06-harness-sensitivity` marked specified-not-built with its build order; no gate or ruling changed |
 | `contract-version` | hook | R1 | `template/.claude/hooks/lib/contract-version.sh`, `session-start.sh.jinja`, entry markers | generated hooks | one non-blocking warning line when AGENTS.md's `jv-entry-contract` differs from CLAUDE.md's expected version; matrix check asserts the rendered pair agrees |
 | `loop-parity` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja`, `docs/DEV_LOOP.md` | an entry contract the project owns | the generated contract carries DEV_LOOP's stages 0–8 (review carries the complete gate; document = doc delta or explicit `no-doc-impact`; capture) instead of a 4-step gate; parity test guards re-divergence; no stage-0 full-pass ceremony added (premise checklist by default) |
 | `answers-persistence` | config | R1 | `template/.copier-answers.yml.jinja`, `copier.yml` | a project generated from a git-tracked template source | canonical `_copier_answers` file (resolved `_commit`, original `_src_path`, all answers); answers file no longer `_skip_if_exists`, so `copier update` works and advances `_commit` |

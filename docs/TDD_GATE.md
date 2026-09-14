@@ -26,7 +26,9 @@ complain, not pass.**
     with the framework.
   Checks `01-06` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
   progress-complete, harness-sensitivity — `06` defined with the Harness-integrity law
-  below) consume ONLY these inputs, with a uniform exit contract:
+  below; **`06` is SPECIFIED, NOT SHIPPED** — only `01-05` exist under
+  `template/.claude/hooks/stop/checks/`, see the status note at the consuming-gate
+  paragraph in §3) consume ONLY these inputs, with a uniform exit contract:
   0 = pass, 1 = block (message names the failed rule), 3 = cannot-evaluate (message names the
   missing/malformed input), and **any other exit (2, 127, signals, crashes) = runner-error,
   handled identically to 3** — the contract enumerates the full code space so a crashed
@@ -89,7 +91,13 @@ no `phase:` variant exists):
   each equal the event's corresponding baseline digest — sensitivity
   proven against a guard or harness that has since changed proves nothing about the
   candidate. Consuming gate: check `06-harness-sensitivity` (uniform exit contract above;
-  runs in the same Stop-hook and CI tables as `01-05`) requires a valid bound sensitivity
+  runs in the same Stop-hook and CI tables as `01-05`) — **STATUS 2026-09-14: specified, NOT
+  BUILT.** No `06` check, no `kind: sensitivity` producer, no guard-class inventory and no
+  runner-written ledger ship yet; the Stop runner globs `[0-9]*.sh`, so the absent check is
+  silent. Until built, Harness-integrity rule 2 is UNENFORCED by any gate — the interim safeguards
+  (check `04` RED-before-GREEN, reviewer mutation probes recorded in the review) reduce the exposure
+  but do NOT satisfy rule 2's ledger-event, control and restoration requirements. Build order: ledger →
+  sensitivity producer → guard-class inventory → this check. When built, the check requires a valid bound sensitivity
   event whenever the diff touches a guard-class surface, resolved from the authored
   guard-class inventory (part of the scope-definitions classifier config — patterns for
   gate logic, harness/fixture machinery, extracted/generated rules, permission predicates;
@@ -145,8 +153,8 @@ filename addition.
 
 | Where | Mechanism | Authority |
 |-|-|-|
-| Session (Stop hook) | checks 01-06 read state contract + ledger; block once, override-token escape | advisory-strong |
-| CI | the same checks run against pushed ledger + candidate SHA; fail closed on missing inputs | authoritative signal |
+| Session (Stop hook) | checks 01-06 read state contract + ledger; block once, override-token escape (`06` specified, not built — §3 status note; the runner runs what ships) | advisory-strong |
+| CI | the same checks run against pushed ledger + candidate SHA; fail closed on missing inputs (`06` absent until built) | authoritative signal |
 | Merge | integrator protocol (or branch protection where the plan allows): red = no-merge, SHA-bound | authoritative action |
 
 **Outage-artifact signature (quota/billing-limit kills)** — a CI red class that is
@@ -161,7 +169,7 @@ as confirmation. During any CI freeze the no-push rule protects more than budget
 destroys a pre-outage green that cannot currently be regenerated** — merge-ready state is
 irreplaceable until capacity returns.
 
-The framework ships the checks as provider-neutral commands (stdin/env in, exit code +
+The framework ships the built checks (`01-05` today) as provider-neutral commands (stdin/env in, exit code +
 message out) plus tested adapters (GitHub Actions skeleton). Where required status checks
 are unavailable (the source project's plan), the merge-protocol row is the binding one — the
 docs must say so rather than imply branch protection exists.

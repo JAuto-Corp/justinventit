@@ -131,6 +131,7 @@ provides the falsifier that prose review cannot.
 ### Copier — Robustness
 - [x] End-to-end test: `copier copy` with each stack → validate output · `scripts/ci/generate-matrix-check.sh` — 4 answer sets (go/nextjs/fastapi/rust) with coherence assertions (a)–(f)
 - [x] `copier update` test: modify template → update project → verify three-way merge · `scripts/ci/test-copier-update.py` (real copy at HEAD, marker commit in a clone, real `copier update`, project edits preserved, `_commit` advanced)
+- [ ] Check `06-harness-sensitivity` (TDD_GATE §3, Harness-integrity rule 2) — **specified, not built**; prerequisites in order: runner-written JSONL ledger (TDD_GATE §3; template still greps the transcript) → `kind: sensitivity` producer (mutation runner) → guard-class inventory in the classifier config → the check itself. Decision packet 2026-09-14: build later, do not delete (user-ruled law); status now stated in the spec.
 - [ ] Forge markers (`<!-- forge:start/end -->`) validated in CLAUDE.md output — markers are emitted (`template/CLAUDE.md.jinja`) but **nothing asserts them**; the validation is the deliverable, not the markers
 - [ ] Empty directory handling (Git doesn't track empty dirs — use .gitkeep) — **no `.gitkeep` anywhere in `template/`**
 
