@@ -146,6 +146,16 @@ class EntryPointers(unittest.TestCase):
             self.assertIn("apply", text, name)
         self.assertTrue((TEMPLATE / "docs/SKILL_MODES.md").is_file())
 
+    def test_agents_md_is_never_overwritten_in_brownfield_projects(self) -> None:
+        copier = (ROOT / "copier.yml").read_text(encoding="utf-8")
+        skip = copier[copier.index("_skip_if_exists:"):copier.index("_exclude:")]
+        self.assertIn('- "AGENTS.md"', skip)
+
+    def test_pointers_carry_the_caveman_carve_out_inline(self) -> None:
+        for name in ("AGENTS.md.jinja", "CLAUDE.md.jinja"):
+            text = (TEMPLATE / name).read_text(encoding="utf-8")
+            self.assertIn("`caveman` runs `lite`", text, name)
+
     def test_mode_policy_sets_lite_default_for_caveman(self) -> None:
         text = (TEMPLATE / "docs/SKILL_MODES.md").read_text(encoding="utf-8")
         self.assertIn("`lite` for routine status updates", text)

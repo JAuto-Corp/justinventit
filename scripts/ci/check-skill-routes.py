@@ -98,7 +98,7 @@ PINNED_SKILLS["caveman"] = {
     "equivalent_distribution": {
         "repository": "JuliusBrussee/caveman",
         "plugin_name": "caveman",
-        "plugin_version": "15581d1"
+        "plugin_version": "unversioned@15581d1"
     },
     "authors": [
         "Julius Brussee"
@@ -320,7 +320,7 @@ def assert_projection(source: Path, projection: Path) -> None:
             raise RouteError(f"claude projection {name} pointer/hash/byte drift")
 
 
-def assert_discovery(root: Path, source: Path, projection: Path, skill_name: str = "frontend-design") -> None:
+def assert_discovery(root: Path, source: Path, projection: Path, skill_name: str) -> None:
     surfaces = surface_root(root)
     codex_root = surfaces / ".agents/skills"
     codex_hits: list[Path] = []

@@ -9,7 +9,7 @@
   "equivalent_distribution": {
     "repository": "JuliusBrussee/caveman",
     "plugin_name": "caveman",
-    "plugin_version": "15581d1"
+    "plugin_version": "unversioned@15581d1"
   },
   "authors": [
     "Julius Brussee"

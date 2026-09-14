@@ -246,6 +246,9 @@ _skip_if_exists:
   - "context/devlog/**"           # threads / decisions / design-intent / user-actions / findings
   - "context/devlog/*"
 
+  # --- Provider-neutral entry pointer (seeded once; a brownfield project's own AGENTS.md is its entry contract) ---
+  - "AGENTS.md"
+
   # --- Copier answers (seeded once; updated in place by Copier itself, never re-templated) ---
   - ".copier-answers.yml"
 

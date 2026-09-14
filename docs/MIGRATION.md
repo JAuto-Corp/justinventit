@@ -10,6 +10,7 @@ Adding justinventit to an existing codebase is the hardest adoption path — but
 
 Understand what you have:
 - **Existing CLAUDE.md?** Copier will merge, not overwrite. But review the merge.
+- **Existing AGENTS.md?** Never overwritten (`_skip_if_exists`); the template's minimal pointer is seeded only when the file is absent. Add the `docs/SKILL_MODES.md` read-and-apply line to your own AGENTS.md if you adopt the vendored skills.
 - **Existing hooks?** Back them up. justinventit's hooks can coexist if they use different event matchers.
 - **Existing skills?** Move to `.claude/skills/domain/` — you create that directory yourself (the template does not generate it) and the framework will never touch it.
 - **Existing CI/CD?** justinventit doesn't override CI. It provides templates you can adopt.

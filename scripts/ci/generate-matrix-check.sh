@@ -206,6 +206,8 @@ check_set() {
       errs+=("(skill) runtime route/authority check failed")
     fi
 
+  fi
+
   # --- mode policy reachable from both ordinary entries of the generated project ---
   if [ ! -f "$out/docs/SKILL_MODES.md" ]; then
     errs+=("(skill) docs/SKILL_MODES.md missing from generated project")
@@ -223,13 +225,19 @@ check_set() {
     [ -n "$extra_skill" ] && [ "$extra_skill" != "frontend-design" ] || continue
     if [ ! -d "$out/.agents/skills/$extra_skill" ] || [ ! -d "$out/.claude/skills/$extra_skill" ]; then
       errs+=("(skill) $extra_skill canonical or Claude projection missing")
-    elif ! diff -rq "$out/.agents/skills/$extra_skill" "$out/.claude/skills/$extra_skill" >/dev/null; then
+    elif [ -L "$out/.agents/skills/$extra_skill" ] || [ -L "$out/.claude/skills/$extra_skill" ]; then
+      errs+=("(skill) $extra_skill routes must be physical directories")
+    elif ! diff -qr --no-dereference "$out/.agents/skills/$extra_skill" "$out/.claude/skills/$extra_skill" >/dev/null; then
       errs+=("(skill) .agents/skills/$extra_skill and .claude/skills/$extra_skill differ")
-    elif [ "$(sha256sum "$out/.agents/skills/$extra_skill/SKILL.md" | awk '{print $1}')" != "$(jq -r '.skill.files["SKILL.md"].sha256' "$extra_fixture")" ]; then
-      errs+=("(skill) canonical $extra_skill SKILL.md differs from expected fixture")
+    else
+      if [ "$(sha256sum "$out/.agents/skills/$extra_skill/SKILL.md" | awk '{print $1}')" != "$(jq -r '.skill.files["SKILL.md"].sha256' "$extra_fixture")" ]; then
+        errs+=("(skill) canonical $extra_skill SKILL.md differs from expected fixture")
+      fi
+      if [ "$(sha256sum "$out/.agents/skills/$extra_skill/LICENSE.txt" | awk '{print $1}')" != "$(jq -r '.skill.files["LICENSE.txt"].sha256' "$extra_fixture")" ]; then
+        errs+=("(skill) canonical $extra_skill LICENSE.txt differs from expected fixture")
+      fi
     fi
   done
-  fi
 
   # --- (a) no leaked .jinja files ---
   local leaked
