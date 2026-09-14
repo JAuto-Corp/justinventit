@@ -32,12 +32,12 @@ stages as the framework's `DEV_LOOP.md` §1, in this order:
 
 | # | Stage | Exit condition |
 |-|-|-|
-| 0 | draft red-team | premise checklist recorded on the design artifact (diagnosis grounded; cheaper alternative considered; consumers read); a full independent pass only when the artifact changes policy or gates, is consumed by more than one seat or runtime, or is irreversible or migration-bearing |
+| 0 | draft red-team | premise checklist recorded on the design artifact (diagnosis grounded in cited evidence; cheaper or more reversible alternative considered and why not; consumers named and actually read); a FULL independent pass when any trigger holds: the artifact changes policy, protocol or gate behavior; it is consumed by more than one seat or runtime; it is irreversible or migration-bearing; its planned surface is Standard+ (new tables/routes/pages, 4+ files, planned migrations, or planned changes to scenario seeds/factory helpers). Escalate to a full pass on any uncertainty, either party, and BEFORE integration if the eventual diff crosses into Standard+ despite a checklist-tier draft |
 | 1 | scope | SPEC.md + SCENARIOS.md exist; every named API, number or consumer claim is cited or refused |
 | 2 | spec-audit | independent fresh-context audit; every blocker dispositioned |
 | 3 | RED | scenarios run and FAIL: runner exit non-zero, recorded (Quick scope may satisfy RED as the same change) |
 | 4 | GREEN | implementation; the same runner exits zero; `{{ type_check_command }}` passes |
-| 5 | review | no unresolved actionable finding; the complete gate in `.claude/skills/orchestrators/verify/complete.md` passes (scenario evidence RED then GREEN, SPEC adherence line by line, audits and best-practice checks, `{{ type_check_command }}`, build); hard block on missing scenarios |
+| 5 | review | no unresolved actionable finding; the complete gate in `.claude/skills/orchestrators/verify/complete.md` passes: scenario evidence (RED-observed then GREEN for Standard+, mandatory; Quick scope may instead show tests added or modified in the same change and passing — the same-change exemption), SPEC adherence line by line, audits and best-practice checks, `{{ type_check_command }}`, build; hard block on missing scenarios |
 | 6 | integrate | checks green on the current head; only the integrator merges |
 | 7 | document | doc delta, or an explicit `no-doc-impact: <reason>` line in the PR body; fails like a test gate |
 | 8 | capture | every discovery has a durable record (issue, hub or `context/DISCOVERIES.md`); nothing lives only in a session |

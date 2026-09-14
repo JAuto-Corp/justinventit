@@ -199,6 +199,24 @@ class EntryPointers(unittest.TestCase):
         row7 = next(l for l in self.AGENTS.splitlines() if l.startswith("| 7 | document |"))
         self.assertIn("no-doc-impact", row7)
 
+    def test_stage_zero_semantics_match_dev_loop_1a(self) -> None:
+        # Sequence parity is not semantics: pin the DEV_LOOP §1a trigger set, the checklist default and both escalations.
+        row0 = next(l for l in self.AGENTS.splitlines() if l.startswith("| 0 | draft red-team |"))
+        for needle in ("premise checklist", "policy, protocol or gate behavior", "more than one seat or runtime",
+                       "irreversible or migration-bearing", "Standard+", "4+ files", "planned migrations",
+                       "scenario seeds/factory helpers", "any uncertainty", "BEFORE integration"):
+            self.assertIn(needle, row0, needle)
+        self.assertNotIn("optional", row0.lower())
+
+    def test_review_gate_carries_the_quick_same_change_exemption(self) -> None:
+        # TDD_GATE.md §4 case 2: same-change satisfies the gate for Quick scope only; Standard+ requires observed RED.
+        row3 = next(l for l in self.AGENTS.splitlines() if l.startswith("| 3 | RED |"))
+        row5 = next(l for l in self.AGENTS.splitlines() if l.startswith("| 5 | review |"))
+        self.assertIn("same change", row3)
+        self.assertIn("same-change exemption", row5)
+        self.assertIn("Standard+, mandatory", row5)
+        self.assertIn("verify/complete.md", row5)
+
     def test_agents_md_is_seeded_once_and_project_owned(self) -> None:
         self.assertNotIn("forge:start", self.AGENTS)
         copier = (ROOT / "copier.yml").read_text(encoding="utf-8")
