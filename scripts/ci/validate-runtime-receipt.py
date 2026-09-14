@@ -84,13 +84,19 @@ def _validate_schema(document: dict[str, Any], rule: dict[str, Any], value: Any,
         if missing:
             raise ReceiptValidationError(f"{path}: missing required fields: {', '.join(missing)}")
         properties = rule.get("properties", {})
-        if rule.get("additionalProperties") is False:
-            extras = sorted(set(value) - set(properties))
-            if extras:
-                raise ReceiptValidationError(f"{path}: unknown fields: {', '.join(extras)}")
+        additional = rule.get("additionalProperties")
+        extras = sorted(set(value) - set(properties))
+        if additional is False and extras:
+            raise ReceiptValidationError(f"{path}: unknown fields: {', '.join(extras)}")
+        if "propertyNames" in rule:
+            for name in value:
+                _validate_schema(document, rule["propertyNames"], name, f"{path}.<{name}>")
         for name, child_rule in properties.items():
             if name in value:
                 _validate_schema(document, child_rule, value[name], f"{path}.{name}")
+        if isinstance(additional, dict):
+            for name in extras:
+                _validate_schema(document, additional, value[name], f"{path}.{name}")
 
 
 def _artifact_records(receipt: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
@@ -98,6 +104,9 @@ def _artifact_records(receipt: dict[str, Any]) -> list[tuple[str, dict[str, Any]
     for leg in ("codex_availability", "claude_availability", "claude_no_project"):
         artifacts = receipt[leg]["artifacts"]
         records.extend((f"{leg}.artifacts.{name}", record) for name, record in artifacts.items())
+    for skill, entry in sorted(receipt.get("additional_skills", {}).items()):
+        artifacts = entry["codex"]["artifacts"]
+        records.extend((f"additional_skills.{skill}.codex.artifacts.{name}", record) for name, record in artifacts.items())
     return records
 
 
