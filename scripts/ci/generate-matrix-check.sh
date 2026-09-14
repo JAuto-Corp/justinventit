@@ -282,6 +282,12 @@ check_set() {
     errs+=("(d) harness run-all.sh missing")
   fi
 
+  # The portable evidence helper is optional at runtime; test its generated CLI here.
+  if ! python3 "$out/scripts/test_evidence_delta.py" >"$TMP_ROOT/$name.evidence-delta.log" 2>&1; then
+    errs+=("(d) evidence-delta CLI regression failed")
+    while IFS= read -r l; do errs+=("    $l"); done < <(tail -n 8 "$TMP_ROOT/$name.evidence-delta.log")
+  fi
+
   # --- (d) the real Stop runner executes to a clean exit (pipeline live) ---
   if [ -f "$out/.claude/hooks/stop/runner.sh" ]; then
     local rc

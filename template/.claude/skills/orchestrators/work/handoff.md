@@ -42,22 +42,17 @@ Verify the tree is committed and pushed so the receiver starts from a known stat
 
 ### 7. Emit a goal-focused handoff prompt
 
-Not a context dump — a directive:
+Use the single delivery reference in `docs/DELIVERY.md` for goal, scope, exact
+revision, acceptance/evidence, governing inputs and next permitted action.
+Link the existing record and changed facts; do not retype a parallel status summary.
+Include the state paths from step 5 when they are not already in that record.
+The receiver still performs the required checks below:
 
 ```markdown
-GOAL: [specific, actionable, verifiable]
-
-## Scope
-- IN: [tasks from the issue / PROGRESS.md]
-- OUT: [adjacent work to avoid]
-
-## Key files
-- context/WORKING.md — session state
-- docs/CURRENT_WORK.md — work pointer
-- [path]/PROGRESS.md — checklist
+Delivery reference: [existing work record containing the DELIVERY.md fields]
 
 ## Before working, you MUST
-1. Read the files above
+1. Read the linked governing inputs and current state files
 2. Deploy an Explore to verify current state
 3. Audit findings against the relevant best-practices skill
 4. Add a verification entry to CURRENT_WORK.md
