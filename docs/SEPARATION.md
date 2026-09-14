@@ -34,9 +34,10 @@ are the product's own and no JV release writes to them.
 ## Bounded overlays (the only JV → JA path)
 
 - Only JV-only artifacts, offered by release id, excluded mechanically when a path already exists in JA (upgrade
-  procedure proposed in PR #36). From this branch that is the two pinned skills and `SKILL_MODES.md`; JA already
-  carries `ponytail` as a user-level install at the same upstream hash, so a JA overlay would add only `caveman`
-  and the mode policy, and only when JA asks.
+  procedure proposed in PR #36). From this branch that is the two pinned skills and `SKILL_MODES.md`. Exclusion is
+  decided per runtime route actually present in the project tree: JA today has no project `.agents/skills/ponytail`
+  or `.claude/skills/ponytail` route (its `ponytail` is a user-level Claude install at the same upstream hash, which
+  Codex does not see), so an overlay would be evaluated route by route, and only when JA asks.
 - No copied framework machinery, no hook/engine/plugin ecosystems, no second status store, no gate change by overlay.
 - Known JV-internal inconsistencies stay inside JV until fixed: generated four-step contract vs the documented 0–8 loop;
   check `06-harness-sensitivity` specified but not shipped; the generated entry contract is still Claude-first (this

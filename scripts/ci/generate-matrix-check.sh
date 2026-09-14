@@ -206,6 +206,16 @@ check_set() {
       errs+=("(skill) runtime route/authority check failed")
     fi
 
+  # --- mode policy reachable from both ordinary entries of the generated project ---
+  if [ ! -f "$out/docs/SKILL_MODES.md" ]; then
+    errs+=("(skill) docs/SKILL_MODES.md missing from generated project")
+  fi
+  local entry
+  for entry in AGENTS.md CLAUDE.md; do
+    if [ ! -f "$out/$entry" ] || ! grep -q 'docs/SKILL_MODES.md' "$out/$entry"; then
+      errs+=("(skill) $entry does not instruct reading docs/SKILL_MODES.md")
+    fi
+  done
   # --- additional pinned canonical skills: one fixture each, same physical-route contract ---
   local extra_fixture extra_skill
   for extra_fixture in "$TEMPLATE_ROOT"/scripts/ci/fixtures/*.expected.json; do

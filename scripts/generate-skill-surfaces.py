@@ -115,10 +115,14 @@ def fixture_paths(root: Path) -> list[Path]:
     paths = [path for path in sorted(fixtures_dir.glob("*.expected.json"))
              if isinstance(load_json(path).get("skill"), dict)]
     if not strict:
-        canonical_root = surface_root(root) / ".agents/skills"
-        paths = [path for path in paths
-                 if path.name == f"{MANDATORY_SKILL}.expected.json"
-                 or (canonical_root / load_json(path)["skill"]["name"]).is_dir()]
+        surfaces = surface_root(root)
+        # A pinned skill is in scope when EITHER runtime route exists in any form (dir, file, dangling
+        # symlink); the complete canonical+projection pair is then required, so a half-present skill fails.
+        def in_scope(path: Path) -> bool:
+            name = load_json(path)["skill"]["name"]
+            return any(route.exists() or route.is_symlink()
+                       for route in (surfaces / ".agents/skills" / name, surfaces / ".claude/skills" / name))
+        paths = [path for path in paths if path.name == f"{MANDATORY_SKILL}.expected.json" or in_scope(path)]
     if not paths:
         raise ProjectionError("no pinned skill fixture found")
     return paths

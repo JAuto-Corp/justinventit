@@ -27,6 +27,8 @@ class ValidationError(RuntimeError):
 
 fixture = Path(sys.argv[1]).resolve()
 schema_path = Path(sys.argv[2]).resolve()
+sys.path.insert(0, str(schema_path.parent.parent))
+from skill_inventory import loaded_skills_total  # noqa: E402
 
 
 def load_json(path: Path, label: str) -> dict:
@@ -124,12 +126,15 @@ try:
         "Remote settings: Fetch failed (http_401) and no cached settings",
         "Loading skills from:",
         "Total plugin skills loaded: 0 (0 duplicate/user-owned entries skipped)",
-        "Loaded 1 unique skills (1 unconditional, 0 conditional, managed: 0, user: 0, project: 1, additional: 0, legacy commands: 0)",
     )
     for marker in debug_markers:
         count = debug.count(marker)
         if count != 1:
             raise ValidationError(f"claude debug marker drift/cardinality: {marker!r} count={count}")
+    # One self-consistent project-skill total (N unique = N unconditional = project: N); the frozen
+    # fixture was produced with one pinned skill, later receipts carry every pinned skill.
+    if loaded_skills_total(debug) < 1:
+        raise ValidationError("claude debug loaded-skill marker absent, ambiguous or inconsistent")
     attachment_lines = [
         line for line in debug.splitlines()
         if line.startswith("Sending ") and line.endswith(" skills via attachment (initial)")
@@ -331,6 +336,12 @@ source_root = Path(sys.argv[1]).resolve()
 scratch = Path(sys.argv[2]).resolve()
 raw = scratch / "raw"
 project = scratch / "project"
+sys.path.insert(0, str(source_root / "scripts/ci"))
+from skill_inventory import loaded_skills_pattern, project_skill_count  # noqa: E402
+
+pinned_total = project_skill_count(project, source_root / "scripts/ci/fixtures")
+if pinned_total < 1:
+    raise ReceiptError("probe project carries no pinned skill")
 statuses = {
     "codex": int(sys.argv[3]),
     "codex_control": int(sys.argv[4]),
@@ -413,13 +424,7 @@ def validate_claude(prefix: str, config_name: str, expected_project: Path, targe
     for marker in common_markers:
         if debug.count(marker) != 1:
             raise ReceiptError(f"claude {prefix}debug marker changed: {marker}")
-    loaded_pattern = (
-        r"Loaded 1 unique skills \(1 unconditional, 0 conditional, managed: 0, user: 0, "
-        r"project: 1, additional: 0, legacy commands: 0\)"
-        if target_expected
-        else r"Loaded 0 unique skills \(0 unconditional, 0 conditional, managed: 0, user: 0, "
-        r"project: 0, additional: 0, legacy commands: 0\)"
-    )
+    loaded_pattern = loaded_skills_pattern(pinned_total if target_expected else 0)
     if len(re.findall(loaded_pattern, debug)) != 1:
         raise ReceiptError(f"claude {prefix}loaded-skill marker changed")
     attachment_markers = re.findall(r"Sending ([0-9]+) skills via attachment \(initial\)", debug)

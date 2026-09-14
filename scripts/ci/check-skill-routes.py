@@ -199,10 +199,14 @@ def fixture_paths(root: Path) -> list[Path]:
         if {path.name for path in paths} != {f"{name}.expected.json" for name in PINNED_SKILLS}:
             raise RouteError(f"expected fixture set differs from pinned skill authority: {sorted(p.name for p in paths)!r}")
         return paths
-    canonical_root = surface_root(root) / ".agents/skills"
-    paths = [path for path in paths
-             if path.name == f"{MANDATORY_SKILL}.expected.json"
-             or (canonical_root / load_json(path, "expected fixture")["skill"]["name"]).is_dir()]
+    surfaces = surface_root(root)
+
+    def in_scope(path: Path) -> bool:
+        name = load_json(path, "expected fixture")["skill"]["name"]
+        return any(route.exists() or route.is_symlink()
+                   for route in (surfaces / ".agents/skills" / name, surfaces / ".claude/skills" / name))
+
+    paths = [path for path in paths if path.name == f"{MANDATORY_SKILL}.expected.json" or in_scope(path)]
     if not paths:
         raise RouteError("no pinned skill fixture found")
     return paths

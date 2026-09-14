@@ -3,6 +3,7 @@
 Canonical skills live in `.agents/skills/<name>/SKILL.md`; Codex reads them there and Claude Code reads the
 byte-identical generated projection in `.claude/skills/<name>/`. Do not edit the projection by hand.
 
-Skill modes for the vendored `ponytail` and `caveman` skills, by responsibility: `docs/SKILL_MODES.md`.
+Before using `ponytail` or `caveman`, read `docs/SKILL_MODES.md` and apply the mode it sets for your
+responsibility; the upstream defaults (`ponytail` full, `caveman` full) do not apply here.
 
 Claude Code additionally routes through `CLAUDE.md`; other runtimes start here.
