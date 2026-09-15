@@ -8,7 +8,9 @@ import sys
 import tempfile
 import unittest
 
-CLI = Path(__file__).with_name("evidence-delta.py")
+# CLI beside this test (JV layout) or one directory up (a project's scripts/tests/ layout); no local edit needed.
+_HERE = Path(__file__).resolve()
+CLI = next((c for c in (_HERE.with_name("evidence-delta.py"), _HERE.parent.parent / "evidence-delta.py") if c.is_file()), _HERE.with_name("evidence-delta.py"))
 TEST_ENV = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
 TEST_ENV.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_SYSTEM=os.devnull, GIT_TERMINAL_PROMPT="0")
 

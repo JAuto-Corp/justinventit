@@ -12,6 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
+| `test-locator` | script | R1 | `template/scripts/test_evidence_delta.py`, `template/scripts/test_evidence_seal.py` | `evidence-delta.py` / `evidence-seal.py` beside the tests or one directory up | tests resolve their CLI beside themselves or one directory up, so a project's `scripts/tests/` placement needs no local edit (JA CANARY-01 field result: the only delta was this line) |
 | `correction-review` | policy | R2 | `docs/DEV_LOOP.md`, `docs/ARCHITECTURE.md`, `template/docs/DELIVERY.md` | an entry contract or delivery manual the project owns | cardinality binds the initial audit; each correction owes one focused exact-head confirmation; a full round only on scope/guarantee change; two failures at a gate still route to the diagnosis/harness challenge, never an automatic round |
 
 ## jv-v0.2.0 — 2026-09-15
