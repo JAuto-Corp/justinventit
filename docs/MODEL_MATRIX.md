@@ -358,6 +358,25 @@ both-tenses rule. `max_deferral` is never authored in any wave: it is derived fr
 inputs under SEAT_PROTOCOL §4's compositional constraints. Until Phase 3, implementations
 take interim per-fleet values; the CONSTRAINTS bind now, the data shape does not exist yet.
 
+## 3c. Field calibration — the route line (2026-09-15, owner queue via R 01M2JS75ZB)
+
+Model choice is a task-routing policy calibrated by evidence, not a global ranking. Public benchmarks are priors;
+this fleet's outcomes are the local tie-breaker. The only instrument is at most ONE compact line per SAMPLED
+boundary — a small initial sample, not universal reporting — on an existing record (a review receipt, a PR body
+or an acceptance finding; never a new store, scheduler or form):
+
+`route: <task-class> | author <runtime/model/effort> | review <runtime/model/effort> | default|deviation:<reason>`
+
+Outcomes are derived from records already produced: accepted/blocked/incomplete; material findings by severity and
+whether they were unique; changed-head correction rounds; elapsed time and tokens where available; whether the
+provider pairing added an independent perspective or only repetition. Extraction is manual over a small number of
+completed boundaries until repetition itself becomes the bottleneck. Working hypothesis under test (not a rule):
+terminal/automation/tooling code → Astra-class author, Fable-class review; specs, policy, orchestration and
+owner-facing synthesis → Fable-class author, Astra-class challenge; routine implementation → Opus/Sol as
+general-tier peers by fit and capacity; R2/R3 boundaries keep the provider bookend (ARCHITECTURE §2); Quick
+deterministic work owes no provider pair. Effort stays at the dispatch-time policy above until compared on like
+tasks. A matrix delta is proposed only with evidence, reviewed like any change, and lands with a reversible canary.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
