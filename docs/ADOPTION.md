@@ -13,7 +13,7 @@ release), one entry per change:
 | Field | Meaning |
 |-|-|
 | `id` | stable slug, e.g. `evidence-delta` |
-| `kind` | doc · skill · script · hook · policy |
+| `kind` | doc · skill · script · hook · policy · config |
 | `tier` | R0–R3 exposure from `template/docs/DELIVERY.md` (hook and policy entries are at least R2) |
 | `requires` | files, sections or commands the project must already have |
 | `rollback` | `git revert <adoption commit>` (add `-m 1` when that commit is a merge) unless the entry says otherwise |

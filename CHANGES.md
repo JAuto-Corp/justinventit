@@ -12,13 +12,28 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| `receipt-multiskill` | script | JV-internal | `scripts/ci/runtime-skill-receipt.sh`, receipt schema/validator, `scripts/ci/test-runtime-receipt-multiskill.py` | — | CI availability receipt covers every pinned skill (additive `additional_skills`); never overlaid |
-| `evidence-seal` | script | R1 | `template/scripts/evidence-seal.py`, `template/scripts/test_evidence_seal.py` | python3 ≥ 3.9 (git optional) | regenerate-only `SHA256SUMS` seal/verify for evidence packets; exact coreutils format; `--reseal` prints the entry delta; verify exits 0 pass / 1 changed-or-missing / 3 unlisted / 2 cannot-evaluate; declared exclusions via `.sealignore` (always sealed itself); undeclared symlinks, `.git`, empty packets, unsealable names and the filesystem root are refused; optional, grants nothing |
-| `check06-status` | doc | R0 | `docs/TDD_GATE.md`, `docs/ROADMAP.md` | — | check `06-harness-sensitivity` marked specified-not-built with its build order; no gate or ruling changed |
-| `contract-version` | hook | R1 | `template/.claude/hooks/lib/contract-version.sh`, `session-start.sh.jinja`, entry markers | generated hooks | one non-blocking warning line when AGENTS.md's `jv-entry-contract` differs from CLAUDE.md's expected version; matrix check asserts the rendered pair agrees |
-| `loop-parity` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja`, `docs/DEV_LOOP.md` | an entry contract the project owns | the generated contract carries DEV_LOOP's stages 0–8 (review carries the complete gate; document = doc delta or explicit `no-doc-impact`; capture) instead of a 4-step gate; parity test guards re-divergence; no stage-0 full-pass ceremony added (premise checklist by default) |
+| — | — | — | — | — | nothing unreleased |
+
+## jv-v0.2.0 — 2026-09-15
+
+Base: `main` at 2b5ba48 after PR #45 (PRs #38–#45, each merged at an independently reviewed exact head).
+
+| id | kind | tier | files | requires | notes |
+|-|-|-|-|-|-|
+| `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja`, `template/docs/PLAYBOOK.md.jinja`, `template/docs/SKILL_MODES.md` (pointers retargeted to AGENTS.md) | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract, seeded once and project-owned (`_skip_if_exists`, never prompted); CLAUDE.md = `@AGENTS.md` + Claude extras (framework-managed); later contract changes ship as rows here for projects to merge |
 | `answers-persistence` | config | R1 | `template/.copier-answers.yml.jinja`, `copier.yml` | a project generated from a git-tracked template source | canonical `_copier_answers` file (resolved `_commit`, original `_src_path`, all answers); answers file no longer `_skip_if_exists`, so `copier update` works and advances `_commit` |
-| `entry-contract` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja` | none for greenfield; brownfield merges its AGENTS.md manually | AGENTS.md becomes the canonical provider-neutral contract, seeded once and project-owned (`_skip_if_exists`, never prompted); CLAUDE.md = `@AGENTS.md` + Claude extras (framework-managed); later contract changes ship as rows here for projects to merge |
+| `loop-parity` | policy | R2 | `template/AGENTS.md.jinja`, `template/CLAUDE.md.jinja`, `docs/DEV_LOOP.md` | an entry contract the project owns | the generated contract carries DEV_LOOP's stages 0–8 (review carries the complete gate; document = doc delta or explicit `no-doc-impact`; capture) instead of a 4-step gate; parity test guards re-divergence; no stage-0 full-pass ceremony added (premise checklist by default) |
+| `contract-version` | hook | R2 | `template/.claude/hooks/lib/contract-version.sh`, `session-start.sh.jinja`, entry markers | generated hooks | one non-blocking warning line when AGENTS.md's `jv-entry-contract` differs from CLAUDE.md's expected version; matrix check asserts the rendered pair agrees |
+| `receipt-multiskill` | script | JV-internal | `scripts/ci/runtime-skill-receipt.sh`, receipt schema/validator, `scripts/ci/test-runtime-receipt-multiskill.py` | — | CI availability receipt covers every pinned skill (additive `additional_skills`); never overlaid |
+| `check06-status` | doc | R0 | `docs/TDD_GATE.md`, `docs/ROADMAP.md` | — | check `06-harness-sensitivity` marked specified-not-built with its build order; no gate or ruling changed |
+| `evidence-seal` | script | R1 | `template/scripts/evidence-seal.py`, `template/scripts/test_evidence_seal.py` | python3 ≥ 3.9 (git optional) | regenerate-only `SHA256SUMS` seal/verify for evidence packets; exact coreutils format; `--reseal` prints the entry delta; verify exits 0 pass / 1 changed-or-missing / 3 unlisted / 2 cannot-evaluate; declared exclusions via `.sealignore` (always sealed itself); undeclared symlinks, `.git`, empty packets, unsealable names and the filesystem root are refused; optional, grants nothing |
+
+Corrections at release time: `contract-version` was merged as tier R1 and is listed here as R2 — `docs/ADOPTION.md`
+requires hook entries to be at least R2; `entry-contract` now names the two generated docs whose pointers it retargeted.
+
+Known limits disclosed with this release: check `06-harness-sensitivity` remains specified, not built (the Stop runner
+runs `01-05`; see `docs/TDD_GATE.md` §3); the runtime availability receipt still requires CI's exact CLI versions;
+`evidence-seal` reports a repository HEAD only via `git rev-parse` and never inspects worktree state.
 
 ## jv-v0.1.0 — 2026-09-14
 
