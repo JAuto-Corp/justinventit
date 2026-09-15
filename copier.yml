@@ -251,6 +251,9 @@ _skip_if_exists:
   - "context/devlog/**"           # threads / decisions / design-intent / user-actions / findings
   - "context/devlog/*"
 
+  # --- Scope classifier VALUES (framework seeds stack-aware defaults; project owns the patterns) ---
+  - "scripts/scope-classes.json"
+
   # --- Canonical entry contract (seeded once with the full contract; project-owned afterwards; never prompted) ---
   - "AGENTS.md"
 

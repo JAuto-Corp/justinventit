@@ -1,0 +1,49 @@
+{%- set mig = 'supabase' if database == 'supabase' else ('sql' if database in ['postgres', 'mysql', 'sqlite'] else 'none') -%}
+{
+  "schema_version": 1,
+  "_comment": "Project-owned VALUES for scripts/scope-classify.py (rule order is the framework's — JV TDD_GATE §2 Scope classes). Edit patterns freely; keep schema_version. consumer_roots searches the whole tree minus prose by default because product packages may live at the repo root (Django apps, Go modules); narrow it only if you know every root that can execute or import.",
+  "file_count_threshold": 4,
+  "standard_triggers": [
+{%- if mig == 'supabase' %}
+    {"name": "migration-added", "pattern": "^supabase/migrations/.*\\.sql$", "status": "added"},
+{%- elif mig == 'sql' %}
+    {"name": "migration-added", "pattern": "^(db/)?migrations?/.*\\.(sql|py|rb|js|ts)$", "status": "added"},
+{%- endif %}
+{%- if stack == 'nextjs' %}
+    {"name": "api-route-added", "pattern": "^(apps/[^/]+/)?src/app/api/.*/route\\.(ts|js)$", "status": "added"},
+    {"name": "page-touched", "pattern": "^(apps/[^/]+/)?src/app/(.*/)?page\\.(tsx|jsx)$"},
+{%- elif stack == 'react-vite' %}
+    {"name": "page-touched", "pattern": "^src/(pages|routes)/.*\\.(tsx|jsx)$"},
+{%- elif stack == 'rails' %}
+    {"name": "migration-added", "pattern": "^db/migrate/.*\\.rb$", "status": "added"},
+    {"name": "api-route-added", "pattern": "^app/controllers/.*\\.rb$", "status": "added"},
+    {"name": "page-touched", "pattern": "^app/views/"},
+{%- elif stack == 'django' %}
+    {"name": "migration-added", "pattern": "^.*/migrations/.*\\.py$", "status": "added"},
+    {"name": "api-route-added", "pattern": "^.*/(urls|views)\\.py$", "status": "added"},
+    {"name": "page-touched", "pattern": "^.*/templates/"},
+{%- elif stack == 'fastapi' %}
+    {"name": "api-route-added", "pattern": "^(app|src)/(api|routers?)/.*\\.py$", "status": "added"},
+{%- elif stack == 'go' %}
+    {"name": "api-route-added", "pattern": "^(internal|cmd|pkg)/.*handler.*\\.go$", "status": "added"},
+{%- elif stack == 'rust' %}
+    {"name": "api-route-added", "pattern": "^src/.*(routes?|handlers?).*\\.rs$", "status": "added"},
+{%- endif %}
+{%- if use_tds %}
+    {"name": "scenario-touched", "pattern": "^test-data/(scenarios|factories|foundation)/"},
+{%- endif %}
+    {"name": "infra-touched", "pattern": "^\\.github/(workflows|actions)/"}
+  ],
+  "executable_class": {
+    "pattern": "^(scripts/|test-data/scripts/|\\.claude/hooks/|\\.claude/settings\\.json|\\.githooks/|\\.husky/|\\.github/(workflows|actions)/|supabase/functions/|[^/]*Dockerfile|apps/[^/]*/Dockerfile)",
+    "exclude_pattern": "\\.md$"
+  },
+  "tooling": {
+    "config_path": "scripts/scope-classes.json",
+    "denylist": "^(apps/|packages/|src/|app/|lib/|internal/|cmd/|pkg/|supabase/|db/|migrations?/|test-data/|\\.github/|\\.claude/hooks/|\\.claude/settings|\\.githooks/|\\.husky/|package\\.json$|pnpm-lock|Makefile$|.*Dockerfile$)",
+    "consumer_roots": [".", ":(exclude,glob)**/*.md", ":(exclude,glob)**/*.markdown", ":(exclude,glob)**/*.rst", ":(exclude,glob)**/*.txt", ":(exclude,glob)**/LICENSE*", ":(exclude,glob)**/CHANGES*"],
+    "product_import_patterns": ["^\\s*(from|import)\\s+(apps|packages|src|app|lib|internal|cmd|pkg)\\b", "\\bfrom\\s+['\"](\\.\\./)*(apps|packages|src|app|lib|internal|cmd|pkg)/", "^\\s*import\\s+['\"](\\.\\./)*(apps|packages|src|app|lib)/", "require\\(['\"](\\.\\./)*(apps|packages|src|app|lib)/"],
+    "_inventory_comment": "INERT BY DEFAULT. Quick(tooling) cannot fire until this project authors helper+test pairs here, e.g. {\"helper\": \"scripts/evidence-delta.py\", \"test\": \"scripts/test_evidence_delta.py\"}. Known v1 limit before you do: the consumer search uses git grep with -I, so a textual reference inside a file your .gitattributes marks binary (e.g. *.ipynb -diff) is not seen; keep the inventory empty if your repository marks text files binary, or first re-scope that guarantee (ROADMAP).",
+    "inventory": []
+  }
+}

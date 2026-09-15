@@ -303,6 +303,13 @@ check_set() {
     errs+=("(d) evidence-seal CLI regression failed")
     while IFS= read -r l; do errs+=("    $l"); done < <(tail -n 8 "$TMP_ROOT/$name.evidence-seal.log")
   fi
+  if ! python3 "$out/scripts/test_scope_classify.py" >"$TMP_ROOT/$name.scope-classify.log" 2>&1; then
+    errs+=("(d) scope-classify CLI regression failed")
+    while IFS= read -r l; do errs+=("    $l"); done < <(tail -n 8 "$TMP_ROOT/$name.scope-classify.log")
+  fi
+  if [ ! -f "$out/scripts/scope-classes.json" ] || ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$out/scripts/scope-classes.json" 2>/dev/null; then
+    errs+=("(d) rendered scripts/scope-classes.json missing or not JSON")
+  fi
 
   # --- (d) the real Stop runner executes to a clean exit (pipeline live) ---
   if [ -f "$out/.claude/hooks/stop/runner.sh" ]; then

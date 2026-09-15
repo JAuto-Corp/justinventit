@@ -208,7 +208,13 @@ docs must say so rather than imply branch protection exists.
 - **Pairing gate**: every scenario has a paired test (registry-derived). Adoption on a
   brownfield project grandfathers existing violations with a **no-new-violations ratchet**
   (count can only go down; recorded in a baseline file).
-- **Scope classifier**: pure git-diff path/count heuristic, patterns in config —
+- **Scope classifier**: pure git-diff path/count heuristic, patterns in config (engine:
+  `template/scripts/scope-classify.py`; values: the project's `scripts/scope-classes.json`, which ships with an
+  EMPTY tooling inventory so the `tooling` sub-case is inert until a project opts in; v1 invariant: the
+  engine establishes `tooling` only for what it can prove — deletions, any ambiguous import, and any textual
+  reference to a changed path from a non-prose file outside the inventory are `Standard+` by rule, without a
+  confirmation step; known v1 limit: that reference search is `git grep -I`, so a file `.gitattributes` marks
+  binary is not searched — one reason the inventory ships empty; it is deliberately not a dependency analyzer) —
   self-classification is not a bypass (label-based bypass requires an O-granted label, logged). The `tooling`
   sub-case (§2) is a declaration checked mechanically and attested by the exact-head reviewer — logged, never a label.
 
