@@ -14,6 +14,9 @@ verify <dir>            exit 0 every listed entry matches and nothing is unliste
                         undeclared symlink or special file, empty packet, unsealable name).
 Exclusions are declared in <dir>/.sealignore (one relative path prefix per line,
 '#' comments). The ignore file is always sealed and can never exclude itself.
+A report or finding that CITES the printed manifest_sha256 cannot live inside the
+manifest it cites: keep it beside the packet directory, or under a path declared in
+.sealignore. Seal once; never edit SHA256SUMS by hand — reseal with --reseal instead.
 A packet containing .git must declare it. The filesystem root is refused.
 """
 import argparse
