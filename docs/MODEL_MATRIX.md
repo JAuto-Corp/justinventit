@@ -357,6 +357,13 @@ both-tenses rule. `max_deferral` is never authored in any wave: it is derived fr
 inputs under SEAT_PROTOCOL §4's compositional constraints. Until Phase 3, implementations
 take interim per-fleet values; the CONSTRAINTS bind now, the data shape does not exist yet.
 
+**Seat-control budgets (`SEAT_PROTOCOL.md` §2a)**: `effect_commit_budget` — per ACTION
+CLASS, the minimum remaining lease validity an effect-commit must hold across
+validate→effect→record — and `hb_write_deadline` (the bounded heartbeat write) are
+likewise matrix-authored values whose schema fields land with the same Phase-3
+regeneration, written future-tense here per the both-tenses rule. Until Phase 3,
+implementations take interim per-fleet values; the §2a constraints bind now.
+
 ## 4. Supersession
 
 Shipping this matrix **supersedes the 2026-07-24 "one model, two efforts" policy**. The
