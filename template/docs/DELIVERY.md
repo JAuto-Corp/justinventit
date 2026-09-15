@@ -115,6 +115,7 @@ and harness before buying another unchanged round. No automatic restart or pass.
 Fresh independent audits establish independence; a focused correction confirmation
 should cover the change and regression risk under the project's required rules.
 Do not add duplicate reviews without a distinct required question.
+Cardinality binds the INITIAL audit of a subject; every subsequent correction owes exactly one focused confirmation at the corrected exact head, by a fresh context that is not the author, covering the change and its regression risk — the correction is the distinct required question. A further full-cardinality round is owed only when the correction adds a guarantee or changes scope (scope disposition). After two failures at the same gate the existing rule applies first — challenge the diagnosis and harness before buying another round of any size; no round is automatically owed. A confirmation on a predecessor head never covers the merged head.
 
 Capture what changed, scoped acceptance, evidence/limitations, exposure and the next
 owner checkpoint once through the required project path. If recording fails, retain

@@ -106,6 +106,8 @@ where any other document's phrasing differs, this table wins:
 | fleet | L1+L2 | 2 fresh-context audits | cross-runtime pass **required if a second runtime is configured, recommended otherwise** | reviewers are never the authoring session |
 | isolated-fleet | L1+L2+L3 | as fleet | as fleet | as fleet, plus isolation-adapter conformance |
 
+**Corrections.** Cardinality binds the INITIAL audit of a subject; every subsequent correction owes exactly one focused confirmation at the corrected exact head, by a fresh context that is not the author, covering the change and its regression risk — the correction is the distinct required question. A further full-cardinality round is owed only when the correction adds a guarantee or changes scope (scope disposition). After two failures at the same gate the existing rule applies first — challenge the diagnosis and harness before buying another round of any size; no round is automatically owed. A confirmation on a predecessor head never covers the merged head. (`template/docs/DELIVERY.md` carries this sentence to projects.)
+
 "Fresh context" is runtime-neutral: a Claude subagent, or a fresh Codex `exec` thread — a
 Codex-only solo project is fully conformant. Authoring-tier work maps to the best available
 runtime's thinking tier when the preferred one is absent (matrix `fallback` chains).

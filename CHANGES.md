@@ -12,7 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| — | — | — | — | — | nothing unreleased |
+| `correction-review` | policy | R2 | `docs/DEV_LOOP.md`, `docs/ARCHITECTURE.md`, `template/docs/DELIVERY.md` | an entry contract or delivery manual the project owns | cardinality binds the initial audit; each correction owes one focused exact-head confirmation; a full round only on scope/guarantee change; two failures at a gate still route to the diagnosis/harness challenge, never an automatic round |
 
 ## jv-v0.2.0 — 2026-09-15
 
