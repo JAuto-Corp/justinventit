@@ -74,6 +74,7 @@ seat_classes:               # role → tier (+ rationale, fallback CHAIN — nev
   docs_baseline:    { tier: authoring, fallback: thinking, note: "two-tier synthesis ruling" }
   docs_maintenance: { tier: maint,  requires: "hierarchy exists (gate, not vibe)" }
   cross_review:     { tier: thinking, second_opinion: { when: "second-runtime-configured", runtime: other, effort: xhigh, else: "same-runtime fresh-context pass" } }
+  # Provider bookend: see ARCHITECTURE §2 (normative; two-runtime prerequisite and independence rules live there).
   frontend:         { tier: doing, escalate_to: thinking, note: "escalation raises the TIER (judgment-heavy UI work); tiers order thinking > authoring-adjacent > doing > maint on capability — a tier change is never a model downgrade dressed as a raise" }
 models:                     # per-runtime model ids per TIER — complete on every runtime
   claude: { thinking: fable-5, authoring: fable-5, doing: opus-5, maint: sonnet-5 }   # 2026-07-27 correction: FABLE THINKS, OPUS DOES — opus-as-thinker caused over-engineering-through-misunderstanding; thinking seats consult Sol xhigh frequently (funnel, red-team, escalated judgment)
