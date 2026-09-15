@@ -25,9 +25,9 @@ Then read, to know what exists and where this fits:
 | `docs/ROADMAP.md` | Where this work sits in the bigger picture |
 | The issue/epic (`gh issue view N`) | Scope, constraints, acceptance criteria |
 | Existing plans under `docs/` | Patterns to follow for structure |
-| `CLAUDE.md` § TDD Gate | **Scope classification** — decides how much planning is needed |
+| `AGENTS.md` § Scope classification | **Scope classification** — decides how much planning is needed |
 
-**Scope classification is objective — do not self-classify.** Apply `CLAUDE.md` § TDD Gate (mirrored in the `work` skill): new tables/routes/pages or 4+ files → Standard+; single-file, no new surface → Quick.
+**Scope classification is objective — do not self-classify.** Apply `AGENTS.md` § Scope classification (Quick, Quick (tooling), Standard+); the `work` skill points there too.
 
 **Refactor awareness**: note messiness in the code this work will touch — competing abstractions, dead code, pattern drift. These are refactor targets to *bundle into the plan*, not separate debt. A plan is the cheapest place to decide what to clean up.
 
@@ -43,7 +43,7 @@ Then read, to know what exists and where this fits:
 | `patterns` skill § Interview | Outcomes the code can't answer | Structured Q&A before writing the SPEC |
 | `team-lead` | Parallel explorer/audit waves | Spawn templates, file ownership |
 
-**Quick scope** (1-3 files, no new surface): skip Phase 2 — domain skills load too much context for a small fix.
+**Quick scope** (as classified by `AGENTS.md` § Scope classification): skip Phase 2 — domain skills load too much context for a small fix.
 
 ---
 

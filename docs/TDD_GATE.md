@@ -23,7 +23,8 @@ complain, not pass.**
   - pairing registry — a generated artifact; its authored source is the scenario files
     themselves (the barrel/registry generator derives it).
   - scope definitions — the classifier config (patterns + thresholds), authored, versioned
-    with the framework.
+    with the framework; classes `Quick`, `Standard+` and the declared `tooling` sub-case of
+    `Quick` (**Scope classes**, end of this section).
   Checks `01-06` (scenarios-exist, type/build evidence, scenarios-executed, red-before-green,
   progress-complete, harness-sensitivity — `06` defined with the Harness-integrity law
   below; **`06` is SPECIFIED, NOT SHIPPED** — only `01-05` exist under
@@ -37,6 +38,35 @@ complain, not pass.**
   (never brick); CI → fail closed. "Cannot evaluate" is a distinct, visible outcome from
   "pass" EVERYWHERE (exit codes and messages distinguish them).
 - Scenario enumeration derives from the **generated barrel/registry**, never a name regex.
+
+**Scope classes.** Two classes, decided by what the changed files do: `Quick` (single-file fix, no new
+surface) and `Standard+` (any product trigger — tables, routes, pages, seeds/factories, workflow or
+action infrastructure, file count). `tooling` is a DECLARED sub-case of `Quick` for seat tooling — helpers a
+seat runs by hand that CI, hooks and the product runtime never execute. It inherits every `Quick`
+exemption (same-change RED, the complete gate's Quick skip) and adds one mandatory gate. A change is
+`tooling` only when ALL hold, evaluated in this order, any miss → `Standard+`:
+1. no changed path matches a `Standard+` trigger or the product/enforcement denylist (application and
+   package code, migrations and functions, seeds/factories/foundation, CI workflows and actions, hooks,
+   runtime settings, container builds, package scripts) — a mixed change is never `tooling`;
+2. every changed path is in the project's authored **tooling inventory** (exact helper + sibling-test
+   pairs in the classifier config), or the change adds such a pair and passes rules 3–5;
+3. nothing outside the inventory consumes a changed path: no product module, test, hook, CI workflow or
+   action, settings file, package script or container build references or imports it, directly or
+   through another inventoried file (mechanical grep over product AND enforcement roots — a helper the
+   session-start hook runs, or one a CI-run test imports, is not tooling however it is named), and no
+   changed file imports a product package; an unresolved or transitive consumer routes to `Standard+`;
+4. the sibling test is added or modified in the same change (same-change) or a RED event is recorded
+   (§4 states 1–2); an implementation-only change is `Standard+`;
+5. the PR body declares `class: tooling`, the classifier's reason, `target: none`, the one-commit
+   rollback, and the independent exact-head reviewer attests, with the evidence they used, the conditions
+   no diff heuristic can evaluate: the helper executes no product command, writes no product or shared
+   state, and has no direct or transitive product/CI/hook consumer beyond what rule 3's grep showed.
+Gates: the tool's own tests at the exact head plus ONE independent exact-head review (the gate `Quick`
+lacks); no substrate, scenario runner, build or deploy expectation is owed, because rules 1–3 establish
+that nothing product-facing changed and rule 5 attests what a grep cannot see. The classifier prints
+`class=tooling reason=<rule trace>` as it prints `Standard+` reasons; a `tooling` declaration is a logged
+declaration checked by rules 1–4 and a reviewer, never a bypass label (§5). Deleting the sub-case returns
+every such change to plain `Quick`/`Standard+` classification.
 
 ## 3. Evidence ledger
 
@@ -132,7 +162,8 @@ part of the PR's history and the classifier's evidence.
    assembled at push time from the PR range and travels with the PR, independent of local
    ledger rotation thereafter.
 2. No red event but tests for the behavior were added/modified in the PR and pass →
-   **same-change**: satisfies the gate for Quick scope ONLY (the declared exemption,
+   **same-change**: satisfies the gate for Quick scope ONLY — including its declared `tooling`
+   sub-case (§2) — (the declared exemption,
    restated in ARCHITECTURE §5 and DEV_LOOP §1). For Standard+ it is a **block**, not a
    flag — the RED stage is mandatory there, full stop.
 3. Impl changed with no test touch and no ledger events → **untested-change** (the
@@ -178,7 +209,8 @@ docs must say so rather than imply branch protection exists.
   brownfield project grandfathers existing violations with a **no-new-violations ratchet**
   (count can only go down; recorded in a baseline file).
 - **Scope classifier**: pure git-diff path/count heuristic, patterns in config —
-  self-classification is not a bypass (label-based bypass requires an O-granted label, logged).
+  self-classification is not a bypass (label-based bypass requires an O-granted label, logged). The `tooling`
+  sub-case (§2) is a declaration checked mechanically and attested by the exact-head reviewer — logged, never a label.
 
 ## 6. Layer split
 

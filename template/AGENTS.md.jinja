@@ -1,5 +1,5 @@
 # {{ project_name }} — Agent Entry Contract
-<!-- jv-entry-contract: 1 -->
+<!-- jv-entry-contract: 2 -->
 
 This file is the canonical entry contract for every runtime (Codex reads it natively; Claude Code imports it
 from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below depends on a particular runtime.
@@ -55,6 +55,7 @@ other runtimes read the files and perform each section.
 | New UI pages/major components | Standard+ | Yes |
 | 4+ files modified | Standard+ | Yes |
 | Single-file bug fix, no new surface area | Quick | No |
+| Seat tooling (declared): every changed file in the project's tooling inventory, no Standard+ trigger or denylisted path, no hook/CI consumer, sibling test changed or RED observed — JV TDD_GATE §2 Scope classes | Quick (tooling) | Own tests + one exact-head review |
 
 ## Work Routing
 
@@ -62,6 +63,7 @@ other runtimes read the files and perform each section.
 |-|-|
 | Quick fix (single-file, no new surface area) | Fix → Commit with `Fixes #N` → document (or `no-doc-impact`) → capture |
 | Standard+ (see scope triggers) | stages 0–8: scope → spec-audit → RED → GREEN → review → integrate → document → capture |
+| Quick (tooling) | Quick route + one independent exact-head review + PR-body declaration (`class: tooling`, classifier reason, reviewer attestation: no product command executed, no product/shared state written; `target: none`; one-commit rollback) |
 | External concern | Append to `context/DISCOVERIES.md` (stage 8) → keep working |
 
 For dispatch/handoff summaries and scoped evidence comparison, use `docs/DELIVERY.md`.
