@@ -12,7 +12,7 @@ Full validation before a phase is complete. **All steps must pass.** This is the
 ### 1. Scenario evidence (ATDD)
 
 Locate the active phase's `SCENARIOS.md`.
-- **Standard+ scope** (new tables/routes/pages, or 4+ files — see `CLAUDE.md` § Scope): FAIL hard if missing.
+- **Standard+ scope** (per `AGENTS.md` § Scope classification): FAIL hard if missing.
 - **Quick scope**: warn if missing.
 
 If present, verify each scenario has a recorded **RED-then-GREEN** run (seen failing before passing) and its evidence fields (logs/output/screenshots) are filled and passing. This is exactly what stop `checks/03-scenario-evidence` and `04-tdd-cycle` verify — record the runs here so the signal at the end doesn't block.

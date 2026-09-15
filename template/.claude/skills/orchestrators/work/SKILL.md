@@ -45,7 +45,7 @@ Blockers: [none or description]
 
 ## Scope Classification (objective — do not self-classify)
 
-Standard+ is triggered by ANY of: new DB tables/columns, new API routes, new UI pages/major components, or 4+ files modified. Single-file fix with no new surface area = Quick. When in doubt, it's Standard. (Mirrors `CLAUDE.md` § TDD Gate.)
+Classes and triggers are defined once in `AGENTS.md` § Scope classification (Quick, Quick (tooling), Standard+); apply that table, never a restatement.
 
 | Scope | Ceremony |
 |-|-|

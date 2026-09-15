@@ -27,7 +27,7 @@ Even a Quick fix does this: a one-line change in a file an active epic is restru
 
 ### 3. Assess scope (objective triggers — do not self-classify)
 
-Standard+ if ANY: new DB tables/columns, new API routes, new UI pages/major components, or 4+ files. Otherwise Quick. When in doubt, it's Standard. See `SKILL.md` § Scope Classification.
+Apply `AGENTS.md` § Scope classification (Quick, Quick (tooling), Standard+) — the single definition; when in doubt, it's Standard.
 
 ### 4. Sync remote, then cut the branch
 

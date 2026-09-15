@@ -27,11 +27,14 @@ Read in order when in execution phase:
 
 ## ATDD Enforcement
 
-Standard+ scope (4+ files, new routes, new tables, new pages):
+Scope is classified by `AGENTS.md` § Scope classification (Quick, Quick (tooling), Standard+) — never
+restated here.
+
+Standard+ scope:
 - **SCENARIOS.md must exist before implementation begins**
 - `/work:start` and `/work:continue` check for this
 - `/verify:complete` hard-blocks on missing scenarios
 
-Quick fixes (single-file, no new surface area):
+Quick scope (including its declared tooling sub-case):
 - Acceptance criteria in commit message only
 - No formal SCENARIOS.md required
