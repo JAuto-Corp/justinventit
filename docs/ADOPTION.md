@@ -61,6 +61,9 @@ project's orchestrator decides from that evidence; a failed canary declines the 
 is deleted. Rollback after integration is `git revert <adoption commit>` (`-m 1` for a merge) by the integrator, with
 one capture line. No state outside git is touched, and no orchestration-root or shared evidence tree is ever
 initialized as a repository by a release.
+"Docs-only is inert" is a per-project fact, never an assumption: before offering an overlay as effect-free, check the
+project's push-triggered jobs (a staging push may run migration or deploy workflows regardless of paths) and any
+composer- or forge-owned regions in the target file (JA field result, 2026-09-16).
 
 ## Boundaries
 
