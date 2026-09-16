@@ -12,7 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| — | — | — | — | — | nothing unreleased |
+| `ja-field-amendments` | policy | R2 | `docs/ARCHITECTURE.md` §2, `template/docs/DELIVERY.md`, `docs/ADOPTION.md` | the `correction-review` and `provider-bookend` rows | JA adoption feedback (O 01M2M5M2B8): a correction that adds, changes or REMOVES a guarantee owes the full round; only a substantive touch on the exact subject counts toward the bookend; a recorded missing bookend is provenance, never a waiver of a required audit; "docs-only is inert" is a per-project fact to check, not an assumption |
 
 ## jv-v0.2.1 — 2026-09-15
 
