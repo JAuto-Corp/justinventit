@@ -51,7 +51,27 @@ JV-Declined: <id>
 which ids were declined. One line in the project's existing capture channel names the tag. Nothing else is written;
 a PR description is context, not the record.
 
-## Canary and rollback
+## Delivery alternative: a version-pinned shared install outside the project
+
+When a released tool is seat-side tooling that the project's pipeline would classify as product code (its
+executable-class rule, its push-triggered suite and deploys), the overlay PR is the wrong shape. The sanctioned
+alternative is a shared install the JV lead prepares OUTSIDE every repository: `releases/<tag>/scripts/<tool>` copied
+byte-for-byte from the tag (mode 0555), an `INSTALL-MANIFEST.md` in that directory naming the tag, commit, per-file
+sha256, preparation time and the rollback, and ONE stable discovery pointer (`current` → the release directory). The
+project's orchestrator accepts by verifying hash parity against the tag and running one real invocation on a real
+packet; its acceptance record IS the adoption record, appended to the manifest with the same fields the overlay
+trailers carry — `JV-Source: <tag>/<commit>`, `JV-Accepted: <ids>`, and `JV-Declined: <ids>` when applicable — so the
+manifest answers the same question `git log --grep` answers for committed adoptions (that grep covers committed
+adoptions only; a shared install is discoverable through its manifest, never through the project's history). Shared
+tooling lives outside the project's repository and therefore outside its CI by construction: hash parity plus the
+orchestrator's real invocation is the whole acceptance, and it waives no project gate — the project's own checks
+still govern everything the tool's output is later used for. Rollback is removing or repointing
+the pointer; nothing else exists — no PATH change, hook, daemon, store, package manager, CI or product effect. A new
+release is a new directory plus an explicit re-acceptance; the pointer alone is never trust. Field origin: JA adopted
+`evidence-seal` and `evidence-delta` this way on 2026-09-16 (`~/.jauto-orchestration/jv/current/scripts/`), after the
+overlay path had been declined for exactly the reasons above.
+
+## Canary and rollback (overlay PRs)
 
 Canary: one unpublished commit in one isolated project worktree (from the project's then-current integration branch),
 containing only the release's files with the trailers above; one seat exercises them once (for a script, one real run
