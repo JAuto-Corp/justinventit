@@ -12,9 +12,27 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| `packet-default` | policy | R2 | `template/docs/DELIVERY.md` | `scripts/evidence-seal.py` present (or a fleet's pinned shared path) | evidence-seal is the default for NEW packets; hand-built manifests retired for new work; `sha256sum -c --strict` stays the independent check; historical packets untouched; the tool decides content completeness only |
-| `shared-install-path` | doc | R0 | `docs/ADOPTION.md` | — | sanctioned delivery shape for seat-side tooling a project's pipeline would treat as product code: version-pinned shared install outside every repo, `INSTALL-MANIFEST.md` with hashes + rollback, one stable pointer, the project's acceptance record as the adoption record; field-proven by JA 2026-09-16 |
+| — | — | — | — | — | nothing unreleased |
+
+## jv-v0.2.2 — 2026-09-16
+
+Base: `main` at 51d9ee0 after PR #57 (PRs #55–#57, each merged at an independently reviewed exact head; all three carry the
+`bookend:` and `route:` lines). Field origin: JA's adoption of jv-v0.2.1 (correction-review + provider-bookend into its
+delivery-progression practice; evidence-seal + evidence-delta through a version-pinned shared install; the shared path
+made the default for new packets).
+
+| id | kind | tier | files | requires | notes |
+|-|-|-|-|-|-|
 | `ja-field-amendments` | policy | R2 | `docs/ARCHITECTURE.md` §2, `template/docs/DELIVERY.md`, `docs/ADOPTION.md` | the `correction-review` and `provider-bookend` rows | JA adoption feedback (O 01M2M5M2B8): a correction that adds, changes or REMOVES a guarantee owes the full round; only a substantive touch on the exact subject counts toward the bookend; a recorded missing bookend is provenance, never a waiver of a required audit; "docs-only is inert" is a per-project fact to check, not an assumption |
+| `shared-install-path` | doc | R0 | `docs/ADOPTION.md` | — | sanctioned delivery shape for seat-side tooling a project's pipeline would treat as product code: version-pinned shared install outside every repo, `INSTALL-MANIFEST.md` with hashes + rollback, one stable pointer, the project's acceptance record as the adoption record; field-proven by JA 2026-09-16 |
+| `packet-default` | policy | R2 | `template/docs/DELIVERY.md` | `scripts/evidence-seal.py` present (or a fleet's pinned shared path) | evidence-seal is the default for NEW packets; hand-built manifests retired for new work; `sha256sum -c --strict` stays the independent check; historical packets untouched; the tool decides content completeness only |
+
+Known limits disclosed with this release: unchanged from jv-v0.2.1 — the `scope-classify` tooling sub-case ships inert
+and its consumer guarantee has the `git grep -I` limit; the entry contract is at version 2; check `06-harness-sensitivity`
+remains specified, not built; the runtime availability receipt requires CI's exact CLI versions; `route:` lines are a
+sampled instrument; `evidence-seal` reports a repository HEAD via `git rev-parse` only. New in this release: the
+packet default binds NEW packets only and never rewrites historical evidence; the shared-install shape is outside a
+project's CI by construction (acceptance = hash parity + one real invocation).
 
 ## jv-v0.2.1 — 2026-09-15
 
