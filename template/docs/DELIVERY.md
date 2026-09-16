@@ -58,6 +58,19 @@ grant. A substrate grant is separate from this attempt's admission. Keep the
 project's required scope audits, runner RED/GREEN and reviewer checks. Test harness
 clock boundaries and cleanup failure paths cheaply before a scarce runtime attempt.
 
+## Evidence packets: one tool, one manifest
+
+A new evidence packet is sealed with `scripts/evidence-seal.py seal <dir>` and checked with
+`scripts/evidence-seal.py verify <dir>`; cite the printed `manifest_sha256` in the record that accepts the packet, and
+keep that record outside the packet (or under a path declared in `.sealignore`). Hand-built manifests are retired
+for new work: never write, append to or edit `SHA256SUMS` by hand — reseal with `--reseal`, which prints the delta.
+`sha256sum -c --strict SHA256SUMS` remains the independent verification and the fallback when the tool is absent.
+The tool makes a complete content manifest; it does not decide what belongs in the packet, semantic acceptance,
+effects, permissions or immutability — those stay with the lead and the gates. Existing packets are never resealed
+or rewritten to fit this rule; it binds new packets only. Where a fleet installs the released tool outside the
+project (the JV upstream document `docs/ADOPTION.md` in the justinventit repository describes that shared-install
+shape; it is not rendered into projects), the fleet's pinned path is the default for the same rule.
+
 ## Reuse evidence at its actual granularity
 
 Accept a named requirement at a named level: design, implementation, integration,
