@@ -279,7 +279,11 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   with exact-quote citations; diff-scoped bugs; introduced-logic/security), few-concurrent;
   (4) **independent VALIDATION pass** — every finding re-examined by a fresh thread charged
   to refute it; unvalidated findings are filtered, not hedged; (5) verdict via schema with
-  full-SHA citations. **High-signal doctrine riding every lens prompt**: objective defects
+  full-SHA citations. **Review-authority framing riding every judgment prompt**: apply the
+  single finding-admission contract in `template/docs/DELIVERY.md` § Close correction loops
+  (rendered projects: `docs/DELIVERY.md`). Pass its governing inputs, never a prior opinion or
+  expected verdict; do not copy or modify the policy inside prompt definitions. **High-signal
+  doctrine riding every lens prompt**: objective defects
   and unambiguous quoted-rule violations only; explicit false-positive list (pre-existing,
   linter-catchable, pedantic, silenced, unverifiable-without-outside-context); *if not
   certain, do not flag* — this is also the standing treatment for the disposition-overreach

@@ -12,7 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| — | — | — | — | — | nothing unreleased |
+| `review-authority-framing` | policy | R2 | `docs/ARCHITECTURE.md`, `docs/MODEL_MATRIX.md`, `template/docs/DELIVERY.md`, `docs/ADOPTION.md` | one project-owned delivery manual and review prompts that can point to it | one canonical finding-admission rule: reviewers receive outcome, accepted contract and evidence but no expected verdict/prior opinion; every blocker traces to accepted authority or an explicit scope-change decision; contract challenges remain visible scope questions; architecture owns the general context-delivery principle and adoption points to it; no new role, form, review round or gate |
 
 ## jv-v0.2.2 — 2026-09-16
 

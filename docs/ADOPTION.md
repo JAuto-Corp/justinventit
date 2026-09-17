@@ -30,6 +30,10 @@ project's own gate decision. Known JV-internal inconsistencies (generated four-s
 loop; check `06-harness-sensitivity` specified but not shipped; Claude-only generated entry) are JV roadmap items and
 are never exported to a project through an overlay.
 
+Policy amendments follow `ARCHITECTURE.md` §1 law 2's context-delivery corollary and
+`CONTEXT_CONTRACT.md` §5a: reconcile the project's existing canonical surface and live pointers in one adoption;
+do not append a parallel copy.
+
 `copier update` is an adoption path for projects generated from a git-tracked template source (a URL such as
 `gh:JAuto-Corp/justinventit` or a stable local clone path): the answers file records the resolved template commit,
 the source and every answer, so `copier update --vcs-ref jv-vX.Y.Z` performs Copier's three-way merge, keeps
