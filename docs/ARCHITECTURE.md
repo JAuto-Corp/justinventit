@@ -31,6 +31,12 @@ source system rot in specific, diagnosable ways:
    gates), and *derived views* (computed on read, never stored). Any index, map, or matrix is
    a generated artifact. Hand-groomed indexes decay to lies. *Origin: a documentation map
    whose every count was wrong and which omitted the system's entire current command surface.*
+   **Context-delivery corollary.** Initialization and orientation surfaces stay lean: one
+   canonical owner per rule, short reliable pointers from entry surfaces, and details loaded
+   only when needed. Context moves and policy updates follow `CONTEXT_CONTRACT.md` §5a; they
+   are incomplete until every live consumer points to the canonical target and obsolete
+   parallel discoverability is removed or explicitly superseded. Historical evidence is not
+   rewritten.
 3. **Two context layers, explicit everywhere.** Layer A = agentic development platform
    (this framework's scope: levers, hooks, coordination, TDD method, seat protocol).
    Layer B = project context (the consuming project's scope: domain skills, schema, product

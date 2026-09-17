@@ -121,6 +121,14 @@ counterexample, earliest affected gate, and smallest discriminating check. The l
 records block-now, later-proof, owned follow-up, or rejected with reason. A new
 guarantee requires scope disposition. Sibling work proceeds when unaffected.
 
+Give reviewers the owner outcome, accepted contract and governing project evidence,
+but never an expected verdict or another reviewer's opinion. **A review may discover a
+defect, but it may not invent a requirement. Every blocker must trace to accepted
+authority or receive an explicit scope-change decision.** A reviewer may challenge the
+accepted contract as a scope question; report it without silently promoting it to an
+existing requirement or current blocker. This framing changes no independence,
+cardinality, safety, evidence or effect gate.
+
 Each correction has one purpose and a decision deadline. At the deadline choose
 the next lawful proof, justified scope change, or a named blocker with owner and
 next decision date. After two failures at the same gate, challenge the diagnosis
