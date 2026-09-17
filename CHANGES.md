@@ -12,7 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| — | — | — | — | — | nothing unreleased |
+| pacemaker-standby-event-driven | fix | template | `template/scripts/pacemaker.sh`, `template/.claude/hooks/stop/actions/heartbeat-writer.sh.jinja`, `template/scripts/test_pacemaker_standby.py`, `template/docs/PACEMAKER.md`, `scripts/ci/generate-matrix-check.sh` | jv-v0.2.2 | The pacemaker branches on the record's `state:` (SEAT_PROTOCOL §2): `standby` (event-driven, `next_wake_at: event`, declared `doorbell:`) and `dormant` are never classified loop-dead or process-dead, so an intentionally idle seat gets no routine resume/escalation turns; the Stop-hook writer preserves `doorbell:` across turn-ends; one fixture test. Field origin: JA owner direction 2026-09-17 (W/O/I/K/U standby canary live). Rollback: revert the adoption commit; a standby record then reverts to being resumed after grace. |
 
 ## jv-v0.2.2 — 2026-09-16
 
