@@ -45,8 +45,13 @@
 #       ACTION: ESCALATE — notify via the adapter; optionally fire $RESPAWN_HOOK.
 #
 #   (Healthy = heartbeat fresh AND next_wake fresh/upcoming → no action.
-#    Dormant = next_wake_at: none AND state declares dormancy → intentionally idle,
-#    skipped. A role that is genuinely done parks itself with `none`.)
+#    Dormant = `state: dormant` (or legacy `next_wake_at: none`) → concluded/retired,
+#    skipped. A role that is genuinely done parks itself as dormant.
+#    Standby = `state: standby` (or legacy `next_wake_at: event`) → EVENT-DRIVEN: no
+#    scheduled wake exists, so neither "loop overdue" nor heartbeat age is evidence
+#    of anything; a doorbell (mailbox/dispatch) reawakens the seat. Skipped here —
+#    its liveness is doorbell backlog, a project-owned detector. See
+#    docs/SEAT_PROTOCOL.md §2 for the three lifecycle states.)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # SAFETY (per the JAuto ghost-cron / split-brain lesson)
@@ -224,15 +229,42 @@ for ROLE in $ROLES; do
   HB="$(field "$CAD" heartbeat_at)"
   CAD_S="$(field "$CAD" cadence_seconds)"
   CAD_MIN="$(field "$CAD" cadence_min)"
+  DOORBELL="$(field "$CAD" doorbell)"
   [ -z "$CAD_S" ] && [ -n "$CAD_MIN" ] && CAD_S=$((CAD_MIN * 60))
   [ -z "$CAD_S" ] && CAD_S=900
 
   # Per-role grace = max(floor, 2× cadence).
   GRACE=$((CAD_S * 2)); [ "$GRACE" -lt "$GRACE_FLOOR" ] && GRACE=$GRACE_FLOOR
 
-  # ── Dormancy: explicit `next_wake_at: none` = intentionally parked. Skip. ──
+  # ── Lifecycle state FIRST (docs/SEAT_PROTOCOL.md §2 is the authority): the record's
+  #    `state:` decides whether a scheduled-wake question even applies. Only `active`
+  #    (awake/sleeping) seats have a loop to supervise. ──
+  case "$STATE_FIELD" in
+    dormant)
+      log "role=$ROLE dormant (state=dormant) — skip"
+      continue ;;
+    standby)
+      # EVENT-DRIVEN seat: there is no next scheduled wake, so "loop overdue" is not a
+      # question that applies, and heartbeat age is not evidence either — an idle
+      # standby seat takes no turns, so its heartbeat ages BY DESIGN. Resuming or
+      # escalating here would manufacture exactly the routine model turns the standby
+      # state exists to eliminate. Its liveness is doorbell backlog (mail it should
+      # have woken FOR and did not), a project-owned detector; this generic pacemaker
+      # only records the declared doorbell and flags a record that declares none.
+      if [ -n "$DOORBELL" ]; then
+        log "role=$ROLE standby (event-driven; doorbell=$DOORBELL) — no scheduled wake to supervise; skip"
+      else
+        log "role=$ROLE standby WARN — record declares no doorbell; a standby seat without one is indistinguishable from a dead seat (SEAT_PROTOCOL §2); skip"
+      fi
+      continue ;;
+  esac
+  # Legacy markers for records that carry no `state:` (older heartbeat-only formats).
   if [ "$NEXT" = "none" ] || [ "$NEXT" = "NONE" ]; then
     log "role=$ROLE dormant (next_wake_at=none) — skip"
+    continue
+  fi
+  if [ "$NEXT" = "event" ]; then
+    log "role=$ROLE standby (event-driven; doorbell=${DOORBELL:-UNDECLARED}; legacy next_wake_at=event) — no scheduled wake to supervise; skip"
     continue
   fi
 

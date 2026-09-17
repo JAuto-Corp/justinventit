@@ -16,6 +16,7 @@
 #   field(){ grep -m1 "^$2:" "$1" | sed "s/^$2:[[:space:]]*//"; }
 #   STATE=$(field ... state); NEXT=$(field ... next_wake_at); HB=$(field ... heartbeat_at)
 #   CAD_S=$(field ... cadence_seconds); CAD_MIN=$(field ... cadence_min)
+#   DOORBELL=$(field ... doorbell)   # standby seats: the event source that reawakens them
 # We honor the SAME dir-override precedence and emit EXACTLY those `key: value`
 # fields so the file round-trips byte-for-byte through the pacemaker's parser.
 #
@@ -53,6 +54,7 @@ if [ -f "$CAD" ]; then
   CAD_MIN="$(field "$CAD" cadence_min)"
   CONTEXT="$(field "$CAD" context)"
   WC="$(field "$CAD" wake_count)"
+  DOORBELL="$(field "$CAD" doorbell)"
 else
   # Seed a fresh role file. next_wake_at defaults to `none` (dormant) so a role that
   # has NOT yet armed its own loop is never falsely resumed — the pacemaker skips
@@ -64,6 +66,7 @@ else
   CAD_MIN=""
   CONTEXT="turn-end heartbeat (auto-seeded by stop hook)"
   WC="0"
+  DOORBELL=""
 fi
 [ -n "$STATE" ] || STATE="awake"
 [ -n "$NEXT" ]  || NEXT="none"
@@ -81,6 +84,7 @@ TMP="$CAD.tmp.$$"
   elif [ -n "$CAD_MIN" ]; then
     printf 'cadence_min: %s\n' "$CAD_MIN"
   fi
+  [ -n "$DOORBELL" ] && printf 'doorbell: %s\n' "$DOORBELL"
   [ -n "$CONTEXT" ] && printf 'context: %s\n' "$CONTEXT"
   printf 'next_wake_at: %s\n' "$NEXT"
 } > "$TMP" 2>/dev/null && mv -f "$TMP" "$CAD" 2>/dev/null || rm -f "$TMP" 2>/dev/null
