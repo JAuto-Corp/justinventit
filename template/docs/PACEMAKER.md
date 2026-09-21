@@ -36,11 +36,22 @@ These two signals define exactly two actionable states, each with one action:
 | **ALIVE + LOOP-DEAD** | heartbeat fresh **and** `next_wake_at` stale/`NONE`/overdue past grace | **RESUME** — inject the resume prompt into the role's tmux pane via `tmux send-keys`. The auto-recover; no new process. |
 | **PROCESS DEAD** | heartbeat absent or older than `HEARTBEAT_DEAD` (default 90 min) | **ESCALATE** — notify via the adapter; optionally fire `$PACEMAKER_RESPAWN_HOOK`. |
 
-Two non-actionable states:
+Three non-actionable states (the record's `state:` is read first — `docs/SEAT_PROTOCOL.md` §2
+defines the lifecycle; only `active` seats have a scheduled wake to supervise):
 
 - **Healthy** — heartbeat fresh **and** `next_wake_at` fresh/upcoming → no action.
-- **Dormant** — `next_wake_at: none` with the role intentionally parked → skipped.
-  A role that is genuinely done writes `none` to opt out of supervision.
+- **Standby** — `state: standby` (`next_wake_at: event`, `cadence_seconds: 0`, a declared
+  `doorbell:` such as `mailbox:<role>`) → event-driven; **this pacemaker takes no action**. No
+  scheduled wake exists, so "loop overdue" does not apply, and an idle standby seat takes no
+  turns by design, so resuming it on heartbeat age alone would manufacture the routine model
+  turns the state exists to eliminate. The standby stall predicate is `docs/SEAT_PROTOCOL.md`
+  §2's OR-pair (doorbell backlog past `mail_grace`, or heartbeat age past `2 × floor_seconds`
+  paired with the §4 canary wake); both halves need the seat's doorbell, so they belong to the
+  project's doorbell-aware watchdog, not to this generic supervisor. The pacemaker logs the
+  declared doorbell and flags a standby record that declares none. A rare intentional pause;
+  active autonomous work stays cadenced.
+- **Dormant** — `state: dormant` (legacy: `next_wake_at: none`) → concluded/retired, skipped.
+  A role that is genuinely done parks itself as dormant, not as waiting.
 
 **Grace window** per role = `max(GRACE_FLOOR, 2 × cadence_seconds)` (default floor
 45 min). Real API stalls persist for many minutes; the floor keeps a role that is
@@ -58,8 +69,14 @@ heartbeat_at: 2026-06-16T04:34:10Z      # process-alive (authoritative)
 wake_count: 113
 cadence_seconds: 1800                    # or cadence_min:
 context: one-line narrative of current intent
-next_wake_at: 2026-06-16T05:04:10Z       # loop-alive; or `none` to go dormant
+next_wake_at: 2026-06-16T05:04:10Z       # loop-alive; `event` (standby) or `none` (dormant)
+doorbell: mailbox:a                      # standby only: the event source that reawakens the seat
 ```
+
+The Stop hook preserves `state`, `next_wake_at`, `cadence_seconds`, `doorbell`, `wake_count` and
+`context` across turn-ends; only `heartbeat_at` is re-stamped. `scripts/test_pacemaker_standby.py`
+proves a standby record is never classified loop-dead or process-dead solely for having no next
+scheduled wake, and that the doorbell survives a turn-end.
 
 `heartbeat_at` and `next_wake_at` are ISO-8601 UTC. `next_wake_at` may be omitted
 (some roles run a heartbeat-only format) — the pacemaker then uses the heartbeat as
