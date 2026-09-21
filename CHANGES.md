@@ -12,7 +12,28 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
+| — | — | — | — | — | nothing unreleased |
+
+## jv-v0.2.3 — 2026-09-21
+
+Base: `main` at f71d80b after PR #59 (one row; RED 4bf42e5 → GREEN 0325ef0 → correction 29d2bc6, merged at the
+independently confirmed exact head; carries the `bookend:` and `route:` lines). Field origin: JA owner direction
+2026-09-17 — rare idle teams pause event-driven instead of being model-polled; JA's `scripts/cadence.sh` already wrote
+the `standby` record shape and W/O/I/K/U were live on it as the reversible canary. Review trail: Astra/xhigh exact-head
+FAIL at 0325ef0 (writer test could skip a broken writer; doc overstated conformity with SEAT_PROTOCOL §2) → both corrected →
+focused exact-head confirmation PASS at 29d2bc6.
+
+| id | kind | tier | files | requires | notes |
+|-|-|-|-|-|-|
 | pacemaker-standby-event-driven | fix | template | `template/scripts/pacemaker.sh`, `template/.claude/hooks/stop/actions/heartbeat-writer.sh.jinja`, `template/scripts/test_pacemaker_standby.py`, `template/docs/PACEMAKER.md`, `scripts/ci/generate-matrix-check.sh` | jv-v0.2.2 | The pacemaker branches on the record's `state:` (SEAT_PROTOCOL §2): `standby` (event-driven, `next_wake_at: event`, declared `doorbell:`) and `dormant` are never classified loop-dead or process-dead, so an intentionally idle seat gets no routine resume/escalation turns; the Stop-hook writer preserves `doorbell:` across turn-ends; one fixture test. Field origin: JA owner direction 2026-09-17 (W/O/I/K/U standby canary live). Rollback: revert the adoption commit; a standby record then reverts to being resumed after grace. |
+
+Known limits disclosed with this release: unchanged from jv-v0.2.2 (inert `scope-classify` tooling sub-case with the
+`git grep -I` limit; entry contract at version 2; check `06-harness-sensitivity` specified, not built; runtime receipt
+requires CI's exact CLI versions; `route:` lines are a sampled instrument; `evidence-seal` reports HEAD via `git rev-parse`
+only). New in this release: the pacemaker takes NO action on `standby` seats — the standby stall predicate (SEAT_PROTOCOL
+§2: doorbell backlog OR heartbeat floor with the §4 canary) needs the seat's doorbell and remains a project-owned watchdog
+concern; a standby record with no `doorbell:` is only flagged in the log. The heartbeat writer preserves `doorbell:` but
+still does not carry `conclusion:`/`brief:` (dormant ceremony evidence) across turn-ends — observed, not changed here.
 
 ## jv-v0.2.2 — 2026-09-16
 
