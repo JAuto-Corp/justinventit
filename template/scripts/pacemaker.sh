@@ -48,10 +48,10 @@
 #    Dormant = `state: dormant` (or legacy `next_wake_at: none`) → concluded/retired,
 #    skipped. A role that is genuinely done parks itself as dormant.
 #    Standby = `state: standby` (or legacy `next_wake_at: event`) → EVENT-DRIVEN: no
-#    scheduled wake exists, so neither "loop overdue" nor heartbeat age is evidence
-#    of anything; a doorbell (mailbox/dispatch) reawakens the seat. Skipped here —
-#    its liveness is doorbell backlog, a project-owned detector. See
-#    docs/SEAT_PROTOCOL.md §2 for the three lifecycle states.)
+#    scheduled wake exists; a doorbell (mailbox/dispatch) reawakens the seat. This
+#    pacemaker takes no action on it — the standby stall predicate (SEAT_PROTOCOL §2:
+#    doorbell backlog OR heartbeat floor with the §4 canary) needs the doorbell and
+#    belongs to the project's doorbell-aware watchdog.)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # SAFETY (per the JAuto ghost-cron / split-brain lesson)
@@ -245,12 +245,14 @@ for ROLE in $ROLES; do
       continue ;;
     standby)
       # EVENT-DRIVEN seat: there is no next scheduled wake, so "loop overdue" is not a
-      # question that applies, and heartbeat age is not evidence either — an idle
-      # standby seat takes no turns, so its heartbeat ages BY DESIGN. Resuming or
-      # escalating here would manufacture exactly the routine model turns the standby
-      # state exists to eliminate. Its liveness is doorbell backlog (mail it should
-      # have woken FOR and did not), a project-owned detector; this generic pacemaker
-      # only records the declared doorbell and flags a record that declares none.
+      # question that applies, and an idle standby seat takes no turns, so its heartbeat
+      # ages BY DESIGN. Resuming or escalating on that age alone would manufacture the
+      # routine model turns the standby state exists to eliminate. The standby stall
+      # predicate is SEAT_PROTOCOL §2's OR-pair (doorbell backlog past mail_grace, or
+      # heartbeat age past 2×floor paired with the §4 canary wake); both halves need
+      # the seat's doorbell, so they belong to the project's doorbell-aware watchdog.
+      # This generic pacemaker takes no action: it records the declared doorbell and
+      # flags a record that declares none.
       if [ -n "$DOORBELL" ]; then
         log "role=$ROLE standby (event-driven; doorbell=$DOORBELL) — no scheduled wake to supervise; skip"
       else

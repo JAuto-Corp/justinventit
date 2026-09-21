@@ -108,7 +108,12 @@ class HeartbeatWriterDoorbellTests(unittest.TestCase):
 
     def _writer(self):
         if WRITER_RENDERED.is_file():
-            return WRITER_RENDERED.read_text(encoding="utf-8")
+            body = WRITER_RENDERED.read_text(encoding="utf-8")
+            if "INERT in this project" in body:
+                # Solo-tier renders ship the writer as a declared no-op; identified by its
+                # own text, never by a silent outcome.
+                raise unittest.SkipTest("heartbeat writer is the declared inert render")
+            return body
         if WRITER_TEMPLATE.is_file():
             text = WRITER_TEMPLATE.read_text(encoding="utf-8")
             # Template layout: take the cluster branch between the jinja `if` and `else` lines.
@@ -121,8 +126,8 @@ class HeartbeatWriterDoorbellTests(unittest.TestCase):
             return "".join(lines[:start] + lines[start + 1:end])
         raise unittest.SkipTest("heartbeat writer not present in this project")
 
-    def test_doorbell_survives_turn_end(self):
-        body = self._writer()
+    def _assert_writer_preserves_standby(self, body):
+        """Run a writer body once against a seeded standby record and assert the live-writer contract."""
         with tempfile.TemporaryDirectory() as tmp:
             script = Path(tmp) / "heartbeat-writer.sh"
             script.write_text(body, encoding="utf-8")
@@ -135,16 +140,28 @@ class HeartbeatWriterDoorbellTests(unittest.TestCase):
             before = (cad / "w.txt").read_text(encoding="utf-8")
             env = dict(os.environ)
             env.update(PACEMAKER_CADENCE_DIR=str(cad), JUSTINVENTIT_ROLE="w")
-            subprocess.run(["bash", str(script)], env=env, capture_output=True, text=True, timeout=30, cwd=tmp)
+            proc = subprocess.run(["bash", str(script)], env=env, capture_output=True, text=True, timeout=30, cwd=tmp)
+            self.assertEqual(proc.returncode, 0, "a Stop action must exit 0: " + proc.stdout + proc.stderr)
             after = (cad / "w.txt").read_text(encoding="utf-8")
-            if after == before:
-                # Solo-tier renders ship the writer as an inert no-op; nothing to prove here.
-                raise unittest.SkipTest("writer is inert in this project (cadence file untouched)")
+            self.assertNotEqual(after, before, "live writer must rewrite the cadence file at turn-end")
             fields = dict(l.split(": ", 1) for l in after.splitlines() if ": " in l)
             self.assertEqual(fields.get("state"), "standby", after)
             self.assertEqual(fields.get("next_wake_at"), "event", after)
             self.assertEqual(fields.get("doorbell"), "mailbox:w", after)
             self.assertNotEqual(fields.get("heartbeat_at"), stale, "heartbeat must be re-stamped")
+
+    def test_doorbell_survives_turn_end(self):
+        self._assert_writer_preserves_standby(self._writer())
+
+    def test_broken_writer_is_a_failure_not_a_skip(self):
+        # Causal fixtures for the check itself: a writer that exits non-zero, and one that exits 0
+        # but never rewrites the record, must both FAIL this contract rather than pass silently.
+        for name, body in (
+            ("nonzero-exit", "#!/bin/bash\nexit 42\n"),
+            ("silent-no-write", "#!/bin/bash\nexit 0\n"),
+        ):
+            with self.subTest(writer=name), self.assertRaises(AssertionError):
+                self._assert_writer_preserves_standby(body)
 
 
 if __name__ == "__main__":

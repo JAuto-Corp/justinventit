@@ -41,12 +41,15 @@ defines the lifecycle; only `active` seats have a scheduled wake to supervise):
 
 - **Healthy** — heartbeat fresh **and** `next_wake_at` fresh/upcoming → no action.
 - **Standby** — `state: standby` (`next_wake_at: event`, `cadence_seconds: 0`, a declared
-  `doorbell:` such as `mailbox:<role>`) → event-driven, skipped. No scheduled wake exists, so
-  neither loop overdue nor heartbeat age is evidence: an idle standby seat takes no turns by
-  design, and resuming or escalating it would manufacture the routine model turns the state
-  exists to eliminate. Its liveness is **doorbell backlog** (mail it should have woken for), a
-  project-owned detector; the pacemaker logs the doorbell and flags a standby record that
-  declares none. A rare intentional pause; active autonomous work stays cadenced.
+  `doorbell:` such as `mailbox:<role>`) → event-driven; **this pacemaker takes no action**. No
+  scheduled wake exists, so "loop overdue" does not apply, and an idle standby seat takes no
+  turns by design, so resuming it on heartbeat age alone would manufacture the routine model
+  turns the state exists to eliminate. The standby stall predicate is `docs/SEAT_PROTOCOL.md`
+  §2's OR-pair (doorbell backlog past `mail_grace`, or heartbeat age past `2 × floor_seconds`
+  paired with the §4 canary wake); both halves need the seat's doorbell, so they belong to the
+  project's doorbell-aware watchdog, not to this generic supervisor. The pacemaker logs the
+  declared doorbell and flags a standby record that declares none. A rare intentional pause;
+  active autonomous work stays cadenced.
 - **Dormant** — `state: dormant` (legacy: `next_wake_at: none`) → concluded/retired, skipped.
   A role that is genuinely done parks itself as dormant, not as waiting.
 
