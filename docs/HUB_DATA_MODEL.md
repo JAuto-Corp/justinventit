@@ -139,6 +139,19 @@ recovery, tenancy isolation, partial-write recovery).
 
 ## 6. Versioning and migration
 
+- **Invariant: a projection writer's full pass never deletes a row it cannot prove it
+  created, and every ingest source is idempotent.** JAuto's first ingester broke both
+  rules. Its full-replace deleted every author-attributed journal row and every open
+  attention row, so hub rulings older than the replay window and raw-SQL rows were lost.
+  LEDGER rows survived the delete and were re-inserted on every run (up to 159 copies).
+  The fix is insert-if-absent by natural key; JAuto PR #3578.
+- **Moving a hub out of a product database (log-first deployments).** When every table
+  write either comes from the append log or can be fenced during a short freeze, do a
+  quiesced, key-preserving, consistent copy with a verifiable manifest:
+  freeze → export → import → verify → flip → unfreeze. Roll back with the same copy
+  reversed. Use dual-write (below) only when a deployment cannot quiesce. Tooling and
+  steps: `hub/README.md`.
+
 - `schema_version` per project, written at adopt/upgrade; framework ships ordered
   migrations per backend; verbs refuse to run against a newer schema than they know
   (fail loudly, upgrade instruction in the error).
