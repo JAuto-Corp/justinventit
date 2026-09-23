@@ -25,9 +25,10 @@
 #   hub-snapshot.sh verify     <db> <dir>             manifest == <dir>/MANIFEST.tsv and
 #                                                     zero FK orphans
 #
-# <db> is @<env-file> (reads HUB_DB_URL from it; preferred) or a libpq URL. A
-# password in the URL is moved into PGPASSWORD for psql, never psql's argv; use
-# the @file form so it stays out of this script's argv too.
+# <db> is @<env-file> (preferred): HUB_DB_URL (a libpq URL WITHOUT a password)
+# plus HUB_DB_PASSWORD, exported to psql as PGPASSWORD — no URL parsing, and
+# the password never reaches any argv. A literal URL is passed to psql as-is
+# (keep passwords out of it: use PGPASSWORD or ~/.pgpass).
 # Manifest line: <table>\t<count>\t<md5 of to_jsonb rows, newline-joined, in
 # primary-key order (text keys COLLATE "C")>. Every session pins TimeZone=UTC.
 # The API token (SUPABASE_ACCESS_TOKEN, default ~/.supabase/access-token) goes
@@ -93,28 +94,18 @@ refuse_check() { # $1 = resolved URL or ref
 
 # ---- psql side -------------------------------------------------------------
 PGURL=""
-resolve_db() { # $1 = @file | URL  ->  PGURL (no password) + exported PGPASSWORD
-  local spec="$1" url split pw
+resolve_db() { # $1 = @file | URL  ->  PGURL (+ PGPASSWORD from the file)
+  local spec="$1" f pw
   if [[ "$spec" == @* ]]; then
-    url="$( { grep -m1 '^HUB_DB_URL=' "${spec#@}" || true; } | cut -d= -f2-)"
-    [[ -n "$url" ]] || die "no HUB_DB_URL in ${spec#@}"
+    f="${spec#@}"
+    PGURL="$( { grep -m1 '^HUB_DB_URL=' "$f" || true; } | cut -d= -f2-)"
+    [[ -n "$PGURL" ]] || die "no HUB_DB_URL in $f"
+    pw="$( { grep -m1 '^HUB_DB_PASSWORD=' "$f" || true; } | cut -d= -f2-)"
+    if [[ -n "$pw" ]]; then export PGPASSWORD="$pw"; fi
   else
-    url="$spec"
+    PGURL="$spec"
   fi
-  refuse_check "$url"
-  split="$(python3 - <<'PY' "$url"
-import sys, urllib.parse as u
-p = u.urlsplit(sys.argv[1])
-host = p.hostname or ""
-netloc = (u.quote(u.unquote(p.username), safe="") + "@" if p.username else "") \
-    + host + (f":{p.port}" if p.port else "")
-print(u.unquote(p.password or ""))
-print(u.urlunsplit((p.scheme, netloc, p.path, p.query, p.fragment)))
-PY
-)"
-  pw="$(sed -n 1p <<<"$split")"
-  PGURL="$(sed -n 2p <<<"$split")"
-  if [[ -n "$pw" ]]; then export PGPASSWORD="$pw"; fi
+  refuse_check "$PGURL"
 }
 pg() { psql "$PGURL" -X -q -v ON_ERROR_STOP=1 "$@"; }
 
@@ -124,7 +115,7 @@ api_query() { # $1 = project ref, stdin = SQL; prints the JSON result array
   tok="${SUPABASE_ACCESS_TOKEN:-$(cat "$HOME/.supabase/access-token")}"
   body="$(mktemp)"
   python3 -c 'import json,sys; print(json.dumps({"query": sys.argv[1] + sys.stdin.read()}))' \
-    "$SESSION_SETUP " > "$body"
+    "$SESSION_SETUP " > "$body" || { rm -f "$body"; return 1; }
   printf 'header = "Authorization: Bearer %s"\n' "$tok" \
     | curl -sS --fail-with-body --max-time 120 -X POST -K - \
         -H "Content-Type: application/json" --data @"$body" \
@@ -146,22 +137,29 @@ check_manifest_shape() { # $1 = file
     grep -qP "^$t\t[0-9]+\t[0-9a-f]{32}$" "$1" || die "$1 has no valid line for $t"
   done
 }
-jsonl_md5() { # $1 = jsonl file -> md5 of its lines newline-joined (= the manifest hash)
-  python3 - "$1" <<'PY'
-import hashlib, sys
-lines = open(sys.argv[1], encoding="utf-8").read().split("\n")
-if lines and lines[-1] == "":
-    lines.pop()
-print(hashlib.md5("\n".join(lines).encode("utf-8")).hexdigest())
-PY
-}
-check_payload() { # $1 = dir: every <t>.jsonl hashes to its manifest line
-  local t want got
+check_payload() { # $1 = dir: every <t>.jsonl parses, has the manifest's row count, and hashes to it
+  local t want n pk
   for t in "${TABLES[@]}"; do
     [[ -f "$1/$t.jsonl" ]] || die "$1/$t.jsonl missing"
     want="$(awk -F'\t' -v t="$t" '$1==t{print $3}' "$1/MANIFEST.tsv")"
-    got="$(jsonl_md5 "$1/$t.jsonl")"
-    [[ "$want" == "$got" ]] || die "$t payload md5 $got != manifest $want"
+    n="$(awk -F'\t' -v t="$t" '$1==t{print $2}' "$1/MANIFEST.tsv")"
+    pk=id; [[ "$t" == orchestration_roles ]] && pk=letter
+    python3 - "$1/$t.jsonl" "$want" "$n" "$pk" <<'PY' || die "$t payload invalid"
+import hashlib, json, sys
+path, want, n, pk = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+lines = open(path, encoding="utf-8").read().split("\n")
+if lines and lines[-1] == "":
+    lines.pop()
+for i, l in enumerate(lines, 1):
+    row = json.loads(l)                      # raises on malformed JSON
+    if not isinstance(row, dict) or pk not in row:
+        sys.exit(f"line {i}: not a row object with '{pk}'")
+if len(lines) != n:
+    sys.exit(f"{len(lines)} rows != manifest {n}")
+got = hashlib.md5("\n".join(lines).encode("utf-8")).hexdigest()
+if got != want:
+    sys.exit(f"md5 {got} != manifest {want}")
+PY
   done
 }
 
@@ -212,11 +210,12 @@ batch, size = [], 0
 for line in open(path, encoding="utf-8").read().split("\n"):
     if not line:
         continue
-    if batch and size + len(line) > LIMIT:
+    n = len(line.encode("utf-8")) + 1        # serialized BYTES (+ the comma)
+    if batch and size + n > LIMIT:
         emit(batch)
         batch, size = [], 0
     batch.append(line)
-    size += len(line)
+    size += n
 if batch:
     emit(batch)
 PY
@@ -247,17 +246,22 @@ PY
     dir="${3:?import needs <dir>}"; replace="${4:-}"; resolve_db "$target"
     [[ -f "$dir/MANIFEST.tsv" ]] || die "$dir/MANIFEST.tsv missing"
     check_manifest_shape "$dir/MANIFEST.tsv"
-    if [[ -f "$dir/${TABLES[0]}.jsonl" ]]; then check_payload "$dir"; fi
+    # One format for the whole snapshot: all 8 .jsonl (payload-verified) or all 8 .csv.
+    fmt=""
+    for t in "${TABLES[@]}"; do
+      if [[ -f "$dir/$t.jsonl" ]]; then f=jsonl; elif [[ -f "$dir/$t.csv" ]]; then f=csv; else die "$dir has no $t.jsonl or $t.csv"; fi
+      [[ -z "$fmt" || "$fmt" == "$f" ]] || die "$dir mixes .jsonl and .csv"
+      fmt="$f"
+    done
+    [[ "$fmt" == jsonl ]] && check_payload "$dir"
     tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
     for t in "${TABLES[@]}"; do
-      if [[ -f "$dir/$t.jsonl" ]]; then
+      if [[ "$fmt" == jsonl ]]; then
         python3 - "$dir/$t.jsonl" > "$tmp/$t.json" <<'PY'
 import sys
 lines = open(sys.argv[1], encoding="utf-8").read().split("\n")
 print("[" + ",".join(l for l in lines if l) + "]")
 PY
-      else
-        [[ -f "$dir/$t.csv" ]] || die "$dir/$t.csv missing"
       fi
     done
     {

@@ -39,7 +39,7 @@ through `hub-sql`.
 
 The manifest has one line per table: the row count and the md5 of the newline-joined `to_jsonb(row)::text`, in primary-key order. Text keys sort with `COLLATE "C"`, and every session pins `TimeZone=UTC`.
 
-Pass a database as `@<env-file>`, which reads `HUB_DB_URL` from that file. The password then never reaches any argv. The API token goes to curl on stdin.
+Pass a database as `@<env-file>`. It reads `HUB_DB_URL` (with no password in it) and `HUB_DB_PASSWORD`, which reaches psql as `PGPASSWORD`. No URL is parsed, and the password never reaches any argv. The API token goes to curl on stdin.
 
 ## Provisioning (adopter)
 
@@ -51,7 +51,8 @@ Pass a database as `@<env-file>`, which reads `HUB_DB_URL` from that file. The p
    NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=<the hub project's service key>
    HUB_PROJECT_REF=<ref>
-   HUB_DB_URL=postgresql://postgres.<ref>:<password>@<pooler-host>:5432/postgres
+   HUB_DB_URL=postgresql://postgres.<ref>@<pooler-host>:5432/postgres
+   HUB_DB_PASSWORD=<database password>
    ```
 
    The first two names match what the JAuto verb clients (`msg.sh`, the ingester) read today. A later release renames them to `HUB_URL` and `HUB_SERVICE_KEY`.
