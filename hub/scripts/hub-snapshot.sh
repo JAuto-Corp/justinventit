@@ -18,7 +18,7 @@
 #   hub-snapshot.sh import-api <project-ref> <dir> [--replace]
 #                                                     Management API; every input is
 #                                                     validated BEFORE any mutation; pages
-#                                                     of ~900 KB (one transaction per page:
+#                                                     of <=800 KB escaped (one txn per page:
 #                                                     the target must be fenced; on failure
 #                                                     rerun with --replace)
 #   hub-snapshot.sh manifest   <db>                   print the manifest
@@ -190,15 +190,23 @@ case "$cmd" in
     [[ -f "$dir/MANIFEST.tsv" ]] || die "$dir/MANIFEST.tsv missing"
     check_manifest_shape "$dir/MANIFEST.tsv"
     check_payload "$dir"
+    for t in "${TABLES[@]}"; do  # every row must fit one request, checked BEFORE any mutation
+      python3 - "$dir/$t.jsonl" <<'PY' || die "$t has a row too large for one API request; use psql import"
+import json, sys
+for i, l in enumerate(open(sys.argv[1], encoding="utf-8").read().split("\n"), 1):
+    if l and len(json.dumps(l)) > 800_000:
+        sys.exit(f"line {i}: {len(json.dumps(l))} escaped bytes")
+PY
+    done
     if [[ "$replace" == "--replace" ]]; then
       echo "TRUNCATE $(IFS=,; echo "${TABLES[*]/#/public.}");" | api_query "$target" >/dev/null \
         || die "TRUNCATE failed on $target"
     fi
     for t in "${TABLES[@]}"; do
       python3 - "$dir/$t.jsonl" "$t" <<'PY' | while IFS= read -r -d '' stmt; do
-import secrets, sys
+import json, secrets, sys
 path, table = sys.argv[1], sys.argv[2]
-LIMIT = 900_000  # bytes per request; the Management API answers 413 near 1 MB+
+LIMIT = 800_000  # escaped bytes per request (+ SQL/session overhead); the API answers 413 near 1 MB
 def emit(batch):
     chunk = "[" + ",".join(batch) + "]"      # the database's own row text, untouched
     tag = "j" + secrets.token_hex(8)
@@ -210,7 +218,7 @@ batch, size = [], 0
 for line in open(path, encoding="utf-8").read().split("\n"):
     if not line:
         continue
-    n = len(line.encode("utf-8")) + 1        # serialized BYTES (+ the comma)
+    n = len(json.dumps(line)) - 1            # bytes AFTER api_query's JSON escaping (+ comma)
     if batch and size + n > LIMIT:
         emit(batch)
         batch, size = [], 0
