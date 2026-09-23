@@ -59,7 +59,7 @@ Editing a generated file is a defect the freshness gate catches.
 schema_version: 1
 tiers:                      # named launchable tiers; every tier resolves on every runtime
   thinking:  { effort: xhigh }
-  authoring: { effort: xhigh, note: "preferred runtime claude/fable-class; resolves to the available runtime's thinking model otherwise" }
+  authoring: { effort: xhigh, note: "preferred runtime claude/opus-5-5 (2026-09-22); resolves to the available runtime's thinking model otherwise" }
   doing:     { effort: medium }   # raised from low 2026-07-27: low doers over-reasoned without the capability to back it; the EXECUTE register (below) is the boundary, not starved effort
   maint:     { effort: medium }
 seat_classes:               # role → tier (+ rationale, fallback CHAIN — never runtime-dead-ends)
@@ -77,7 +77,7 @@ seat_classes:               # role → tier (+ rationale, fallback CHAIN — nev
   # Provider bookend: see ARCHITECTURE §2 (normative; two-runtime prerequisite and independence rules live there).
   frontend:         { tier: doing, escalate_to: thinking, note: "escalation raises the TIER (judgment-heavy UI work); tiers order thinking > authoring-adjacent > doing > maint on capability — a tier change is never a model downgrade dressed as a raise" }
 models:                     # per-runtime model ids per TIER — complete on every runtime
-  claude: { thinking: fable-5, authoring: fable-5, doing: opus-5, maint: sonnet-5 }   # 2026-07-27 correction: FABLE THINKS, OPUS DOES — opus-as-thinker caused over-engineering-through-misunderstanding; thinking seats consult Sol xhigh frequently (funnel, red-team, escalated judgment)
+  claude: { thinking: opus-5-5, authoring: opus-5-5, doing: opus-5-5, maint: sonnet-5 }   # 2026-07-27 correction: FABLE THINKS, OPUS DOES — opus-as-thinker caused over-engineering-through-misunderstanding; thinking seats consult Sol xhigh frequently (funnel, red-team, escalated judgment)
   codex:  { thinking: gpt-5.6-sol, authoring: gpt-5.6-sol, doing: gpt-5.6-sol, maint: gpt-5.6-terra }
 ```
 
@@ -88,12 +88,12 @@ adjacent RATIONALE section with retrieval dates — model facts rot fast.)
 
 | Seat class | Runtime/model/effort | Grounding |
 |-|-|-|
-| orchestrate (O/director), integrate (I) | claude fable-5 @ xhigh + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain. **ROUTING VALUES, not eligibility restrictions** (§3b): any thinking-tier runtime may hold these seats, and a Sol thinking seat issuing dispatches is in-contract |
-| design/guidance authoring, docs baseline | claude fable-5 @ xhigh | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule — same §3b reading as the row above: ROUTING VALUE, not an eligibility restriction; Sol authoring at tier is in-contract, fable-class is the preferred default |
-| implement, explore, capture | claude opus-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
-| diagnostic | fable-5 @ xhigh (thinking tier, per the 07-27 correction) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
+| orchestrate (O/director), integrate (I) | claude opus-5-5 @ xhigh (2026-09-22; was fable) + frequent Sol xhigh consulting | 07-27 user correction (opus-as-O over-engineered); Sol is the standing second brain. **ROUTING VALUES, not eligibility restrictions** (§3b): any thinking-tier runtime may hold these seats, and a Sol thinking seat issuing dispatches is in-contract |
+| design/guidance authoring, docs baseline | claude opus-5-5 @ xhigh (2026-09-22; was fable) | SWE-bench-Pro lead; no overthink caveat; 2× cost worth it for irreversible decisions; "Fable authors guidance" rule — same §3b reading as the row above: ROUTING VALUE, not an eligibility restriction; Sol authoring at tier is in-contract, fable-class is the preferred default |
+| implement, explore, capture | claude opus-5-5 @ medium, EXECUTE register | 07-27: medium for clean execution; the register (implement per instructions; judgment → short packet to director, resolved with Sol xhigh; outcome-not-essay reports ≤~30 lines) holds the thinking boundary |
+| diagnostic | opus-5-5 @ xhigh (thinking tier, per the 07-27 correction; 2026-09-22 substrate switch) | audits/diagnosis are thinking work; the official escalate-on-shallow-reasoning guidance argues for starting high enough, and effort ladders within a session break prompt caching — so the tier IS the escalation, applied at dispatch time |
 | docs maintenance | sonnet-5 @ medium (AFTER hierarchy ships) | two-tier synthesis ruling |
-| cross-review | fable-5 @ xhigh + codex sol @ xhigh second opinion (thinking tier) | standing cross-runtime lane |
+| cross-review | opus-5-5 @ xhigh + codex sol @ xhigh second opinion (thinking tier); fable-5-1 @ xhigh retained on ONE seat (JA letter H) for cross-review and the Opus-5.5-vs-Fable comparison | standing cross-runtime lane |
 | codex seats | gpt-5.6-sol @ xhigh (thinking/judgment/dispatch) / **medium** (doing) | **TRUST PARITY, user ruling 2026-07-28 (§3b)**: Sol is a thinking-tier PEER of the Claude thinking model, not a restricted pilot guest. Doing tier corrected 2026-07-29 to track the 07-27 low→medium raise the Claude rows already carry (profiles jauto-thinking/jauto-doing built to this; Sol default LOW is the provider default, never our doing tier); ultra excluded (auto-delegation) |
 
 Rules that ride along: hold effort constant within a session (prompt cache); raise effort on
@@ -384,6 +384,17 @@ shipping PR must: record the supersede in the policy memory + user CLAUDE.md poi
 the launcher to every tier in `tiers:` (it currently hardcodes two), correct the stale
 harness default model, and regenerate all generated consumers. Until that PR lands, 07-24
 policy stands.
+
+**2026-09-22 value refresh (owner directive, no tier change):** Claude Opus 5.5 released
+(`claude-opus-5-5`; API default effort `medium`; $4/$20 per MTok). Every `opus-5` value above
+now reads `opus-5-5`. **Same day, second directive: Opus 5.5 is the Anthropic substrate for
+EVERY Claude tier** (thinking, authoring, diagnostic, cross-review, doing) on the owner's read
+that it outperforms Fable; Fable 5.1 is retained on exactly one seat per consuming project
+(JA: letter H) plus the Fable one-shot arm, for cross-review and for a blind-paired
+Opus-5.5-vs-Fable comparison whose evidence decides whether the switch stands. Consumers that use the Claude Code `opus` / `opus[1m]` aliases (launcher
+doing arm, pinned agent defs, team spawn templates) inherit it automatically — the alias
+resolves to `claude-opus-5-5` from Claude Code 2.1.280 — so no launcher or template change
+is required. Roles, efforts, and registers are unchanged.
 
 ## 5. Routed review findings dispositioned here
 
