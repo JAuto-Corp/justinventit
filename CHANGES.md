@@ -12,7 +12,7 @@ Bump rule: any change to the generated entry contract's stages, gates or routing
 
 | id | kind | tier | files | requires | notes |
 |-|-|-|-|-|-|
-| — | — | — | — | — | nothing unreleased |
+| hub-postgrest-baseline | component | L2 | `hub/postgrest/migrations/0001_baseline.sql`, `hub/scripts/{hub-snapshot.sh,hub-backup.sh,hub-schema-fingerprint.sql}`, `hub/README.md`, `docs/WORKSPACE_LIFECYCLE.md`, `docs/HUB_DATA_MODEL.md` | psql ≥ 16; jq; python3; a Supabase project for the hub | The postgrest hub lives in its own project, never in the product database. Ships the baseline schema (parity-proven against the JAuto staging hub apart from 8 declared policy deltas), a consistent key-preserving copy with an md5 manifest (psql and Management API paths, both directions rehearsed), and nightly backups. Adds the projection-writer invariant from JAuto H1. |
 
 ## jv-v0.2.3 — 2026-09-21
 
