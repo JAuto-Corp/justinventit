@@ -1,9 +1,22 @@
-# JV hub: postgrest backend
+# JV hub: postgrest backend (bounded baseline)
 
 The hub is the dev team's coordination state of record (`HUB_DATA_MODEL.md`). With the
 `postgrest` backend it lives in **its own Supabase project, never in the product's
 database**. A product database gets cloned, reset and truncated on the product's
 schedule, and its service-role key reaches customer data. The hub needs neither.
+
+**Scope.** `0001_baseline.sql` is the JAuto-derived *legacy projection schema*, relocated
+as-is. It does **not** yet meet the normative model in `HUB_DATA_MODEL.md`. Still
+outstanding:
+- `project_id` namespacing and tenancy (§4; §6 additive phase)
+- `schema_version` (§6)
+- durable consumer cursors (§1)
+- recipient-scoped reads (§4)
+- the shared conformance suite (§1, §5)
+
+The authoritative record is still the append-only event log (the mailbox `events.jsonl`
+and `from-*-to-*.jsonl`). These tables are its projection, plus the verb-gap rows written
+through `hub-sql`.
 
 ## Contents
 
@@ -19,12 +32,14 @@ schedule, and its service-role key reaches customer data. The hub needs neither.
 | Command | What it does |
 |-|-|
 | `export` | Uses psql to read one `REPEATABLE READ` snapshot into CSVs plus a manifest. |
-| `export-api` | Reads through the Management API when you have no database password. The manifest is taken before and after the export and must match, which proves no writer touched the tables. |
+| `export-api` | Reads through the Management API when you have no database password. Every row is the database's own `to_jsonb(row)::text` in manifest order, so the local md5 of each file must equal its manifest hash. That proves the payload is exactly one consistent state. A mismatch means a writer moved rows mid-export: fence the writers and retry. |
 | `import` | Loads everything in one transaction, in FK order, with constraints enforced. |
-| `import-api` | Loads through the Management API in pages of about 900 KB each. It commits one page at a time, so the target must be quiesced. |
+| `import-api` | Loads through the Management API in pages of about 900 KB each. Every input is validated before the first mutation. It commits one page at a time, so the target's writers must be fenced; on failure, rerun it with `--replace`. |
 | `verify` | Checks that the manifest matches and that no FK row is orphaned. |
 
-The manifest has one line per table: the row count and the md5 of `to_jsonb(row)` in primary-key order.
+The manifest has one line per table: the row count and the md5 of the newline-joined `to_jsonb(row)::text`, in primary-key order. Text keys sort with `COLLATE "C"`, and every session pins `TimeZone=UTC`.
+
+Pass a database as `@<env-file>`, which reads `HUB_DB_URL` from that file. The password then never reaches any argv. The API token goes to curl on stdin.
 
 ## Provisioning (adopter)
 
@@ -46,8 +61,8 @@ The manifest has one line per table: the row count and the md5 of `to_jsonb(row)
 
 Run the steps in this order:
 
-1. **Quiesce.** Stop the projection writer. Transport is log-first, so appends keep flowing into the mailbox logs.
-2. **Consistent export.** Use `export`, or use `export-api` when you have no product database password.
+1. **Fence the writers.** Stop the projection writer, and hold every other table writer (CI fixtures, raw SQL). Transport is log-first, so appends keep flowing into the event log.
+2. **Consistent export.** Use `export` (one REPEATABLE READ snapshot), or `export-api` when you have no product database password. `export-api` proves consistency with the payload md5.
 3. **Import** into the hub project.
 4. **Verify.**
 5. **Flip.** Point every consumer at `hub.env` in one move.
