@@ -112,9 +112,12 @@ cross-family (cross-runtime) second opinion. Everything else still applies: the 
 number of fresh-context audits, their independence (distinct seeds and lenses), the stage-0
 charter and terminal ratifier confirmation (`DEV_LOOP.md` §1a), and every acceptance obligation.
 Round 1 uses at least two independently seeded same-family passes. The substituted cross-family
-opinion is still **owed**: the slice joins a cross-family retro once the other family returns, and
-that retro must clear before any gated irreversible step it protects (for example a security
-contract/revoke deploy). The deviation and the owed retro are logged.
+opinion is still **owed**. This is exactly the `ARCHITECTURE.md` §2 **Provider bookend** path:
+proceed at the authorized equivalent tier, record `bookend: <runtime> missing` in the acceptance
+record (provenance, never a waiver), and make sure the owed opinion exists before acceptance
+wherever the profile requires it. Stricter gates win. The slice joins a cross-family retro once the
+other family returns. An owner-authorized temporary suspension (e.g. a usage stretch) is a
+**logged deviation**, not a change to this contract.
 
 ## 7. Execution hygiene (lessons that cost cycles)
 
