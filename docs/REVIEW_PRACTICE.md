@@ -8,8 +8,9 @@
 ## Why
 
 The value of review is finding **real consequences in the context of the whole system**. In
-one measured week of same-family review (JA, 2026-09-24..26), about 39% of 160+ review
-runs returned BLOCK, and single slices took up to 19 runs. The rounds produced two kinds
+one measured week of same-family review (JA, 2026-09-24..26; o's tally of the verdict files in
+`~/.jauto-orchestration/sol-runs/`, JA PRs #3674, #3677/#3683, #3662 and #3682 among others), about
+39% of 160+ review runs returned BLOCK, and single slices took up to 19 runs (#3674). The rounds produced two kinds
 of finding:
 
 - **Signal.** A consequence someone would feel: live under-billing (attached add-ons
@@ -59,7 +60,8 @@ Every finding carries these fields, in addition to the canonical verdict schema:
 
 ## 3. Blocking eligibility
 
-- Only `reach ∈ {PROD, CI_SAFETY}` may produce a blocking verdict (`revise` / `BLOCK`).
+- Only `reach ∈ {PROD, CI_SAFETY}` may produce a blocking verdict (`revise` / `BLOCK`). An eligible
+  reach is necessary but not sufficient: blocker severity must be justified by the stated consequence.
 - `LOCAL_ONLY` and `HYPOTHETICAL` findings are **notes**. The author may take cheap ones;
   deeper ones are recorded as residuals, never chased.
 - `PRE_EXISTING` findings are **never auto-deferred and never auto-blocking**. The director
@@ -77,10 +79,13 @@ Every finding carries these fields, in addition to the canonical verdict schema:
    finder). This is where provider diversity pays: a different blind spot, not just a
    repeat.
 2. **Rounds 2+ are delta-scoped.** They cover the changed hunks and the previous round's
-   findings. A **new class** may block only if its reach is `PROD`; otherwise it becomes a
-   note or a follow-up.
+   findings. A **new class** found in a later round (including a defect introduced by a
+   correction) may block when its reach is `PROD` **or `CI_SAFETY`**, the same eligibility as §3.
+   Round number and class novelty never waive a substantive safety finding; anything else new
+   becomes a note or a follow-up.
 3. **Round cap: 3.** After it, structural blockers escalate to the director with a short
-   packet. Nothing loops silently.
+   packet. The cap bounds *repetition*, not *acceptance*: fail-closed gates and the
+   no-unresolved-blockers exit rule still apply. Nothing loops silently.
 4. **Local-only harness hardening is capped at one round.** Beyond that, residuals are
    documented (e.g. "no guarantee of no-operation after abort; target identity, synthetic
    credentials and a post-condition assertion bound the harm").
@@ -102,9 +107,14 @@ When both families are available:
 - **Delta reviews:** same- or cross-family, cheap.
 - **Money/security lens:** cross-family, always.
 
-When only one family is available, round 1 uses two independently seeded passes, and the
-slice is queued for a cross-family retro once the other family returns. That deviation is
-logged.
+When only one family is available, the fallback substitutes for **exactly one requirement**: the
+cross-family (cross-runtime) second opinion. Everything else still applies: the required
+number of fresh-context audits, their independence (distinct seeds and lenses), the stage-0
+charter and terminal ratifier confirmation (`DEV_LOOP.md` §1a), and every acceptance obligation.
+Round 1 uses at least two independently seeded same-family passes. The substituted cross-family
+opinion is still **owed**: the slice joins a cross-family retro once the other family returns, and
+that retro must clear before any gated irreversible step it protects (for example a security
+contract/revoke deploy). The deviation and the owed retro are logged.
 
 ## 7. Execution hygiene (lessons that cost cycles)
 

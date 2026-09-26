@@ -280,8 +280,10 @@ raw tokens), and `exec resume` turns a thread's whole grounding into a cached pr
   (4) **independent VALIDATION pass** — every finding re-examined by a fresh thread charged
   to refute it; unvalidated findings are filtered, not hedged; (5) verdict via schema with
   full-SHA citations. **High-signal doctrine riding every lens prompt**: objective defects
-  and unambiguous quoted-rule violations only; explicit false-positive list (pre-existing,
-  linter-catchable, pedantic, silenced, unverifiable-without-outside-context); *if not
+  and unambiguous quoted-rule violations only; explicit false-positive list (linter-catchable,
+  pedantic, silenced, unverifiable-without-outside-context). *Pre-existing* findings are NOT
+  on it: per `REVIEW_PRACTICE.md` §3 (superseding the earlier blanket exclusion, 2026-09-26) they are
+  flagged `origin: PRE_EXISTING` and routed to the director for FOLD/FILE, never silently discarded; *if not
   certain, do not flag* — this is also the standing treatment for the disposition-overreach
   blemish. **Ruling red-team lane (pilot — WIDENED 2026-07-28)**: on orchestrator/director wakes that issue
   policy-shaping, irreversible, or batch rulings, the drafted rulings go through one Sol
