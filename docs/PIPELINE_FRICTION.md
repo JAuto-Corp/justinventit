@@ -71,6 +71,25 @@ Tracked on the provider-pattern scoreboard (host) and in the JA gate ledger once
 Baseline (2026-09-29): the #3755 repair took 4 hosted CI rounds, 2 of them process-caused. 130 artifact regen commits
 since 09-01.
 
+
+## Observed 2026-09-30 (input for W7 and a new W8; owner: "iron out our CI flow once we have a conclusively solved method")
+
+| # | Friction | Cost that day | Direction |
+|-|-|-|-|
+| 1 | Isolated branch DB left at the smallest compute for a run or rerun | 522 gateway errors, 60 s timeouts, a contaminated attempt | Tier bump + readback as a hard precondition of every admission and rerun (i adopted); record the tier on the PR |
+| 2 | No foundation re-verify or re-seed after a failed run | Rerun died in strict foundation validation (missing TDS services/technicians) | Pre-rerun foundation check; or a fresh branch per attempt |
+| 3 | Test helpers mask infra errors and share run-scoped IDs (JA #3804) | One 522 cascaded into 14 misleading suite errors | Typed infra errors; per-scenario IDs |
+| 4 | Local full producer is not CI-parity (JA #3800, #3801) | Three looping local runs; early-return "passes" | One contract derived from test.yml (in flight) |
+| 5 | Local db reset reports 502 after success (JA #3795) | False STOPs in mutant windows | Verify-not-reset in substrate.sh |
+| 6 | The 5 s vitest default under parallel load (JA #3788) | Four flaky reds across files | testTimeout 20 s (in W3) |
+| 7 | Codex sandbox writable roots differ per seat | Pre-ci install blocked for d; an overlapping host run | One owner per host run, via the integrator's slot |
+
+**W8 (new): hosted CI run hygiene.**
+- Preflight: tier, health, foundation.
+- After a red: capture, then clean up, re-verify and re-seed before any rerun.
+- "Fresh branch per attempt" is the fallback.
+- Measure paid CI attempts per landed slice, split into product-caused and process-caused.
+
 ## Decisions (director, 2026-09-30; the owner delegated technical choices)
 
 1. **W1 regenerates on staging after merge**, following the existing `database.types.ts` pattern. PR diffs stay clean, and the PR
