@@ -317,7 +317,10 @@ wind-down, any silent seat is silent BY ACCIDENT — silence regains meaning.
   NON-DESTRUCTIVELY: read the stream from their stored cursor offset WITHOUT writing the
   cursor — never via the consuming read verb, whose obvious use silently eats messages the
   seat is holding.
-- Drain on boot and at phase boundaries; drain files are read whole.
+- Drain behavior and milestone reporting are canonical in
+  [DELIVERY.md — Seat communication](../template/docs/DELIVERY.md#seat-communication).
+  This section owns transport/cursor semantics; the delivery manual owns when to drain
+  and how to reconcile intent before acting.
 - **Assume the transport is lossy; verify, don't trust.** Five silent-corruption modes were
   observed in ONE day on a mature mailbox transport (timeout-never-wrote, backticks blanked,
   sender-shell `$()` execution, subject/body collapse, flag-eaten-as-positional). Rules:

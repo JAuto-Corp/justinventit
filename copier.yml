@@ -246,6 +246,7 @@ _skip_if_exists:
   - "context/FRICTION_LOG.md"     # accumulated friction signals
   - "context/DISCOVERIES.md"      # accumulated external-concern log
   - "docs/CURRENT_WORK.md"        # current-work pointer; mutated every session
+  - "docs/FOCUS.md"               # active milestone; project-owned after seeding
 
   # --- Dev-log data dir (L1 coherence anchor — append-only event stream + derived views) ---
   - "context/devlog/**"           # threads / decisions / design-intent / user-actions / findings

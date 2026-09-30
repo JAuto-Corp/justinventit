@@ -68,6 +68,14 @@ that nothing product-facing changed and rule 5 attests what a grep cannot see. T
 declaration checked by rules 1–4 and a reviewer, never a bypass label (§5). Deleting the sub-case returns
 every such change to plain `Quick`/`Standard+` classification.
 
+## 2a. Bounded test design
+
+Use [REVIEW_PRACTICE §4](../template/docs/REVIEW_PRACTICE.md#4-reviewtest-flow) for the
+Intent → I# → test/finding trace, pre-code test-list audit, RED witness review and mutant
+stop rule. That policy owns the minimum cells and correction review rules. This document
+continues to own runner evidence, RED admissibility and harness-integrity requirements;
+reading the policy does not implement the missing ledger or sensitivity gate below.
+
 ## 3. Evidence ledger
 
 Append-only JSONL events written by the RUNNERS (test runner reporter hook, build wrapper),

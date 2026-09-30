@@ -26,7 +26,7 @@ uncertainty; do not add archive reconstruction or a new reading attestation. Pre
 mandatory state updates until the project explicitly consolidates them. A digest
 helps navigation; source, accepted requirements and authorized decisions control.
 
-Use project-qualified identities, for example `JV-O` and `JA-O`. Existing authority
+Use project-qualified identities, for example `PROJECT-O` and `PROJECT-I`. Existing authority
 assigns responsibilities; a name grants none. One lead owns the decision, authors
 produce, independent reviewers check their commissioned scope, and the assigned
 integrator integrates. Provider/model/session are provenance, never role semantics.
@@ -128,8 +128,10 @@ and harness before buying another unchanged round. No automatic restart or pass.
 Fresh independent audits establish independence; a focused correction confirmation
 should cover the change and regression risk under the project's required rules.
 Do not add duplicate reviews without a distinct required question.
-Cardinality binds the INITIAL audit of a subject; every subsequent correction owes exactly one focused confirmation at the corrected exact head, by a fresh context that is not the author, covering the change and its regression risk — the correction is the distinct required question. A further full-cardinality round is owed whenever the correction adds, changes or REMOVES a guarantee, or changes scope (scope disposition). After two failures at the same gate the existing rule applies first — challenge the diagnosis and harness before buying another round of any size; no round is automatically owed. A confirmation on a predecessor head never covers the merged head.
-**Provider bookend.** Where two runtimes are configured, a change at an R2/R3 boundary (the exposure tiers above — that table is the canonical classification) is touched once by each runtime's thinking-tier model across authoring, challenge (spec-audit or review) or acceptance — distinct roles and questions count, but only a substantive touch on the exact subject and head counts (a relay read, a summary, or work on a predecessor head does not); a duplicate full review does not. For other judgment-bearing changes, an author and an independent reviewer from different runtimes satisfy it at any tier; trivial, mechanical, reversible work with deterministic checks owes none. A runtime's unavailability never stalls independent work: proceed at the authorized equivalent tier and record `bookend: <runtime> missing` in the acceptance record — that record is provenance, never a waiver: every audit or second opinion the profile requires must still exist before acceptance. No further round is owed unless the head or the contract changed or a named blocker remains (**Corrections**); stricter gates win.
+Correction cardinality, bounded code-fix re-review and provider bookends/availability
+are defined once in `REVIEW_PRACTICE.md` §4 and §6. Preserve the project's initial audit
+count, independent roles and effect gates; neither a deadline nor unavailable provider
+supplies a missing completed opinion.
 
 Capture what changed, scoped acceptance, evidence/limitations, exposure and the next
 owner checkpoint once through the required project path. If recording fails, retain
@@ -153,3 +155,67 @@ stays unknown. Success means faster useful proof with retained invariant coverag
 and no escaped defects; fewer files/findings alone do not establish improvement.
 Remove optional steps that add maintenance or duplicate records without improving
 those outcomes. No dashboard or new mandatory metric event is required.
+
+## Active milestone and standing authorities
+
+Maintain one project-owned `docs/FOCUS.md` under 60 lines: owner outcome, ordered steps
+with one owner/state each, parked work and capacity/CI lane order. Re-read it at ordinary
+boot and before dispatch; update a line when state changes, with detail linked elsewhere.
+Only business decisions go to the owner. Technical/process decisions go to the director
+as a short packet or use an existing standing authority. Prioritize by actual exposure;
+a single-user pre-public deployment does not acquire an internet-facing threat model by
+analogy. Existing security, correctness and effect gates remain binding.
+Why: the owner-visible milestone was getting displaced by ceremony and speculative work.
+Origin: **JA, 2026-09-30**, `FOCUS.md` and `PONYTAIL-BOOT-v1.md` Notch-up.
+
+After ruling a recurring mechanical failure class, the director can grant a bounded
+standing authority: named holder, exact predicate/evidence, permitted action, invalidations
+or expiry, and escalation on mismatch/recurrence. Record each use on the existing PR/work
+record; preserve raw failures and distinguish qualification from PASS. A grant is not a
+general retry budget, assertion waiver, merge permission or production-effect approval.
+A later hold must reach the holder before it can countermand the grant. Do not ask again
+when its conditions still hold; otherwise send the smallest decision packet to the director.
+
+The following are **historical JA examples, not grants to a generated project**. Adopt
+only a pattern the project's authorized director has actually ruled:
+
+| Origin example | Predicate and bounded response |
+|-|-|
+| SA1, 2026-09-29 | Metadata/review-only inventory drift: sanctioned regeneration, verify the gated diff, PR note. |
+| SA2, 2026-09-29 | Exact gateway-5xx setup signature with an earlier hosted pass and identical fixtures: classify once; recurrence is filed, not retried. |
+| SA3, 2026-09-29 | A later commit changes no runtime, tests, workflows, dependencies or SQL: qualify existing proof by the complete relevant delta; do not call it a new run. |
+| SA4, 2026-09-29 | Local failures match a merge-base control with unchanged tests/helpers: retain raw FAIL, require hosted PASS; new failure or changed blob escalates. |
+| SA5, 2026-09-29 | Generated-artifact freshness failure: documented regeneration from clean scratch, generated-only diff, one batched follow-up after terminal CI; other deltas escalate. |
+| SA6, 2026-09-30 | One default-timeout failure and every other check passes: one whole-file rerun at the same head; record qualification, expire on the systemic fix. |
+| SA7, 2026-09-30 | Exact post-seed restart/502 sequence: require exact migration-version set, timely service health and relevant live predicates; retain qualified raw failure, expire on the fix. |
+| SA8, 2026-09-30 | Read-only migration-validation race: lag is exactly the newly merged migrations and fresh readback proves catch-up; rerun that job once, second red escalates. |
+
+Why: mechanical snags caused repeated director round-trips and duplicate diagnosis.
+Origin: **JA, 2026-09-29–30**, `feedback-ceremony-tangle-standing-authorities.md`,
+`standing-authorities-canonical.json` (SA1–5), integrator handoff (SA6–8); primary SA1–3
+ruling `01M3PN19EJZM301TM52NBG31S4`. Project-specific paths, fixtures and live grants stay
+with the source project; these examples supply no runtime configuration.
+
+## Seat communication
+
+Commissioned seats drain **their own** mailbox on boot/wake, at every implementation ↔
+check handoff and phase boundary, and immediately before acting on a dispatch delayed
+roughly ten minutes or more. Drain and reconcile first, then act: never batch substantive
+work with the drain. A scheduled wake is a snapshot, so a current hold/reprioritization
+wins. Read every new message; when output is persisted or truncated, read the whole saved
+output from its beginning and reconcile all mailbox section headers. A preview or newest
+message is not a complete drain. Ad-hoc sessions follow direct user work and consume no
+commissioned seat's mail. Use the project's installed transport; this guidance alone does
+not install a mailbox or move its cursor semantics into this document.
+Why: stale wake intent raced a hold, and consumed-but-unread output hid delivered blockers.
+Origin: **JA, 2026-04-30** chain-handoff incident (PR #2035), **2026-05-18** stale dispatch
+(PRs #2353/#2354), **2026-05-31** parallel drain/action (Epic #2249), and
+**2026-07-10 / 2026-09-30** `persisted-drain-output-skip-trap.md`.
+
+Mail the director only at milestones: CI terminal, landed, blocker or a decision outside
+standing authority (plus a deliverable explicitly requested in the dispatch). No ACK,
+“recorded” or “adopted” messages. Lead with outcome and the one decision needed; evidence
+belongs in the linked PR/packet. Existing dispatch-specific START/END protocols still apply.
+Why: every mail wakes an expensive director context; repeated acknowledgements burned
+capacity without advancing the outcome. Origin: **JA, 2026-09-28**, milestone-mail ruling
+`01M3KM7X69GARREETG41VVZE7E`; **2026-09-30**, Ponytail reporting addendum.
