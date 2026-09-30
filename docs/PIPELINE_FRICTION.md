@@ -90,6 +90,12 @@ since 09-01.
 - "Fresh branch per attempt" is the fallback.
 - Measure paid CI attempts per landed slice, split into product-caused and process-caused.
 
+**W9 (new, 2026-09-30): host run hygiene.**
+- Local cleanup failed six times in a week (09-24 to 09-30). A run that is killed or times out orphans its containers and processes, and each time an integrator forensics turn went to cleaning up.
+- Cleanup belongs to the lock, not the run. Everything a heavy run creates carries its run id. A reaper removes a released or stale run's containers and processes, sweeping on every lock acquire and from a cron backstop.
+- It never touches volumes or images. Unlabelled resources are reported, never killed.
+- Owner: "Is there a more robust way to handle clean up?" JA pilot: `scripts/host-reap.sh`.
+
 ## Decisions (director, 2026-09-30; the owner delegated technical choices)
 
 1. **W1 regenerates on staging after merge**, following the existing `database.types.ts` pattern. PR diffs stay clean, and the PR
