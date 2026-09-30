@@ -1,6 +1,6 @@
 # Pipeline friction — scope (JV-owned, JA is the first adopter)
 
-Status: **draft for owner review** (o, 2026-09-30). Nothing here is ratified until the owner says so.
+Status: **adopted** (o, 2026-09-30). The owner approved the direction; technical choices are delegated to the director.
 Evidence: JA gate inventory, `customer-portal` branch `claude/gate-inventory`,
 `docs/agentic/pipeline-friction/GATE-INVENTORY.md` (122 rows / 120 gates, base `b049a64b`).
 
@@ -56,8 +56,7 @@ issues). JA #3711 (ephemeral CI databases) owns it.
   reviewer. It merges only in gaps between invoice landings, never ahead of one.
 - Changes to the CI workflow file (W1–W3) land only with `pre-ci.sh` green, one trial PR, and a single-commit revert
   ready.
-- Order: **W3 → W1 → W2 → W4 → W5 → W6**, with W7 whenever a seat is idle. W3 is pure de-duplication, so it's the
-  safest first. W1 has the largest payoff. W2 needs W3's cleaner structure.
+- Order: see Decisions below.
 - JV owns this document and any generic design (the pre-ci derivation, the gate-ledger schema, the auto-regen pattern).
   JA gets thin adoption PRs that cite it, the same way REVIEW_PRACTICE v1 was adopted.
 
@@ -72,9 +71,9 @@ Tracked on the provider-pattern scoreboard (host) and in the JA gate ledger once
 Baseline (2026-09-29): the #3755 repair took 4 hosted CI rounds, 2 of them process-caused. 130 artifact regen commits
 since 09-01.
 
-## Open questions for the owner
+## Decisions (director, 2026-09-30; the owner delegated technical choices)
 
-1. **W1 target:** should the auto-regen commit land on the PR branch before merge, or on staging after merge? Types use
-   staging-after; a PR-side bot makes review diffs noisier.
-2. **Priority:** is W4 (retiring A35/A36, which removes a prod secret from CI) urgent enough to go first for security
-   hygiene?
+1. **W1 regenerates on staging after merge**, following the existing `database.types.ts` pattern. PR diffs stay clean, and the PR
+   gate checks only that the generator's inputs are valid.
+2. **Order: W3 → W4 → W1 → W2 → W5 → W6**, with W7 whenever a seat is idle. W4 is small and removes a production secret
+   from CI, so it goes right after the zero-risk de-duplication, ahead of the larger W1/W2 workflow changes.
