@@ -21,7 +21,8 @@
         "umask",
         "[[ ]]",
         "(( ))",
-        "true (cleanup error handling)"
+        "true (cleanup error handling)",
+        "shift (run verb dispatch)"
       ],
       "utilities": [
         "dirname",
