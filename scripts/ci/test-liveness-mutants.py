@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Finite W-C3 mutant witnesses: 26 SPEC cells plus four RED-review folds.
+"""Finite W-C3 mutant witnesses: 26 SPEC cells, four RED-review folds and one traced I3 edge.
 
 Only disposable rendered copies are mutated. The trusted effect/source gate
 runs before every syntax or test child; unsafe effect seeds are never executed.
@@ -60,6 +60,7 @@ MUTANTS=[
   r'''(?:^|[;&|()]|\bthen|\bdo)\s*(?:(?:builtin|command|exec)\s+)?''','t6_f5_source_gate_positive_and_refusals','harness'),
  ('R2-helper-closure',GUARD,", '.claude/hooks/lib/utils.sh'",'', 't6_f5_source_gate_positive_and_refusals','harness'),
  ('R3-foreign-read',ENGINE,'def decision(store,role,registered,now):',"def decision(store,role,registered,now):\n    for foreign in store.parent.iterdir():\n        if foreign!=store:\n            for item in foreign.rglob('*'):\n                if item.is_file():item.read_bytes()",'t1_project_isolation_and_worktree','runtime'),
+ ('I3-malformed-roster',ENGINE,'if roster.exists() and not roster.is_dir():','if False:','t3_unknown_dormancy_and_later_seat','runtime'),
  ('R4-legacy-read',BOUNDARY,'    _jv_fail "migration required:', '''    if [[ -f "${!key}" ]]; then cat -- "${!key}" >/dev/null; fi
     if [[ -d "${!key}" ]]; then find "${!key}" -type f -exec cat {} \\; >/dev/null; fi
     _jv_fail "migration required:''','t7_f1_updated_consumer_refuses_legacy_knobs','runtime'),

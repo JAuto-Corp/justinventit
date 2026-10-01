@@ -279,6 +279,8 @@ def report(store,row,now,dry):
 
 def observe(store,args):
     if args not in ([],['--dry-run']):raise ValueError('usage: stall-watchdog.sh [--dry-run]')
+    for roster in (store/'sessions',store/'cadence'):
+        if roster.exists() and not roster.is_dir():raise ValueError('roster path is not a directory: '+str(roster))
     dry=bool(args);watchdog=store/'watchdog'
     if not dry:watchdog.mkdir(exist_ok=True)
     # ponytail: one local project sweep lock; per-seat locks only if sweep throughput requires it.

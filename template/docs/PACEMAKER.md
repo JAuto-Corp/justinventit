@@ -31,6 +31,9 @@ are data, never executed to test migration.
 
 ## Explicit identity and producer
 
+Runtime dependencies are Python 3.12+, Bash 4.3+, jq, GNU coreutils/findutils and
+util-linux flock on Linux. Tests use Linux inotify and synthetic process files.
+
 Use the same project binding as the portable mailbox and launcher:
 
 ```bash

@@ -7,10 +7,10 @@ O's `01M3V742AADC9P8T8CVTY76SJC` (2026-10-01) accepts W-C2 at
 SPEC first, same review/test flow. W-C2 PR CI `36832519964` passed every step;
 duplicate push `36832514595` is terminal cancelled. I owns that integration.
 
-Current deliverable is tests-only RED after the accepted SPEC folds. The
+Current deliverable is author GREEN after the accepted SPEC and RED-review folds. The
 [SPEC](../specs/W-C3-LIVENESS.md) and dated sections below preserve the pre-code
-reading, disposition and new evidence. Production runtime remains unchanged;
-no source-script execution or independent RED verdict is claimed.
+reading, disposition and new evidence. The generated runtime is implemented;
+no source-script execution or independent code acceptance is claimed.
 
 ## Reading and reconciliation
 
@@ -141,3 +141,43 @@ with a helper-effect seed. R3→I1/I7 watches both projects' roster, mail, curso
 and cadence during normal and dry-run sweeps. R4→I1/I7/F1 snapshots and watches
 all seeded legacy targets around each refused upgrade knob. The schedule-
 deletion mutant and actual updated-runtime migration proof remain GREEN gates.
+
+
+## Author GREEN and finite mutations
+
+After all four RED folds, `9af1de0` reproduces five containment assertion failures
+(four compound/absolute forms and the omitted helper) without executing any unsafe
+seed. `66cd307` fixes the gate: two calibration methods PASS; the actual Copier
+RED still has 19 missing-closure assertions and zero errors. No second RED review
+was commissioned, as o directed.
+
+`dd006ed` implements the shared cadence/heartbeat writer, pure binding verifier,
+report-only observer and pacemaker alias, generated Stop delegation and migration
+guidance. The actual Copier suite passes all 21 methods, including real upgrade
+runtime refusals and rollback. The old matrix standby entry reuses the guarded
+standby and migration cells; it no longer executes the retired recovery fixture.
+
+The first finite run at `7ef8853` has 30 valid outcomes: 26 runtime assertion kills,
+three harness assertion kills, and one unsafe-effect source refusal before any
+child. No survivors, errors or syntax/setup kills. This includes independent
+schedule-deletion and all four RED-review findings. The initial baseline renders
+carry the identical runtime from `dd006ed`; the later commit adds the mutant runner
+and changes only a Copier comment and root change-log grammar.
+
+The shared binding helper addition triggers actual mailbox and launcher
+regressions: 27 mailbox methods and 20 launcher methods PASS at `7ef8853`. The
+four-answer render matrix also PASSes at that head. No old W-C1/W-C2 mutant run is
+claimed; their existing caller implementations are unchanged.
+
+An author check against I3 found that a file occupying `sessions/` could silently
+look like an empty roster. `d0eb6c5` adds the refusal inside the existing malformed-
+evidence method; it fails once against retained real Copier runtime `dd006ed`
+(with zero errors). The observer now rejects non-directory owned roster paths
+before sweeping. One narrowly traced mutant removes that check, bringing the
+finite total to 31. Final generated GREEN and that finite run follow; no unrelated
+case expansion or additional review round is introduced.
+
+CI now runs the actual liveness/update runner and finite mutants, retaining compact
+receipts. The current-head framework CI and one independent full code review are
+still required before o acceptance and i integration. No live adopter or host
+scheduler has been changed.
