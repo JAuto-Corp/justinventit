@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """W-C4 T1–T7 and SPEC F1–F3. Missing closure is feature-absence RED."""
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -28,6 +29,7 @@ class Containment(unittest.TestCase):
             root=Path(tmp)
             self.seed_closure(root)
             self.assertEqual(runtime_findings(root),[])
+
             seeds=('if /bin/kill -TERM "$pid"; then :; fi','/usr/bin/tmux send-keys x',
                    'curl https://invalid.example','cat /proc/123/environ','cat /proc/*/cmdline',
                    'cat /home/'+'justi/private','os.kill(123,9)','subprocess.run(["anything"])')
@@ -90,6 +92,14 @@ class Containment(unittest.TestCase):
                         self.assertTrue(runtime_findings(root),'undeclared edge would execute')
                 path.write_bytes(original)
             self.assertEqual(runtime_findings(root),[])
+
+            # A candidate cannot register its own previously unknown image.
+            path=root/CLOSURE[0];path.write_bytes(path.read_bytes()+b'\neval "$payload"\n')
+            fake=root/'scripts/tests/capacity_allowlist.json';fake.parent.mkdir(parents=True)
+            policy=json.loads(Path(__file__).with_name('capacity_allowlist.json').read_text())
+            policy['programs'][CLOSURE[0]]['images'].append({'name':'self-registration','sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+            fake.write_text(json.dumps(policy))
+            self.assertTrue(runtime_findings(root),'candidate-local policy became authority')
 
     def test_r2_native_flock_boundary(self):
         """R2→I1/I7: pathname and foreign FDs never reach native flock."""

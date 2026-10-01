@@ -1,48 +1,47 @@
-"""W-C4 I6/I7: bounded source checks before every render/runtime child."""
-from pathlib import Path
-import re
+"""W-C4 closed-world execution admission for the three reviewed shell programs.
 
-from liveness_guard import COUPLING, SECRET, COMMAND, PY_EFFECT, render_findings
+The adjacent, committed allowlist pins COMPLETE program bytes, including each
+command's arguments, substitutions, control flow and helper edges. Its readable
+edge inventory explains those pins. Unknown bytes never gain admission from a
+command-name regex, a candidate-local policy, an environment flag, or a source
+scan that generates its own allowlist. Even harmless edits need an explicit pin
+update. Finite mutation images are declared separately and only touch fixture
+resources; this gate is an experiment boundary, not a hostile-code sandbox.
+
+No Python interpreter/helper edge is admitted. Thus Python signal/pidfd/exec/
+subprocess forms, like arbitrary shell prefixes or dynamic dispatch, cannot
+enter the operating closure. The pinned wrappers' caller-argv forwarding is the
+one declared workload edge, supplied by the trusted fixture during these tests.
+A new bypass class means STOP and escalate to o, not another guard patch.
+"""
+import hashlib
+import json
+from pathlib import Path
+
+from liveness_guard import render_findings
 
 CLOSURE = ('scripts/build-lock.sh', 'scripts/build-guarded.sh', 'scripts/lib/jv-project.sh')
-# R1: fail closed on additional executable dependencies, including a helper
-# launched rather than sourced. The only permitted edges are literal peers.
-EDGES = {
-    CLOSURE[0]: 'source "$SCRIPT_DIR/lib/jv-project.sh"',
-    CLOSURE[1]: 'exec bash "$SCRIPT_DIR/build-lock.sh" run "$@"',
-}
-DEPENDENCY = re.compile(r'(?:^|[;&|()]|\b(?:then|do|else))\s*(?:(?:env|command|exec)\s+)*(?:source|\.|bash|sh)\s+')
-WRAPPED_EFFECT = re.compile(r'(?<![\w-])(?:kill|killall|pkill|pgrep|tmux|curl|wget|ssh|scp|sftp|nc|ncat|netcat|claude|codex|crontab|systemctl|notify-send|osascript)(?![\w-])')
-# R2: literal host-root fallbacks and HOME/cwd-derived paths are never admitted
-# to runtime. This is bounded source inspection, not an arbitrary-shell sandbox.
-HOST_PATH = re.compile(r'''(?<=[\s="'<>:-])/(?!dev/null\b|proc/meminfo\b|proc/self/fd/)[A-Za-z0-9_.-]|(?<![*/])\.\./|(?<!\*)/\.\./|\$\{?(?:HOME|TMPDIR|PWD)\b''')
+# Read beside the trusted guard, NEVER from the candidate root under inspection.
+POLICY = json.loads(Path(__file__).with_name('capacity_allowlist.json').read_text())
+assert POLICY['schema'] == 1 and set(POLICY['programs']) == set(CLOSURE)
 
 
 def runtime_findings(root):
     findings = []
+    root = Path(root).absolute()
     for rel in CLOSURE:
-        path = Path(root) / rel
-        if path.is_symlink() or not path.is_file():
+        path = root / rel
+        parts = (path, *[p for p in path.parents if p == root or root in p.parents])
+        if any(p.is_symlink() for p in parts) or not path.is_file():
             findings.append({'file': rel, 'check': 'missing-or-alias'})
             continue
-        for n, line in enumerate(path.read_text().splitlines(), 1):
-            for name, regex in (('coupling', COUPLING), ('secret', SECRET)):
-                if regex.search(line):
-                    findings.append({'file': rel, 'line': n, 'check': name})
-            if line.lstrip().startswith('#'):
-                continue
-            if DEPENDENCY.search(line) and line.strip() != EDGES.get(rel):
-                findings.append({'file': rel, 'line': n, 'check': 'undeclared-dependency'})
-            if HOST_PATH.search(line):
-                findings.append({'file': rel, 'line': n, 'check': 'host-path-open'})
-            for name, regex in (('external-effect', COMMAND), ('python-effect', PY_EFFECT)):
-                if regex.search(line):
-                    findings.append({'file': rel, 'line': n, 'check': name})
-            if WRAPPED_EFFECT.search(line):
-                findings.append({'file': rel, 'line': n, 'check': 'external-effect'})
-            # These two local observations are the admitted source interface:
-            # memory availability and this process's own inherited descriptor.
-            checked = re.sub(r'/proc/(?:meminfo|self/fd/[A-Za-z0-9_$\{\}]+)', '', line)
-            if re.search(r'/proc(?:/|[\s"\'])', checked):
-                findings.append({'file': rel, 'line': n, 'check': 'host-process-scan'})
+        try:
+            body = path.read_bytes()
+        except OSError:
+            findings.append({'file': rel, 'check': 'unreadable'})
+            continue
+        permitted = {item['sha256'] for item in POLICY['programs'][rel]['images']}
+        digest = hashlib.sha256(body).hexdigest()
+        if digest not in permitted:
+            findings.append({'file': rel, 'check': 'undeclared-executable-image'})
     return findings

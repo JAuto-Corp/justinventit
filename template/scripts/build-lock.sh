@@ -24,6 +24,7 @@ check_paths() {
   while [[ "$path" != / ]]; do
     [[ ! -L "$path" ]] || fail 'symlink in host directory path'
     [[ ! -e "$path" || -d "$path" ]] || fail 'host path is not a directory'
+    [[ ! -d "$path" || -x "$path" ]] || fail 'host directory is not searchable'
     path=${path%/*}; [[ -n "$path" ]] || path=/
   done
   for path in "$LOCK_FILE" "$INFO_FILE"; do

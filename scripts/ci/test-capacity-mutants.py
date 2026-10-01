@@ -58,11 +58,16 @@ MUTANTS=[
  ('forbidden-recovery',LOCK,'set -euo pipefail','set -euo pipefail\nenv /bin/kill -TERM "$pid"',None,'source-refusal'),
  ('F2-probe-error',LOCK,'  [[ "$rc" == 75 ]] ||','  [[ "$rc" != 0 ]] ||',
   't4_f2_probe_error_is_not_conflict','runtime'),
- ('R1-extra-helper',GUARD,'            if DEPENDENCY.search(line) and line.strip() != EDGES.get(rel):',
-  '            if False:', 'r1_r2_closure_wrapped_effects_and_host_opens','harness'),
- ('R1-wrapped-effect',GUARD,'            if WRAPPED_EFFECT.search(line):','            if False:',
+ # Former regex mutants now open the equivalent single admission hole. These
+ # mutated guards inspect DATA ONLY; the trusted outer gate is never weakened.
+ ('R1-extra-helper',GUARD,'        if digest not in permitted:',
+  '        if digest not in permitted and b\'source "$SCRIPT_DIR/lib/extra.sh"\' not in body:',
   'r1_r2_closure_wrapped_effects_and_host_opens','harness'),
- ('R2-host-open',GUARD,'            if HOST_PATH.search(line):','            if False:',
+ ('R1-wrapped-effect',GUARD,'        if digest not in permitted:',
+  "        if digest not in permitted and b'env X=1 tmux' not in body:",
+  'r1_r2_closure_wrapped_effects_and_host_opens','harness'),
+ ('R2-host-open',GUARD,'        if digest not in permitted:',
+  "        if digest not in permitted and b'../capacity.lock' not in body:",
   'r1_r2_closure_wrapped_effects_and_host_opens','harness'),
  ('R2-native-flock',FIXTURE,
   'if not fd.isdecimal() or not target or not pathlib.Path(target).resolve().is_relative_to(root):',
@@ -71,6 +76,14 @@ MUTANTS=[
   't4_spoofed_descriptors','runtime'),
  ('R4-other-common-inode',LOCK,'LOCK_FILE="$LOCK_DIR/build.lock"','LOCK_FILE="$LOCK_DIR/other.lock"',
   'r4_python_canonical_owner','runtime'),
+ ('C1-unknown-image',GUARD,'        if digest not in permitted:',
+  '        if False:', 'c1_closed_world_unknown_edges','harness'),
+ ('C2-unsearchable-ancestor',LOCK,
+  '    [[ ! -d "$path" || -x "$path" ]] || fail \'host directory is not searchable\'\n',
+  '', 'c2_unsearchable_ancestor_is_unknown','runtime'),
+ ('C3-false-held',LOCK,"1) printf 'build-lock: unheld\\n'", "1) printf 'build-lock: held\\n'",
+  't6_status_readonly_absent_and_held','runtime'),
+
 ]
 
 
@@ -100,7 +113,7 @@ def main():
         findings=[{'project':i,**f} for i,p in enumerate(projects) for f in runtime_findings(p)]
         (directory/'source-gate.json').write_text(json.dumps(findings,indent=2)+'\n')
         if kind=='source-refusal':
-            assert findings and any(f['check']=='external-effect' for f in findings)
+            assert findings and any(f['check']=='undeclared-executable-image' for f in findings)
             result={'name':name,'class':kind,'outcome':'refused-before-child','executed':False}
         else:
             assert not findings,(name,'source refusal cannot count as behavioral kill',findings)
