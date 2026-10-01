@@ -87,11 +87,17 @@ class Mailbox(unittest.TestCase):
         self.state = self.root / "state"
         self.bin = self.root / "bin"
         self.bin.mkdir()
+        self.scratch_home = self.root / "scratch-home"
+        self.scratch_home.mkdir()
+        self.secrets = {KEY}
         self.env = {
             "PATH": os.environ["PATH"], "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+            "HOME": str(self.scratch_home),
             "JV_PROJECT_ID": "alpha", "JV_PROJECT_ROOT": str(self.projects[0]),
             "JV_STATE_ROOT": str(self.state),
         }
+        # R1: EVERY child gets offline curl, including malformed-config cells.
+        self.env.update(self.fake_curl("unexpected"))
 
     def run_msg(self, *args, peer=False, env=None, stdin=None, xpg=False):
         run_env = dict(self.env)
@@ -103,8 +109,14 @@ class Mailbox(unittest.TestCase):
             else:
                 run_env[k] = str(v)
         cmd = ["bash", *(["-O", "xpg_echo"] if xpg else []), str(PEER_SCRIPT if peer else SCRIPT), *args]
-        return subprocess.run(cmd, env=run_env, input=stdin, text=True,
-                              capture_output=True, timeout=20, cwd=self.projects[int(peer)])
+        result = subprocess.run(cmd, env=run_env, input=stdin, text=True,
+                                capture_output=True, timeout=20, cwd=self.projects[int(peer)])
+        # R7: inspect both streams even on success, using every actual test key.
+        for secret in self.secrets:
+            for value in {secret, secret.replace("\r", "\n")}:
+                if value:
+                    self.assertNotIn(value, result.stdout + result.stderr, "configured credential leaked")
+        return result
 
     def ok(self, *args, **kwargs):
         r = self.run_msg(*args, **kwargs)
@@ -155,17 +167,25 @@ class Mailbox(unittest.TestCase):
 
     def test_I1_projects_restart_identity_and_independent_cursors(self):
         for peer in (False, True):
-            self.ok("send", "o", "a", "peer" if peer else "local", peer=peer, env={"MSG_HUB_ID": ULID})
-            self.ok("send", "o", "all", "broadcast", peer=peer)
-            self.ok(*self.completion(), peer=peer)
+            tag = "BETA" if peer else "ALPHA"
+            self.ok("send", "o", "a", tag + "-direct", peer=peer, env={"MSG_HUB_ID": ULID})
+            self.ok("send", "o", "all", tag + "-broadcast", peer=peer)
+            self.ok(*self.completion(), "--body", tag + "-completion", peer=peer)
         beta_before = snapshot(self.state / "beta")
-        self.assertIn('"body":"local"', self.ok("read", "a"))
-        self.assertEqual(snapshot(self.state / "beta"), beta_before)
-        self.assertNotIn('"body":"local"', self.ok("read", "a"))
-        self.assertIn('"body":"peer"', self.ok("read", "a", peer=True))
-        self.assertIn('"body":"broadcast"', self.ok("read", "b"))
-        self.ok("archive", "a", "task-1")
-        self.assertFalse((self.mail(True) / "archive").exists())
+        records = lambda out: [json.loads(x) for x in out.splitlines() if x.startswith("{")]
+        for peer in (False, True):
+            expected = [*self.views("o", "a", peer), *self.views("o", "all", peer)]
+            actual = records(self.ok("read", "a", peer=peer))
+            self.assertCountEqual(actual, expected)
+            tag = "BETA" if peer else "ALPHA"
+            self.assertEqual({m["body"] for m in actual}, {tag + s for s in ("-direct", "-broadcast", "-completion")})
+            self.assertEqual(records(self.ok("read", "a", peer=peer)), [])
+            if not peer:
+                self.assertEqual(snapshot(self.state / "beta"), beta_before)
+            self.assertEqual(records(self.ok("read", "b", peer=peer)), self.views("o", "all", peer))
+            self.ok("archive", "a", "task-1", peer=peer)
+            archived = [json.loads(x) for p in (self.mail(peer) / "archive/a").glob("*.jsonl") for x in p.read_text().splitlines()]
+            self.assertCountEqual([{k: v for k, v in m.items() if not k.startswith("_archive_")} for m in archived], self.views("o", "a", peer))
         self.assertEqual(len(self.events()), 3)
         self.assertEqual(len(self.events(True)), 3)
         before = snapshot(self.state)
@@ -226,6 +246,7 @@ class Mailbox(unittest.TestCase):
         self.ok("archive", "a", "task-b", peer=True)
         a = self.state / "alpha"
         b = self.state / "beta"
+        (a / "mail/cursors/a-from-o-to-a.offset").write_text("0")
         # Every initialized path, including archive cursor JSON and cursor locks;
         # also cover the trigger and repair-temp names before they are created.
         paths = list(dict.fromkeys([Path("."), *(p.relative_to(a) for p in a.rglob("*")),
@@ -240,9 +261,23 @@ class Mailbox(unittest.TestCase):
             if not target.exists():
                 target = b / "mail/from-o-to-a.jsonl"
             original.symlink_to(target, target_is_directory=target.is_dir())
+            repair_bytes = None
+            if rel.name == "events.jsonl.repair":
+                repair_bytes = (a / "mail/events.jsonl").read_bytes()
+                (a / "mail/events.jsonl").write_bytes(repair_bytes + b'{"torn":')
+            if "archive" in rel.parts and "cursors" not in rel.parts:
+                operations = [["search", "a", "FOREIGN-CANARY"]]
+            elif rel.name.startswith("archive-"):
+                operations = [["archive", "a", "alias"]]
+            elif rel.name == ".hub-drain-trigger":
+                operations = [["hub", "finding", "--from", "o", "--title", "trigger", "--body", "check"]]
+            elif repair_bytes is not None:
+                operations = [["send", "o", "a", "repair"]]
+            else:
+                operations = [["read", "a"]]
             try:
                 before = snapshot(self.state)
-                for args in (["read", "a"], ["send", "o", "a", "bad"], ["archive", "a", "alias"]):
+                for args in operations:
                     with self.subTest(path=str(rel), args=args):
                         with watch_opens(b) as accesses:
                             r = self.refuse(args, r"(?i)symlink")
@@ -253,6 +288,8 @@ class Mailbox(unittest.TestCase):
                 original.unlink()
                 if existed:
                     backup.rename(original)
+                if repair_bytes is not None:
+                    (a / "mail/events.jsonl").write_bytes(repair_bytes)
         dangling = a / "mail/cursors/a-from-o-to-a.offset"
         dangling.unlink()
         dangling.symlink_to(b / "not-created")
@@ -262,7 +299,9 @@ class Mailbox(unittest.TestCase):
 
     def test_I2_lock_refusal_has_no_unlocked_delivery(self):
         env = self.stub("flock", "exit 1")
+        before_initial = snapshot(self.state)
         self.refuse(["send", "o", "a", "initial"], r"(?i)lock", env=env)
+        self.assertEqual(snapshot(self.state), before_initial)
         self.assertEqual(self.events(), [])
         self.ok("send", "o", "a", "control")
         before = self.events()
@@ -283,9 +322,27 @@ exec "$REAL_FLOCK" "$@"'''
         # A shared-lock-only refusal reaches archive's own lock, not init.
         env = {**self.stub("flock", 'test "${1:-}" != -s || exit 1\nexec "$REAL_FLOCK" "$@"'),
                "REAL_FLOCK": real_flock}
+        cursors = snapshot(self.mail() / "cursors")
         self.refuse(["archive", "a", "locked"], r"(?i)shared.*lock", env=env)
+        self.assertEqual(snapshot(self.mail() / "cursors"), cursors)
         self.assertEqual(self.events(), before)
         self.assertEqual(len(self.views()), 1)
+
+    def test_R4_I1_lock_targets_are_project_local(self):
+        real = shutil.which("flock")
+        env = self.stub("flock", '''for arg in "$@"; do
+ case "$arg" in [0-9]*) readlink "/proc/self/fd/$arg" >> "$LOCK_TRACE" ;; esac
+done
+exec "$REAL_FLOCK" "$@"''')
+        for peer in (False, True):
+            trace = self.root / ("beta-locks" if peer else "alpha-locks")
+            self.ok("send", "o", "a", "lock-control", peer=peer,
+                    env={**env, "REAL_FLOCK": real, "LOCK_TRACE": trace})
+            targets = [Path(x) for x in trace.read_text().splitlines()]
+            store = self.state / ("beta" if peer else "alpha")
+            self.assertTrue(targets)
+            self.assertIn(self.mail(peer) / ".hub-append.lock", targets)
+            self.assertTrue(all(t == self.projects[int(peer)] or t.is_relative_to(store) for t in targets), targets)
 
     def test_I2_barrier_failure_new_and_replay(self):
         self.ok("send", "o", "a", "seed")
@@ -341,7 +398,9 @@ exec "$REAL_FLOCK" "$@"'''
         self.ok("send", "o", "a", LITERAL, env={"MSG_HUB_ID": ULID})
         self.assertEqual(len(self.events()), 1)
         for args in (["send", "o", "a", "different"], ["send", "o", "b", LITERAL]):
+            before = snapshot(self.mail())
             self.refuse(args, r"DIFFERENT content", code=6, env={"MSG_HUB_ID": ULID})
+            self.assertEqual(snapshot(self.mail()), before)
         self.assertEqual(self.views("o", "b"), [])
         projection = self.mail() / "from-o-to-a.jsonl"
         partial = b'{"ts":"old","hub_i'
@@ -355,6 +414,16 @@ exec "$REAL_FLOCK" "$@"'''
         read = self.ok("read", "a")
         self.assertEqual([json.loads(x) for x in read.splitlines() if x.startswith("{")], [canonical])
         self.assertEqual(len(self.events()), 1)
+
+    def test_R9_I2_readback_failure_publishes_no_projection(self):
+        real = shutil.which("tail")
+        env = self.stub("tail", '''if [ "${1:-}" = -n ] && [ "${2:-}" = 1 ]; then
+ case "${3:-}" in */events.jsonl) echo broken-readback; exit 0 ;; esac
+fi
+exec "$REAL_TAIL" "$@"''')
+        self.refuse(["send", "o", "a", "unverified"], r"(?i)(append|verify|event log)",
+                    env={**env, "REAL_TAIL": real})
+        self.assertEqual(self.views(), [])
 
     def test_I3_invalid_ids_clock_and_entropy(self):
         for invalid in ("bad", "I" * 26, "8" + "0" * 25, "0" * 25):
@@ -527,6 +596,7 @@ exec "$REAL_FLOCK" "$@"'''
         cfg = self.root / "dedicated-hub.env"
         values = {"HUB_PROJECT_ID": "alpha", "HUB_URL": "https://hub.example.invalid", "HUB_SERVICE_KEY": KEY}
         values.update(changes)
+        self.secrets.add(str(values["HUB_SERVICE_KEY"]))
         cfg.write_text("".join(f"{k}={v}\n" for k, v in values.items()))
         return {"MSG_ENV_FILE": str(cfg)}
 
@@ -543,6 +613,8 @@ if not args or args[0]!='-q':
  (root/'credential-trace').write_text(data)
  sys.exit(92)
 mode=os.environ.get('FAKE_CURL_MODE','ok')
+if mode=='unexpected':
+ print('unexpected offline HTTP call',file=sys.stderr); sys.exit(95)
 if mode=='network':
  print(data,file=sys.stderr); sys.exit(7)
 if mode=='http':
