@@ -292,6 +292,75 @@ class Liveness(unittest.TestCase):
         self.assertEqual(cad.read_bytes(),cadence)
         self.assertNotIn('healthy',json.dumps(row).lower());self.assertIn('limited',row['observation'])
 
+    def test_c1_mail_event_identity(self):
+        """Code C1→I1/I4: foreign/misrouted events are unknown, never backlog."""
+        f=self.f;self.standby()
+        for recipient in ('a','all'):
+            for invalid in ({'project_id':'beta'},{'project_id':None},{'from':'i'},{'to':'b'}):
+                with self.subTest(recipient=recipient,invalid=invalid):
+                    stream,_=f.mail(recipient=recipient,ages=(2200,),cursor=False)
+                    event=json.loads(stream.read_text());event.update(invalid)
+                    stream.write_text(json.dumps(event)+'\n');before=snapshot(f.store()/'mail')
+                    seats,done=self.sweep('--dry-run',degraded=True)
+                    self.assertEqual(seats['a']['reasons'],['mail-unknown'])
+                    self.assertIsNone(seats['a']['backlog_seconds']);self.assertEqual(done['unknown'],1)
+                    self.assertEqual(before,snapshot(f.store()/'mail'));stream.unlink()
+        f.mail(ages=(2200,),cursor=False)
+        seats,_=self.sweep('--dry-run');self.assertEqual(seats['a']['backlog_seconds'],2200)
+
+    def test_c2_wc1_sender_grammar_and_cursors(self):
+        """Code C2→I4/I7: every W-C1 identifier retains its exact stream cursor."""
+        f=self.f;self.standby()
+        senders=('O','watchdog','build_bot1','Z'+'9_'*31+'9')
+        for sender in senders:
+            for recipient in ('a','all'):
+                with self.subTest(sender=sender,recipient=recipient):
+                    stream,cursor=f.mail(sender,recipient,ages=(9900,2200,2),consumed=1)
+                    # A different stream's cursor must not suppress this stream.
+                    other,other_cursor=f.mail('i',ages=(9000,2),consumed=2)
+                    before=snapshot(f.store()/'mail');seats,_=self.sweep('--dry-run')
+                    self.assertEqual(seats['a']['backlog_seconds'],2200)
+                    self.assertEqual(seats['a']['reasons'],['mail-backlog'])
+                    self.assertEqual(before,snapshot(f.store()/'mail'))
+                    stream.unlink();cursor.unlink();other.unlink();other_cursor.unlink()
+
+    def test_c3_full_interactive_argv(self):
+        """Code C3→I4: all argv tokens count, including flags after resume IDs."""
+        f=self.f;self.standby()
+        refused=[('codex','--help'),('claude','--version'),('codex','-h'),('claude','-v'),
+                 ('codex','resume','alpha-a','--help'),('codex','fork','alpha-a','--version'),
+                 ('codex','hello','--help'),('claude','hello','--print'),
+                 ('codex','resume','alpha-a','--profile'),('claude','--model'),
+                 ('codex','--profile='),('claude','--model='),
+                 ('codex','--unsupported'),('claude','--unsupported'),
+                 ('codex','--profile','fixture','exec','hi'),('claude','--model','fixture','-p','hi'),
+                 ('claude','update'),('codex','completion')]
+        supported=[('codex','--profile','fixture'),('codex','resume','alpha-a','--profile=fixture'),
+                   ('codex','--config','x="multi\nline"','resume','alpha-a','--model','fixture'),
+                   ('claude','-n','alpha-a','--remote-control','alpha-a','--effort','xhigh',
+                    '--model','fixture','--add-dir',str(f.projects[0]),'--session-id','fixture-id'),
+                   ('claude','--model=fixture','--resume','alpha-a')]
+        for argv in refused+supported:
+            with self.subTest(argv=argv):
+                f.process(argv=argv);seats,_=self.sweep('--dry-run')
+                self.assertEqual(seats['a']['process'],'present' if argv in supported else 'absent')
+
+    def test_c4_cadence_lf_roundtrip(self):
+        """Code C4→I2: non-LF separators survive publication and later updates."""
+        f=self.f
+        for separator in ('\u2028','\v'):
+            with self.subTest(separator=repr(separator)):
+                # Reset so each RED subcase independently reaches the defect.
+                p=f.cadence();context='before'+separator+'after'
+                self.ok(f.run('cadence.sh','a','awake','300',context))
+                published=p.read_bytes();f.now+=1
+                result=self.ok(f.run('heartbeat-hook.sh'))
+                self.assertFalse(result.stderr.strip(),'published record became unreadable')
+                self.assertIn(('context: '+context+'\n').encode(),p.read_bytes())
+                self.assertNotEqual(p.read_bytes(),published,'heartbeat did not update published record')
+                self.ok(f.run('cadence.sh','a','sleeping','400','next intent'))
+                seats,_=self.sweep('--dry-run');self.assertEqual(seats['a']['reasons'],[])
+
     def test_t4_f2_strict_backlog_process_independent(self):
         """I4/F2: 1799/1800/1801 under present, absent and unavailable process data."""
         f=self.f;self.standby()

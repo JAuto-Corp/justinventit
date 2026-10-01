@@ -173,7 +173,7 @@ os.rename=checked_rename
 
     def mail(self, sender='o', recipient='a', ages=(1801,), peer=0, consumed=0, cursor=True):
         root = self.bind(peer); base='from-'+sender+'-to-'+recipient
-        lines=[(json.dumps({'ts':iso(self.now-age),'from':sender,'to':recipient,'body':'fixture café'})+'\n').encode() for age in ages]
+        lines=[(json.dumps({'project_id':('alpha','beta')[peer],'ts':iso(self.now-age),'from':sender,'to':recipient,'body':'fixture café'})+'\n').encode() for age in ages]
         p=root/'mail'/(base+'.jsonl');p.write_bytes(b''.join(lines))
         c=root/'mail/cursors'/('a-'+base+'.offset')
         if cursor:
