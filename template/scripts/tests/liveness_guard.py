@@ -9,9 +9,10 @@ from pathlib import Path
 import re
 
 CLOSURE = ('scripts/cadence.sh', 'scripts/heartbeat-hook.sh', 'scripts/stall-watchdog.sh',
-           'scripts/pacemaker.sh', 'scripts/lib/jv-project.sh', '.claude/hooks/lib/utils.sh')
-# Any liveness-specific helper added during GREEN must be included in this closure.
-OPTIONAL_HELPERS = ('scripts/lib/jv-liveness.py', 'scripts/lib/jv-liveness.sh')
+           'scripts/pacemaker.sh', 'scripts/lib/jv-project.sh', '.claude/hooks/lib/utils.sh',
+           'scripts/lib/jv-liveness.py', 'scripts/lib/jv-liveness.sh')
+# The delivered GREEN helpers are mandatory; no missing executable is a gate pass.
+OPTIONAL_HELPERS = ()
 COUPLING = re.compile(r'/home/' + r'justi\b|customer' + r'-portal|\bJA' + r'UTO_ROLE\b|\.jauto-|\bjauto\b', re.I)
 SECRET = re.compile(r'\bgh[pousr]_[A-Za-z0-9]{20,}|\bsk-proj-[A-Za-z0-9_-]{20,}|\bsb_secret_[A-Za-z0-9_-]{16,}')
 COMMAND = re.compile(r'(?:^|[;&|()]|\b(?:if|elif|then|do|while|until|else))\s*(?:!\s*)?(?:(?:builtin|command|exec)\s+)?[\"\']?(?:/[^\s\"\']*/)?(?:kill|killall|pkill|pgrep|tmux|curl|wget|ssh|scp|sftp|nc|ncat|netcat|claude|codex|crontab|systemctl|notify-send|osascript)\b')
