@@ -74,7 +74,7 @@ def read_cadence(path,role,strict=True):
     text=path.read_bytes().decode('utf-8')
     if '\r' in text:raise ValueError('CR in cadence record')
     data={}
-    for line in text.splitlines():
+    for line in text.removesuffix('\n').split('\n'):
         if ': ' not in line:raise ValueError('malformed cadence field')
         key,value=line.split(': ',1)
         if key in data:raise ValueError('duplicate cadence field')
@@ -155,7 +155,7 @@ def backlog(store,role,now):
     if not mail.is_dir():raise ValueError('mail store is missing or unreadable')
     oldest=None
     for path in sorted(mail.iterdir()):
-        match=re.fullmatch(r'from-([a-z])-to-('+role+r'|all)\.jsonl',path.name)
+        match=re.fullmatch(r'from-([A-Za-z][A-Za-z0-9_]{0,63})-to-('+role+r'|all)\.jsonl',path.name)
         if not match or match[1]==role:continue
         content=path.read_bytes()
         cursor=mail/'cursors'/(role+'-'+path.stem+'.offset')
@@ -166,6 +166,9 @@ def backlog(store,role,now):
             if not line.endswith(b'\n'):raise ValueError('incomplete mail line')
             event=json.loads(line)
             if not isinstance(event,dict):raise ValueError('mail event is not an object')
+            if (event.get('project_id')!=os.environ['JV_PROJECT_ID'] or
+                event.get('from')!=match[1] or event.get('to')!=match[2]):
+                raise ValueError('mail event project/routing identity mismatch')
             ts=epoch(event.get('ts'));oldest=ts if oldest is None else min(oldest,ts)
     return max(0,now-oldest) if oldest is not None else 0
 
@@ -173,19 +176,38 @@ def backlog(store,role,now):
 def interactive(argv):
     if not argv:return False
     runtime=Path(argv[0]).name
+    # Conservative launcher grammar: unknown flags and utility modes are absent.
+    # Consume the whole argv, including options following a resume ID or prompt.
     if runtime=='claude':
-        return not any(x=='--print' or x.startswith('--print=') or x.startswith('-p') for x in argv[1:])
-    if runtime!='codex':return False
-    values={'--profile','-p','--config','-c','--model','-m','--sandbox','-s','--cd','-C','--add-dir','--enable','--disable','--ask-for-approval','-a'}
-    args=iter(argv[1:])
-    for arg in args:
-        if arg in values:
-            if next(args,None) is None:return False
-        elif arg.startswith('-'):
-            continue
-        else:
-            return arg not in {'exec','e','review','app-server','mcp','mcp-server','login','logout','completion','debug','help'}
-    return True
+        values={'-n','--name','--remote-control','--effort','--model','--add-dir','--session-id',
+                '--resume','-r','--permission-mode','--settings'}
+        flags={'--continue','-c','--fork-session','--dangerously-skip-permissions'}
+        commands={'auth','doctor','install','mcp','plugin','setup-token','update','upgrade','help'}
+    elif runtime=='codex':
+        values={'--profile','-p','--config','-c','--model','-m','--sandbox','-s','--cd','-C',
+                '--add-dir','--enable','--disable','--ask-for-approval','-a'}
+        flags={'--full-auto','--dangerously-bypass-approvals-and-sandbox','--no-alt-screen','--search','--last','--all'}
+        commands={'exec','e','review','app','app-server','mcp','mcp-server','login','logout',
+                  'completion','debug','help','apply','a','cloud','features'}
+    else:return False
+    words=list(argv[1:]);positionals=[];seen_flags=set()
+    while words:
+        arg=words.pop(0)
+        if arg=='--':
+            positionals.extend(words);break
+        option,equals,value=arg.partition('=')
+        if option in values:
+            if not equals:
+                if not words:return False
+                value=words.pop(0)
+            if not value or value.startswith('-'):return False
+        elif arg in flags:seen_flags.add(arg)
+        elif arg.startswith('-'):return False
+        else:positionals.append(arg)
+    if positionals and positionals[0] in commands:return False
+    resume=runtime=='codex' and bool(positionals) and positionals[0] in {'resume','fork'}
+    if seen_flags & {'--last','--all'} and not resume:return False
+    return len(positionals)<=(3 if resume else 1)
 
 
 def process_status(role):

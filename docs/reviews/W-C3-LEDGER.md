@@ -204,3 +204,28 @@ reruns that matrix plus the full W-C3 suite and mutants before integration.
 This ledger-only follow-up does not change test/render/runtime inputs. Next:
 one o-commissioned full code review, exact-head CI, o's verdict and i's integration.
 No author acceptance, author merge, live provider test or host activation occurred.
+
+
+## Code review folds C1–C4 (current work)
+
+The Sol xhigh full code review of `e1bcaf4` BLOCKed four findings. O's
+`01M3VCJQ8TR1BZ0QH7TV19WD5C` commissions a RED cell and mutant for each,
+then o personally reads the diff; no further model review. That head's CI run
+36841364524 passed every step (21 liveness methods and 31 witnesses), but did
+not cover these newly discovered cases. Duplicate push 36841360287 was cancelled.
+
+Tests-first `efbd470` retains real Copier render/update/rollback and adds four
+methods. All four fail as intended: C1 identity has eight assertion failures, C2
+sender/cursor coverage eight, C3 whole-argv parsing fourteen, C4 LF roundtrip two.
+The other 21 methods pass; there are no errors. Fixture mail now carries the
+project identity that the actual W-C1 writer always emits.
+
+| Finding | Trace | Small repair | Mutant |
+|---|---|---|---|
+| C1 foreign/misrouted mail | I1/I4 | Validate event project/from/to before timestamp evaluation | Remove project guard |
+| C2 skipped W-C1 senders | I4/I7 | Use exact W-C1 identifier grammar; preserve exact cursor stem | Restore lowercase single-letter grammar |
+| C3 informational processes | I4 | Parse every supported argv token, reject unsupported/informational/one-shot modes | Accept unknown flags again |
+| C4 unreadable published context | I2 | Split cadence on LF only, retaining non-LF field content | Restore broad splitlines |
+
+No shared mailbox/launcher production helper, locking, host effect, scheduler or
+provider invocation changes. Current GREEN and 35-witness results follow below.

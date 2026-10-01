@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Finite W-C3 mutant witnesses: 26 SPEC cells, four RED-review folds and one traced I3 edge.
+"""Finite W-C3 witnesses: 26 SPEC, four RED folds, one I3 edge, four code folds.
 
 Only disposable rendered copies are mutated. The trusted effect/source gate
 runs before every syntax or test child; unsafe effect seeds are never executed.
@@ -64,6 +64,10 @@ MUTANTS=[
  ('R4-legacy-read',BOUNDARY,'    _jv_fail "migration required:', '''    if [[ -f "${!key}" ]]; then cat -- "${!key}" >/dev/null; fi
     if [[ -d "${!key}" ]]; then find "${!key}" -type f -exec cat {} \\; >/dev/null; fi
     _jv_fail "migration required:''','t7_f1_updated_consumer_refuses_legacy_knobs','runtime'),
+ ('C1-mail-identity',ENGINE,"event.get('project_id')!=os.environ['JV_PROJECT_ID']",'False','c1_mail_event_identity','runtime'),
+ ('C2-mail-senders',ENGINE,'[A-Za-z][A-Za-z0-9_]{0,63}','[a-z]','c2_wc1_sender_grammar_and_cursors','runtime'),
+ ('C3-informational-argv',ENGINE,"        elif arg.startswith('-'):return False","        elif arg.startswith('-'):continue",'c3_full_interactive_argv','runtime'),
+ ('C4-cadence-splitlines',ENGINE,"text.removesuffix('\\n').split('\\n')",'text.splitlines()','c4_cadence_lf_roundtrip','runtime'),
 ]
 
 

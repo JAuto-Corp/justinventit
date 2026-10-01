@@ -97,6 +97,9 @@ Mail inspection is non-consuming, across directed and broadcast projections,
 excluding self-notes and this seat's outbound broadcasts. Each reader/stream has
 its own byte cursor. An absent virgin cursor means byte zero; corrupt/unreadable
 cursors, partial lines, bad timestamps and missing mail evidence are unknown.
+Sender identifiers use the same case-sensitive grammar as `msg.sh`, including
+service names and uppercase senders. Event project and routing identities must
+match the stream; foreign or misrouted events are unknown evidence.
 Fresh arrivals cannot reset the oldest undrained age. No processing or notification
 cursor is advanced, and no mailbox read command is invoked.
 
@@ -148,3 +151,8 @@ before candidate/mutant execution; it is not a hostile-code sandbox. The framewo
 runner exercises saved release defaults, update and adoption-commit rollback.
 Destructive source recovery tests are deliberately excluded. Accepted mailbox and
 launcher regressions remain required when their shared binding helper changes.
+
+Process parsing covers the generated launcher forms and consumes all arguments,
+including options after resume IDs. Help/version, utility and one-shot commands,
+unknown flags and missing values do not establish interactive presence. Cadence
+records use LF delimiters; Unicode separators and vertical tabs stay within fields.
