@@ -121,3 +121,23 @@ and cluster/greenfield/none. The final review-head commit only updates this ledg
 and SPEC status; the installed delta helper records unchanged executable inputs.
 Hosted CI and its duplicate-run cancellation receipts are captured separately
 from the immutable local GREEN packet.
+
+## Full code review: C1/C2 correction
+
+Sol xhigh reviewed `e541d32` and returned BLOCK with two P2s against I3. O's
+`01M3V636X28ET6V9PTHMKR638Z` directs RED-first cells and killing mutants, then o
+reads the final diff personally; no further model review is commissioned.
+
+- C1: an unvalidated `thread_id="*"` can glob-match an unrelated rollout. Require
+  one literal thread UUID and refuse ambiguous thread/rollout evidence.
+- C2: shell command substitution strips trailing newlines, so parsed values such
+  as `trusted\n` and `xhigh\n` can be incorrectly accepted. Compare typed values
+  inside Python, including the shared post-exit tier reader (I4).
+
+Two new parameterized methods exercise these findings through the real fake-Codex
+branch. C1 gives the invalid identity exactly one unrelated matching rollout so
+uniqueness alone cannot mask the missing UUID check. It also supplies duplicate
+rollouts and multiple thread events. C2 uses valid TOML with invalid exact values,
+trailing-newline effort, numeric-vs-string model, and the post-exit sibling call.
+Ordinary UUID/trust/tuple launches remain positive controls. Runtime implementation
+is unchanged in this RED commit; outcomes follow in the correction evidence.

@@ -615,6 +615,48 @@ sys.exit(r.returncode)
         self.assertEqual(len(self.calls("probe")), before, "timeout shim never starts a provider")
         self.assertTrue(native_timeout)
 
+    def test_C1_I3_literal_unique_probe_thread(self):
+        """C1/I3: only one literal UUID and one own rollout can authorize dispatch."""
+        self.record(runtime="codex")
+        self.successful("--fresh")  # Positive: the provider's ordinary UUID resolves.
+        variants = [{"probe_thread_id": value, "no_rollout": True, "foreign_rollout": True}
+                    for value in ("*", "?", "[0-9]*", 7, None)]
+        variants += [{"duplicate_probe_rollout": True}, {"extra_thread_event": True}]
+        for config in variants:
+            with self.subTest(config=config):
+                # A wildcard sees exactly ONE unrelated matching rollout; a
+                # uniqueness check alone cannot accidentally catch this defect.
+                shutil.rmtree(self.codex / "sessions")
+                self.configs[0].write_text(json.dumps({"model": "fixture-model", "effort": "xhigh",
+                                                     "rename_to": "alpha-a", **config}))
+                self.refuse("--fresh", diagnostic=r"(?i)(thread|uuid|rollout|ambiguous)",
+                            dispatch="no-interactive")
+
+    def test_C2_I3_I4_exact_typed_trust_and_tier(self):
+        """C2/I3/I4: comparison must preserve JSON/TOML types and trailing newlines."""
+        self.record(runtime="codex")
+        self.successful("--fresh")
+        config = self.codex / "config.toml"
+        for value in ('"trusted\\n"', '"trusted\\n\\n"', 'true', '["trusted"]'):
+            with self.subTest(trust_value=value):
+                config.write_text('[projects.' + json.dumps(str(self.projects[0])) +
+                                  ']\ntrust_level = ' + value + '\n')
+                self.refuse("--fresh", diagnostic=r"(?i)(trust|config)", dispatch="no-interactive")
+        self.trust()
+        for value in ("xhigh\n", "xhigh\n\n"):
+            with self.subTest(probe_effort=value):
+                self.configure(probe_effort=value)
+                self.refuse("--fresh", diagnostic=r"(?i)(tier|mismatch)", dispatch="no-interactive")
+        self.configure(probe_effort=None)
+        self.record(runtime="codex", model="7")
+        self.configure(model="7", probe_model=7)
+        self.refuse("--fresh", diagnostic=r"(?i)(tier|mismatch)", dispatch="no-interactive")
+        self.record(runtime="codex")
+        self.configure(model="fixture-model", probe_model=None, post_effort="xhigh\n")
+        result = self.launch("--fresh")
+        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+        self.assertRegex(result.stderr, r"(?i)(tier|mismatch)")
+
     def test_T4_claude_fresh_resume_and_invalid_handle(self):
         """I4: UUID/history existence decide attach; unsafe handles never escape."""
         self.record()

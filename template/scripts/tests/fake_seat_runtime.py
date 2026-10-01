@@ -82,12 +82,16 @@ if provider == "codex" and kind == "probe":
             stop("fixture probe failed", 73)
         thread = str(uuid.uuid4())
         if not cfg.get("no_thread"):
-            print(json.dumps({"type": "thread.started", "thread_id": thread}))
+            print(json.dumps({"type": "thread.started", "thread_id": cfg.get("probe_thread_id", thread)}))
+        if cfg.get("extra_thread_event"):
+            print(json.dumps({"type": "thread.started", "thread_id": str(uuid.uuid4())}))
         workdir = args[args.index("-C") + 1]
         if not cfg.get("no_rollout"):
-            rollout(thread, phase="probe", cwd=workdir,
+            own = rollout(thread, phase="probe", cwd=workdir,
                     model=cfg.get("probe_model"), effort=cfg.get("probe_effort"),
                     context=not cfg.get("no_context"))
+            if cfg.get("duplicate_probe_rollout"):
+                own.with_name("rollout-duplicate-" + thread + ".jsonl").write_bytes(own.read_bytes())
         if cfg.get("foreign_rollout"):
             foreign = rollout(str(uuid.uuid4()), phase="probe",
                               cwd=workdir if cfg.get("foreign_same_workdir") else str(root / "foreign-workdir"))
