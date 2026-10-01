@@ -303,6 +303,7 @@ class Mailbox(unittest.TestCase):
         self.refuse(["send", "o", "a", "initial"], r"(?i)lock", env=env)
         self.assertEqual(snapshot(self.state), before_initial)
         self.assertEqual(self.events(), [])
+        (self.bin / "flock").unlink()  # restore healthy control, retaining offline curl
         self.ok("send", "o", "a", "control")
         before = self.events()
         # Do not let the new identity lock mask the inherited append/archive
@@ -353,6 +354,7 @@ exec "$REAL_FLOCK" "$@"''')
                 for _ in range(2):
                     self.refuse(["send", "o", "a", "barrier"], r"durability barrier", code=8, env=env)
                     self.assertEqual(len(self.views()), 1)
+        (self.bin / "sync").unlink()  # restore storage after the injected outage
         self.ok("send", "o", "a", "barrier", env={"MSG_HUB_ID": ULID})
         self.assertEqual(len(self.views()), 2)
         self.assertEqual(len(self.events()), 2)

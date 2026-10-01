@@ -43,6 +43,16 @@ Pass a database as `@<env-file>`. It reads `HUB_DB_URL` (with no password in it)
 
 ## Provisioning (adopter)
 
+The generated portable `scripts/msg.sh` client uses an explicit absolute
+`MSG_ENV_FILE` containing `HUB_PROJECT_ID`, `HUB_URL` and `HUB_SERVICE_KEY`.
+It does not discover the legacy env file described below. Its local project/state
+roots, bounded guarantees and separate-database requirement are documented in
+[`CLUSTER.md`](../template/docs/CLUSTER.md). A compatible projector must be
+provided separately; generating the CLI does not install an ingester.
+
+The following is the historical configuration of the separate legacy helpers
+and source deployment, not an automatically installed portable service:
+
 1. Create a Supabase project for the hub alone. On the free tier, it pauses after 7 days without activity and has no managed backups, so schedule `hub-backup.sh`.
 2. Apply `postgrest/migrations/*.sql` in order.
 3. Write `~/.jauto-orchestration/hub.env` with mode 0600. Never put it in any repository.
@@ -55,7 +65,9 @@ Pass a database as `@<env-file>`. It reads `HUB_DB_URL` (with no password in it)
    HUB_DB_PASSWORD=<database password>
    ```
 
-   The first two names match what the JAuto verb clients (`msg.sh`, the ingester) read today. A later release renames them to `HUB_URL` and `HUB_SERVICE_KEY`.
+   The first two names belong to the historical source clients/ingester. The
+   extracted portable mailbox client uses the explicit configuration above;
+   snapshot/backup helpers retain their own documented keys.
 4. RLS stays enabled with no policies. The service role bypasses RLS, and anon or authenticated reads return nothing.
 
 ## Moving an existing hub out of a product database

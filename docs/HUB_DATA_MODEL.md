@@ -125,6 +125,14 @@ behavior; `MODEL_MATRIX.md` owns per-seat-class selections):**
 
 ## 5. Backends
 
+Implementation boundary: the generated `scripts/msg.sh` supplies the bounded
+single-host transport documented in `template/docs/CLUSTER.md`: project-scoped
+framed authority, append-only mailbox views, byte-offset readers and completion
+repair. Its optional PostgREST reads require a dedicated external projection.
+It does not implement the full backend table below, acknowledged cursors,
+database tenancy, folded state or cross-backend conformance. See the W-C1 review
+ledger for acceptance evidence and disclosed test residuals.
+
 | | postgrest | sqlite (portable default) | jsonl (degraded) |
 |-|-|-|-|
 | Concurrency | full (DB) | full single-host (WAL) | flock append; single-writer-at-a-time |
