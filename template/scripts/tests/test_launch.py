@@ -4,7 +4,6 @@
 Run from actual Copier output. Missing delivery fails setup as feature-absence
 RED; it never counts as a passing refusal or a behavioral mutant kill.
 """
-import concurrent.futures
 import contextlib
 import ctypes
 import json
@@ -96,6 +95,7 @@ class Launch(unittest.TestCase):
         self.bin.mkdir()
         self.fixtures = self.root / "fixture"
         self.fixtures.mkdir()
+        (self.root / "tmp").mkdir()
         self.configs = [self.root / "alpha-fixture.json", self.root / "beta-fixture.json"]
         for p in self.configs:
             p.write_text(json.dumps({"model": "fixture-model", "effort": "xhigh"}))
@@ -106,6 +106,7 @@ class Launch(unittest.TestCase):
         # Only the fixture Codex executable is reachable through the explicit pin.
         self.env = {"PATH": str(self.bin) + ":" + os.environ["PATH"], "HOME": str(self.home),
                     "CODEX_HOME": str(self.codex), "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+                    "TMPDIR": str(self.root / "tmp"),
                     "JV_STATE_ROOT": str(self.state), "JV_CODEX_BIN": str(self.bin / "codex"),
                     "JV_LAUNCH_FIXTURE": str(self.fixtures), "PYTHONDONTWRITEBYTECODE": "1"}
         self.stub("date", '#!/usr/bin/env python3\nimport os,sys\n'
