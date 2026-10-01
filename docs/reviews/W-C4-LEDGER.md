@@ -91,3 +91,13 @@ render, harness or CI inputs. Only o's code-review verdict can advance acceptanc
 only i integrates. Author: a/OpenAI Codex (Astra xhigh assigned by the extraction dispatch; no
 new runtime-resolution probe). Independent reviews are Sol one-shots
 commissioned and ruled on by o, not author self-review.
+
+## Code-review correction in progress
+
+Sol xhigh BLOCK at `ece283d2`; packet hashes and three ownership mutants were
+verified. O `01M3WCKZWFPFCTMH0S71BGF95R` admits a closed-world guard redesign
+(F1), inaccessible-ancestor refusal (F2), and exact unheld assertions (F3). New
+cells precede implementation in a RED commit. The SPEC records o's escalation
+stop condition. No additional guard deny-list patch, self-review or push is
+authorized. Next proof: actual corrected RED, GREEN, all finite mutants, sealed
+fold packet, and narrow independent review commissioned by o.

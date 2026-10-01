@@ -131,3 +131,31 @@ native-flock confinement (R2), omit inode validation (R3), and acquire a
 different common inode (R4). Total: 23 planned mutants, with harness kills
 distinguished from runtime kills and unsafe-source refusals. No new product
 behavior or recovery scope.
+
+## Code-review correction (o 2026-10-01)
+
+O `01M3WCKZWFPFCTMH0S71BGF95R` admits F1–F3 in one fold round: new
+RED cells committed first, GREEN corrections, all mutants rerun, a new sealed
+packet, then an o-commissioned narrow review of the fold delta. Publication
+stays held behind Books' hosted run.
+
+F1→I6/I7 replaces the effect deny-list with a closed allowlist. Every admitted
+subject program has a fixed command/helper-edge inventory and an exact complete
+program-image pin; the finite safe mutation images are separately enumerated.
+No candidate can manufacture its own admission entry. Unmatched images/edges
+refuse, including conditional/variable source, prefixes, dynamic command names,
+eval, interpreter snippets/helpers and Python signal/pidfd/subprocess/exec calls.
+The only caller-command edge is the exact wrapper workload forwarding already
+required by I5, supplied by trusted fixture code during proof. No Python helper
+is in the operating closure. Refusal seeds stay data.
+
+**Stop condition:** a new bypass class after this closed-allowlist redesign
+means the allowlist design is wrong. Escalate to o; do not patch the guard again.
+
+F2→I6 requires inaccessible ancestors to yield refusal/unknown, never unheld;
+the witness holds the canonical flock through a non-searchable fixture ancestor
+and restores permissions in finally. F3→I6/I7 asserts exact unheld output for
+both absent and released slots. Add three traced mutants: unknown-image admission,
+missing ancestor-search check, and false held output for unheld slots. Re-run
+all 23 existing mutants plus these three; previous regex-specific harness
+mutations must target the equivalent closed-allowlist admission faults.

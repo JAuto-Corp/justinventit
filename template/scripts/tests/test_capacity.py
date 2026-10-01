@@ -17,25 +17,28 @@ PEER=Path(os.environ.get('JV_CAPACITY_PEER',PROJECT))
 
 
 class Containment(unittest.TestCase):
+    def seed_closure(self, root):
+        for rel in CLOSURE:
+            path=root/rel;path.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(PROJECT/rel,path)
+
     def test_t7_gate_positive_and_refusals(self):
         """I6/I7: unsafe seeds and extra sourced-helper effects remain data."""
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for rel in CLOSURE:
-                p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('#!/bin/bash\nexit 0\n')
+            self.seed_closure(root)
             self.assertEqual(runtime_findings(root),[])
             seeds=('if /bin/kill -TERM "$pid"; then :; fi','/usr/bin/tmux send-keys x',
                    'curl https://invalid.example','cat /proc/123/environ','cat /proc/*/cmdline',
                    'cat /home/'+'justi/private','os.kill(123,9)','subprocess.run(["anything"])')
             for rel in CLOSURE:
                 path=root/rel
+                original=path.read_bytes()
                 for seed in seeds:
                     with self.subTest(file=rel,seed=seed):
                         path.write_text('#!/bin/bash\n'+seed+'\n')
                         self.assertTrue(runtime_findings(root),'unsafe seed would reach execution')
-                path.write_text('#!/bin/bash\nexit 0\n')
-            path=root/CLOSURE[0]
-            path.write_text('awk x /proc/meminfo\nstat -Lc x "/proc/self/fd/$fd"\n')
+                path.write_bytes(original)
             self.assertEqual(runtime_findings(root),[])
             for key in ('_tasks','_migrations','_jinja_extensions'):
                 self.assertTrue(render_findings(key+': []\n'))
@@ -44,10 +47,10 @@ class Containment(unittest.TestCase):
         """R1→I6/I7, R2→I1/I7: refuse extra helpers and host opens as DATA."""
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for rel in CLOSURE:
-                p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('exit 0\n')
+            self.seed_closure(root)
             helper=root/'scripts/lib/extra.sh';helper.write_text('env /bin/kill -TERM 99999\n')
             entry=root/CLOSURE[0]
+            original=entry.read_bytes()
             for seed in ('source "$SCRIPT_DIR/lib/extra.sh"', '. "$SCRIPT_DIR/lib/extra.sh"',
                          'bash "$SCRIPT_DIR/lib/extra.sh"', 'env /bin/kill -TERM 99999',
                          'env X=1 command /usr/bin/tmux list-sessions',
@@ -58,7 +61,34 @@ class Containment(unittest.TestCase):
                 with self.subTest(seed=seed):
                     entry.write_text(seed+'\n')
                     self.assertTrue(runtime_findings(root),'unsafe seed would execute')
-            entry.write_text('source "$SCRIPT_DIR/lib/jv-project.sh"\n')
+            entry.write_bytes(original)
+            self.assertEqual(runtime_findings(root),[])
+
+    def test_c1_closed_world_unknown_edges(self):
+        """Code F1→I6/I7: every undeclared executable form is DATA and refuses."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);self.seed_closure(root)
+            self.assertEqual(runtime_findings(root),[])
+            (root/'scripts/lib/extra.sh').write_text('signal.pidfd_send_signal(fd,9)\n')
+            (root/'scripts/lib/helper.py').write_text('import os,signal\nsignal.pidfd_send_signal(os.pidfd_open(1),9)\n')
+            seeds=('if source "$SCRIPT_DIR/lib/extra.sh"; then :; fi',
+                   'while source "$SCRIPT_DIR/lib/extra.sh"; do break; done',
+                   'source "$helper"', '. "$helper"',
+                   'env X=1 bash "$SCRIPT_DIR/lib/extra.sh"',
+                   'python3 "$SCRIPT_DIR/lib/helper.py"', 'python3 -c "$payload"',
+                   'bash -c "$payload"', '"$command" argument', 'eval "$payload"',
+                   'env X=1 "$runner" argument', 'command "$runner" argument',
+                   'exec "$runner" argument', 'os.kill(pid,9)', 'os.killpg(pid,9)',
+                   'signal.pidfd_send_signal(fd,9)', 'os.pidfd_open(pid)',
+                   'signal.raise_signal(9)', 'subprocess.run(argv)', 'os.execv(path,argv)',
+                   'os.execve(path,argv,env)', 'os.execl(path,arg)')
+            for rel in CLOSURE:
+                path=root/rel;original=path.read_bytes()
+                for seed in seeds:
+                    with self.subTest(file=rel,seed=seed):
+                        path.write_bytes(original+b'\n'+seed.encode()+b'\n')
+                        self.assertTrue(runtime_findings(root),'undeclared edge would execute')
+                path.write_bytes(original)
             self.assertEqual(runtime_findings(root),[])
 
     def test_r2_native_flock_boundary(self):
@@ -327,7 +357,8 @@ while test ! -e "$8"; do sleep .01; done
         """I6 positive: status/wait-info never create, chmod or clear owned paths."""
         f=self.f
         for verb in ('status','wait-info'):
-            r=self.ok(f.verb(verb));self.assertTrue(r.stdout.strip());self.assertFalse(f.host.exists())
+            r=self.ok(f.verb(verb));self.assertEqual(r.stdout,'build-lock: unheld\nmemory_available_mb=8192\n')
+            self.assertFalse(f.host.exists())
         parent,release,_=f.hold()
         before=snapshot(f.host);modes={str(p):p.stat().st_mode for p in (f.host,f.lock.parent,f.lock,f.info)}
         for verb in ('status','wait-info'):
@@ -335,6 +366,27 @@ while test ! -e "$8"; do sleep .01; done
             self.assertEqual(before,snapshot(f.host))
             self.assertEqual(modes,{str(p):p.stat().st_mode for p in (f.host,f.lock.parent,f.lock,f.info)})
         release.touch();self.assertEqual(parent.wait(timeout=5),0)
+        released=snapshot(f.host)
+        for verb in ('status','wait-info'):
+            r=self.ok(f.verb(verb));self.assertEqual(r.stdout,'build-lock: unheld\nmemory_available_mb=8192\n')
+            self.assertEqual(released,snapshot(f.host))
+
+    def test_c2_unsearchable_ancestor_is_unknown(self):
+        """Code F2→I6: inaccessible is not absent, even with a kernel owner."""
+        self.assertNotEqual(os.geteuid(),0,'permission witness requires an unprivileged test user')
+        f=self.f;f.lock.parent.mkdir(parents=True)
+        with f.lock.open('a') as owner:
+            fcntl.flock(owner,fcntl.LOCK_EX)
+            f.host.chmod(0o600)
+            try:
+                for verb in ('status','wait-info'):
+                    with self.subTest(verb=verb):
+                        r=f.verb(verb,pass_fds=(owner.fileno(),))
+                        self.assertNotEqual(r.returncode,0,r.stdout+r.stderr)
+                        self.assertNotIn('unheld',r.stdout)
+                        self.assertTrue(r.stderr.strip())
+            finally:f.host.chmod(0o700)
+        self.reacquire()
 
     def test_t6_unknown_retired_and_foreign_token(self):
         """I6 refusal: inspection errors stay unknown; no forced release/foreign cleanup."""
