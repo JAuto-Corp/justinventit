@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Finite W-C1 invariant mutants against an already generated consumer.
 
-Each mutant is a disposable script copy. The generated tests force offline curl
+Each mutant is a disposable script/helper closure. The generated tests force offline curl
 and scratch child homes. No live service or product state is involved.
 """
 import argparse
@@ -71,6 +71,7 @@ def main():
     script = project / "scripts/msg.sh"
     tests = project / "scripts/tests/test_msg.py"
     text = script.read_text()
+    helper_text = (project / "scripts/lib/jv-project.sh").read_text()
     mutations = [
         ("I1-root-binding", lambda s: once(s, '.project_root == $root', 'true'),
          "test_I1_projects_restart_identity_and_independent_cursors"),
@@ -91,7 +92,7 @@ def main():
         ("F2-I6-curl-defaults", lambda s: once(s, 'curl -q -sS', 'curl -sS'),
          "test_F2_F3_I6_remote_success_no_artifacts_key_only_on_stdin"),
         ("F3-I6-remote-artifacts", lambda s: once(s, 'hub:target|hub:seats|hub:open|hub:mine|hub:blocked) return 0',
-                                                   'hub:target|hub:seats|hub:open|hub:mine|hub:blocked) _jv_init_store; return 0'),
+                                                   'hub:target|hub:seats|hub:open|hub:mine|hub:blocked) _jv_init_store mail/cursors; return 0'),
          "test_F2_F3_I6_remote_success_no_artifacts_key_only_on_stdin"),
         ("R7-I6-secret-stderr", lambda s: once(s, '  HUB_DB_KEY="$(_hub_env_val HUB_SERVICE_KEY)"',
                                                '  HUB_DB_KEY="$(_hub_env_val HUB_SERVICE_KEY)"\n  printf "%s\\n" "$HUB_DB_KEY" >&2'),
@@ -127,12 +128,18 @@ def main():
         mutations = [m for m in mutations if m[0] in args.only]
     results = []
     for name, mutate, cell in mutations:
-        candidate = evidence / (name + ".sh")
-        candidate.write_text(mutate(text))
+        root = evidence / name / "scripts"
+        (root / "lib").mkdir(parents=True)
+        candidate = root / "msg.sh"
+        helper = root / "lib/jv-project.sh"
+        helper_mutant = name in ("I1-root-binding", "F1-I1-nested-alias")
+        candidate.write_text(text if helper_mutant else mutate(text))
+        helper.write_text(mutate(helper_text) if helper_mutant else helper_text)
         candidate.chmod(0o755)
         syntax = subprocess.run(["bash", "-n", str(candidate)], capture_output=True, text=True)
         if syntax.returncode:
             raise RuntimeError(name + " is not a valid behavioral mutant: " + syntax.stderr)
+        subprocess.run(["bash", "-n", str(helper)], check=True)
         env = {**os.environ, "JV_MSG_SCRIPT": str(candidate), "JV_MSG_PEER_SCRIPT": str(candidate)}
         run = subprocess.run([sys.executable, str(tests), "Mailbox." + cell],
                              capture_output=True, text=True, env=env, timeout=90)
@@ -140,9 +147,10 @@ def main():
         (evidence / (name + ".stderr")).write_text(run.stderr)
         killed = run.returncode != 0 and "FAIL" in run.stderr and "W-C1 feature absent" not in run.stderr
         results.append({"mutant": name, "cell": cell, "status": run.returncode, "killed": killed,
-                        "sha256": hashlib.sha256(candidate.read_bytes()).hexdigest()})
+                        "sha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
+                        "helper_sha256": hashlib.sha256(helper.read_bytes()).hexdigest()})
         print(name + ": " + ("KILLED" if killed else "SURVIVED/INVALID"), flush=True)
-    summary = {"source_sha256": hashlib.sha256(script.read_bytes()).hexdigest(), "results": results}
+    summary = {"source_sha256": hashlib.sha256(script.read_bytes()).hexdigest(), "helper_sha256": hashlib.sha256(helper_text.encode()).hexdigest(), "results": results}
     (evidence / "results.json").write_text(json.dumps(summary, indent=2) + "\n")
     return int(not all(r["killed"] for r in results))
 

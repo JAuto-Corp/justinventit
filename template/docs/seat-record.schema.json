@@ -1,0 +1,499 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:justinventit:seat-record:1",
+  "title": "Seat record (SEAT_PROTOCOL \u00a71)",
+  "description": "Normative schema for <coordination-root>/<project_id>/sessions/<letter>.json. Stage-0 r4 [4] blocked the prose version: a record that cannot be validated cannot deliver the write-and-read validation \u00a71 requires. Lease and watcher are SHAPE ONLY here \u2014 their semantics belong to o's protocol delta (17:49Z split) and this schema deliberately does not encode acquisition, fencing, or renewal rules. VALIDATOR REQUIREMENT (r5 [9]): `format` is ANNOTATION-ONLY in Draft 2020-12 unless format-assertion is enabled. Implementations MUST validate with format assertions on, or timestamps are unchecked strings \u2014 a rule that silently does not run is the fail-open class this record is built against.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "letter",
+    "runtime",
+    "model",
+    "effort",
+    "workdir",
+    "session_handle",
+    "state",
+    "capabilities",
+    "lease",
+    "watcher"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Integer, not semver: readers branch on exact equality and refuse unknown versions rather than guessing compatibility.",
+      "type": "integer",
+      "const": 1
+    },
+    "project_id": {
+      "description": "Immutable adoption identifier, using the same grammar as the project state store.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "letter": {
+      "description": "Canonical lowercase ASCII seat letter. Shape does not confer role membership or authority.",
+      "type": "string",
+      "pattern": "^[a-z]$"
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "claude",
+        "codex"
+      ]
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "From the generated matrix. NULL means unprobed, never 'no model' \u2014 absent would be indistinguishable from unknown, which is the fail-open shape this record exists to avoid. Null is legal ONLY in state=booted; every tier-resolved state forbids it (see allOf)."
+    },
+    "effort": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        null
+      ],
+      "description": "From the generated matrix. NULL means unprobed. Null is legal ONLY in state=booted; every tier-resolved state forbids it (see allOf)."
+    },
+    "workdir": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "session_handle": {
+      "description": "Claude conversation UUID or Codex thread id. Null only while booted-but-unregistered.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "description": "\u00a72 canonical set. `stalled` and `dead` are DERIVED VERDICTS and are never self-written \u2014 a record carrying them is itself a finding.",
+      "type": "string",
+      "enum": [
+        "booted",
+        "active",
+        "standby",
+        "dormant",
+        "parked"
+      ]
+    },
+    "heartbeat": {
+      "description": "Written ONLY by the seat's own turn-end hook (\u00a72). No external process writes these fields; a watchdog-authored heartbeat certifies false liveness.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at",
+        "wake_count",
+        "cadence_seconds"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "wake_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cadence_seconds": {
+          "description": "Bare integer. Prose here is REJECTED, not coerced: an i.txt reading 'none (wake loop STOPPED deliberately)' once killed the whole stall-watchdog sweep under set -u.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_wake_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "conclusion": {
+      "description": "\u00a74a requires reason AND brief for a dormant claim to take; the watchdog refuses dormancy without both.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "reason",
+        "at",
+        "brief"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "brief": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resolvable path to the durable brief a successor boots from."
+        }
+      }
+    },
+    "superseded_by": {
+      "description": "\u00a72 parked-revival: set to the superseding fencing token. A quarantined handle that un-parks observes this, performs NO side effects, and self-concludes.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_probe": {
+      "description": "Externally maintained launch/probe outcome, kept STRICTLY SEPARATE from the canonical STALLED predicate (which stays heartbeat-only per \u00a72). It selects the recovery branch and never triggers a stall by itself. `unresponsive_unknown` is named once in SEAT_PROTOCOL (\u00a73:128) and given no recovery branch \u2014 spec delta 3.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "at",
+        "result"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "live",
+            "parked",
+            "exited",
+            "unresponsive_unknown"
+          ]
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        }
+      }
+    },
+    "capabilities": {
+      "description": "PROBED, never declared. Absent is not false; an unprobed capability is ABSENT, so a reader cannot mistake 'never checked' for 'not supported'. Origin: a seat's RC channel was found silently dead inside a live process and only a recycle re-registered it \u2014 a declared capability is a claim about the past. Value types are key-specific: SEAT_PROTOCOL \u00a71 defines watcher_locations as an ARRAY and external_invoke as an enum, which a blanket boolean|string cannot express (r5 [6]). An EMPTY watcher_locations forbids standby/doorbell mode \u2014 so the empty array is meaningful data, not an absent value.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "probed_at"
+        ],
+        "properties": {
+          "value": {
+            "type": [
+              "boolean",
+              "string"
+            ]
+          },
+          "probed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "properties": {
+        "watcher_locations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "probed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "host",
+                  "in-session"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "probed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "external_invoke": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "probed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "enum": [
+                "remote-control",
+                "exec-resume",
+                "tmux-keys",
+                "none"
+              ]
+            },
+            "probed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "resume_modal": {
+          "$ref": "#/$defs/boolCapability"
+        },
+        "modal_detectable": {
+          "$ref": "#/$defs/boolCapability"
+        },
+        "remote_answerable": {
+          "$ref": "#/$defs/boolCapability"
+        },
+        "resumable": {
+          "$ref": "#/$defs/boolCapability"
+        },
+        "hooks": {
+          "$ref": "#/$defs/boolCapability"
+        },
+        "memory": {
+          "$ref": "#/$defs/boolCapability"
+        }
+      }
+    },
+    "lease": {
+      "description": "SHAPE ONLY \u2014 reserved. Semantics (flock-CAS, ULID token equality, stall-episode binding, causally-fenced release) belong to o's SEAT_PROTOCOL delta. This schema does not encode them and an implementation must not infer them from the shape. NOT nullable: a required-but-null value carries no more information than an absent one (cross-review blocker, 2026-07-28).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "holder",
+        "epoch",
+        "expires_at"
+      ],
+      "properties": {
+        "holder": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fencing token (ULID). null is the NORMAL state \u2014 healthy seats run unleased."
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Human-readable revival counter with NO fencing role; fencing is token equality."
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "watcher": {
+      "description": "SHAPE ONLY \u2014 reserved, same split as lease. Note \u00a71's own caveat: an in-session watcher is conforming only while an externally-readable renewal is current, because a record of existence proves nothing \u2014 a dead watcher leaves the same record. NOT nullable: a required-but-null value carries no more information than an absent one (cross-review blocker, 2026-07-28).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location",
+        "generation"
+      ],
+      "properties": {
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "host",
+            "in-session",
+            null
+          ]
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "session_handle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_poll_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "A dormant seat MUST carry a complete conclusion (\u00a74a) \u2014 dormancy without a ceremony is indistinguishable from a stall.",
+      "if": {
+        "properties": {
+          "state": {
+            "const": "dormant"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "conclusion"
+        ],
+        "properties": {
+          "conclusion": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "description": "An active or standby seat MUST carry a heartbeat \u2014 those states are defined by heartbeat recency (\u00a72 predicate table).",
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "active",
+              "standby"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "heartbeat"
+        ],
+        "properties": {
+          "heartbeat": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "description": "A null session_handle is legal ONLY in `booted` (pre-first-turn). Any other state with a null handle is an unregistered seat claiming to be live \u2014 r5 [5].",
+      "if": {
+        "properties": {
+          "session_handle": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "session_handle"
+        ]
+      },
+      "then": {
+        "properties": {
+          "state": {
+            "const": "booted"
+          }
+        }
+      }
+    },
+    {
+      "description": "Tier verification is mandatory (\u00a73): in every state past pre-first-turn the resolved model and effort MUST be present. A live seat with an unresolved tier is the fail-open shape this record exists to prevent, and null there is indistinguishable from unprobed.",
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "active",
+              "standby",
+              "dormant",
+              "parked"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "model",
+          "effort"
+        ],
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "effort": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "boolCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "probed_at"
+      ],
+      "properties": {
+        "value": {
+          "type": "boolean"
+        },
+        "probed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

@@ -146,3 +146,95 @@ backend conformance, acknowledged cursors and authorization remain future work.
 Historical guard reasons: [provenance](CLUSTER_PROVENANCE.md). Generated runtime
 tests are in `scripts/tests/test_msg.py`; the framework's Copier acceptance runner
 exercises two consumers with isolated state and fake curl, never a live service.
+
+## Seat launch and boot (W-C2)
+
+The same project identity guard binds mailbox and session state. Launch additionally
+requires Python 3.11+ (stdlib TOML), Node 22+ (the bundled JavaScript schema
+validator), and operator-installed provider CLIs. No pnpm, tsx, application
+packages or database are needed. This command runs a seat in the current terminal;
+it does not install providers, profiles, a daemon, leases or a supervisor.
+
+```bash
+# Set the three JV project variables above first. Choose your own model.
+scripts/role-launch.sh A --worktree /absolute/project/worktree \
+  --runtime claude --model your-model --tier thinking --fresh
+scripts/boot-role.sh A
+# Later launches take their entire tuple from the persisted record:
+scripts/role-launch.sh A --worktree /absolute/project/worktree
+```
+
+O and I default to `JV_PROJECT_ROOT`; every other uppercase ASCII letter requires
+an existing `--worktree`. The workdir is canonicalized. Bootstrap requires an
+explicit runtime (`claude` or `codex`) and nonempty model; thinking (the default)
+means xhigh effort, doing means medium. Once a record exists, bootstrap flags are
+refused. To change its tuple, stop the seat and deliberately edit and validate the
+record; the launcher does not provide concurrent record administration.
+
+Records live at `$JV_STATE_ROOT/$JV_PROJECT_ID/sessions/<lower-letter>.json`,
+with an adjacent `.json.lock` held through runtime exit. The full schema and
+project/letter/workdir binding are checked from one opened byte image. Bootstrap
+validates a private candidate before atomic publication and rereads the persisted
+record. Empty capabilities mean unprobed; `booted` and neutral lease/watcher
+shapes do not establish liveness or implement the broader seat protocol.
+
+Claude uses exactly the requested record model/effort, qualified names such as
+`example-project-7c3a-a`, and no implicit permission bypass. Its uppercase-letter
+`A.id` contains a validated UUID. Resume requires the history file under
+`$HOME/.claude/projects/<workdir-with-slashes-replaced-by-hyphens>/<uuid>.jsonl`;
+missing history or `--fresh` selects a fresh UUID. This inherited history layout
+is a compatibility boundary, not a claim about every CLI version. Prelaunch
+refusals fail nonzero; once interactive Claude returns, inherited pane lifecycle
+ends at status 0 (unexpected exits hold for Enter). That status is not a supervisor
+health verdict or proof of the resolved Claude model.
+
+For Codex, set `JV_CODEX_BIN` to an absolute executable path. The launcher prepends
+its directory to PATH and proves `--version` invocation. Configure exact workdir
+trust and matching profiles in `${CODEX_HOME:-$HOME/.codex}/config.toml`:
+
+```toml
+[projects."/absolute/project/worktree"]
+trust_level = "trusted"
+[profiles.example-project-7c3a-thinking]
+model = "your-model"
+model_reasoning_effort = "xhigh"
+[profiles.example-project-7c3a-doing]
+model = "your-model"
+model_reasoning_effort = "medium"
+```
+
+Run the same bootstrap with `--runtime codex`. Each launch requires parsed exact
+workdir trust, then a bounded 240-second read-only probe. A real probe costs one
+provider turn. Only its own `thread.started` rollout and exact recorded tuple can
+pass; another thread's evidence cannot substitute. The checked provider-home
+`.jv-tier-probe.lock` intentionally serializes probes across projects sharing that
+home. Profiles and trust remain operator-managed; W-D3 owns adapter packaging.
+
+A fresh Codex launch prints `/rename <project-id>-<letter>` for the human/agent
+inside the TUI. `A.codex-thread` stores that INTENDED, unverified name. Resume
+accepts only this seat's qualified name and requires tmux or explicit
+`--at-machine` because the resume modal otherwise parks unattended work. A
+provider refusal for an ambiguous duplicate name stays nonzero, without automatic
+fresh/newest-thread fallback. Dated lesson (2026-09-30): repeated fresh launches
+can share a name even after project qualification. Operational UUID recovery
+required stopping the seat first; writing the UUID earlier was overwritten by
+the launcher's name write on exit. Deterministic UUID recovery/manual migration
+is deferred here; this launcher does not accept UUIDs as saved Codex names.
+
+Post-exit Codex workdir/time evidence is advisory: even one matching rollout
+cannot prove ownership. Mismatch exits 4, a clean runtime exit with missing or
+ambiguous evidence exits 5, abnormal runtime exits propagate (including 137),
+and planned 130/143 teardown may end at 0 without evidence. Matching evidence is
+reported as consistent, never as verified interactive-thread identity.
+
+Runtime limitation observed with Codex CLI 0.159.2 on 2026-09-30:
+the exact resolved gitdir must be an operator-supplied writable root. Resolve it from the seat cwd
+with `git -C /absolute/worktree rev-parse --absolute-git-dir`; a parent `.git` or
+`.git/worktrees` entry was insufficient. W-D3 owns packaging those writable roots.
+The read-only tier preflight cannot verify gitdir writability.
+
+`boot-role.sh` only prints a neutral O/I/implementer prompt pointing to AGENTS.md,
+canonical guidance and that seat's mailbox. Project instructions and explicit
+dispatch supply authority. Offline acceptance renders cluster and solo consumers,
+uses allowlisted utilities and fake providers under scratch homes, and runs
+`scripts/tests/test_launch.py`; it is not live-provider compatibility evidence.

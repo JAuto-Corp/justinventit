@@ -73,6 +73,9 @@ jobs:
       - name: Portable mailbox and hub client
         run: python3 scripts/ci/test-mailbox-portability.py
 
+      - name: Portable seat launch, boot and schema
+        run: python3 scripts/ci/test-launch-portability.py
+
       - name: Portable frontend-design acceptance
         # The R4 wrapper first retains: bash scripts/ci/test-skill-portability.sh
         run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh

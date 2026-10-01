@@ -31,3 +31,25 @@ The caller supplies the project ID at adoption; no source paths, personal accoun
 values, live credentials or product data are carried into configuration. Runtime
 providers share one implementation. No provider-specific projection is generated
 for this script.
+
+## Launch, boot and schema extraction
+
+Pinned source revision remains `57d273154cf029158b7cc118143808e524baf28c`:
+`scripts/role-launch.sh`, `scripts/boot-role.sh`, `scripts/lib/codex-seat.sh`,
+`docs/orchestration/role-templates/{O,I,IMPLEMENTER}.md`,
+`scripts/validate-seat-record.ts` and
+`docs/features/plans/b4-seat-records-b2-leases/seat-record.schema.json`.
+
+| Date / origin | Retained reason or intentional extraction difference |
+| --- | --- |
+| 2026-07-29, `c8564d637` | Schema-driven evaluation, unsupported-keyword refusal, date-time/Unicode/prototype-key guards. The `.mjs` evaluator is mechanical TypeScript erasure plus module/usage/default-schema-path packaging, not a second implementation. |
+| 2026-08-02, `29de71234` (2026-07-29 experiments) | Missing Codex profiles can silently resolve defaults; parse trust and prove the exact resolved tuple using the probe's own thread. Checked flock matters because shell errexit is suppressed in conditional compounds. |
+| 2026-08-20, `6347c55b0` / `93be966d2` | Persisted record is sole tuple authority; a single byte image prevents a pathname replacement mixing runtime/model/effort. |
+| 2026-09-23, `317dd77f3` | Retain UUID/history resume, Codex modal guard, provider exit distinctions and honestly advisory post-exit attribution. |
+| 2026-09-30, duplicate-name and gitdir operational record | Qualified names still permit duplicates; UUID recovery had to follow seat shutdown because the launcher rewrites names on exit. Exact cwd gitdir writable-root configuration is separate from read-only tier proof. Both limitations are documented, not claimed implemented. |
+| 2026-10-01, W-C2 / charter X2,X3,X5 | Share W-C1 identity checks, qualify names/state, require explicit bootstrap model, validate private candidates, preserve empty unprobed capabilities, remove implicit permission bypass and source fleet policy from prompts. |
+| 2026-10-01, W-C2 code C1/C2 | Validate one literal probe UUID and require one rollout; wildcard or ambiguous identities cannot authorize dispatch. Compare parsed trust/model/effort inside Python so shell newline trimming and string coercion cannot convert invalid evidence into a pass, including the shared post-exit tier check. |
+
+The schema retains the full source shape; reserved lifecycle fields do not grant
+an implementation of leases, watchers, capabilities, recovery or registry ownership.
+Provider profile installation and complete runtime integration remain W-D3 work.
