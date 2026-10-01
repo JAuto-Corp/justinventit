@@ -110,7 +110,11 @@ produce **2 assertion failures**, zero errors. Unsafe shell/Python seeds stay
 data. A separate false-held mutant passes the predecessor F3 witness and fails
 the strengthened exact-output witness by assertion, zero errors.
 
-GREEN tested commit `78b9216696a7d9a16989613f88a761e5cbc6eb7c`:
+GREEN first passed at `78b9216696a7d9a16989613f88a761e5cbc6eb7c`. The final
+command inventory also names the already-pinned `shift` builtin; that metadata
+completion changes no admitted image or runtime code. All generated tests and
+all mutants were rerun at final tested commit
+`9dcf0d94b84da154bd0e09738976c6f23776c2db`:
 
 - F1 removes runtime regex admission. `capacity_allowlist.json` declares the
   complete command/helper inventories for three Bash programs and pins their
