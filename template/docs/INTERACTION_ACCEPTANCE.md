@@ -31,6 +31,22 @@ explicit disposition before claiming PR-ready; do not quietly omit the outcome.
 For changes with no user-facing interaction, record that scope fact instead of
 inventing a browser flow.
 
+Keep the check proportional: a small fix needs one seat for at most about 15
+minutes, with 2–4 screenshots or a short trace. Use the existing browser flow;
+do not build a bespoke harness for the fix.
+
+If the browser harness itself fails once (setup, configuration, fixture, or an
+unrelated page error before reaching the planned control), record BLOCKED and
+file the harness defect. With the director's recorded disposition, ship on the
+component/interaction tests plus a named post-deploy check by the real user.
+Name that user and the exact outcome to check in the PR/work record. Do not run
+a harness repair loop inside the feature PR or relabel the blocked run as PASS.
+
+Why: a three-file completion fix spent 3.5 hours across three harness attempts
+(configuration cwd, schema drift and an unrelated dashboard error) before this
+fallback. Origin: **JA, 2026-10-01**, o rulings `01M3WM8XER` / `01M3WNWANN`,
+proportion reset `01M3WQYEAS`, and W-D3 fold `01M3WSRTFNWNQFN7B6TWB2EXNR`.
+
 Why: a production completion modal's Done button did nothing despite green unit
 tests. Origin: **JA, 2026-10-01**, owner request
 `01M3W6MG1T1XGND7MW74GYTX26`. This is provider-neutral acceptance guidance; it
