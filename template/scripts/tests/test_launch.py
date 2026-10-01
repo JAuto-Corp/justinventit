@@ -650,12 +650,14 @@ sys.exit(r.returncode)
         self.configure(probe_effort=None)
         self.record(runtime="codex", model="7")
         self.configure(model="7", probe_model=7)
-        self.refuse("--fresh", diagnostic=r"(?i)(tier|mismatch)", dispatch="no-interactive")
+        with self.subTest(probe_model=7):
+            self.refuse("--fresh", diagnostic=r"(?i)(tier|mismatch)", dispatch="no-interactive")
         self.record(runtime="codex")
         self.configure(model="fixture-model", probe_model=None, post_effort="xhigh\n")
-        result = self.launch("--fresh")
-        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
-        self.assertRegex(result.stderr, r"(?i)(tier|mismatch)")
+        with self.subTest(post_effort="xhigh\n"):
+            result = self.launch("--fresh")
+            self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+            self.assertRegex(result.stderr, r"(?i)(tier|mismatch)")
 
     def test_T4_claude_fresh_resume_and_invalid_handle(self):
         """I4: UUID/history existence decide attach; unsafe handles never escape."""
