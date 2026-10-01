@@ -1,7 +1,7 @@
 # W-C5 observability review and evidence ledger
 
-Status: actual generated RED recorded; GREEN implementation and finite witnesses
-authored. Generated GREEN, mutant results and independent code review remain pending.
+Status: local generated GREEN and all finite mutation/matrix gates pass.
+O-commissioned independent code review, publication and hosted CI remain pending.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -117,3 +117,32 @@ finite witnesses. No prior expected value or refusal assertion is weakened.
 The baseline now has 22 methods; the same 22 mutation seeds remain. The source
 closure/pins are unchanged. The code-review packet includes the assertion diff
 for o's admission and the rerun's actual classification.
+
+## Local GREEN handoff (2026-10-01)
+
+Tested commit `a5756d0c3786ab551c72b20c0599e9163ad3248c`:
+
+| Gate | Actual result |
+| --- | --- |
+| Real task-disabled Copier 9.17.1 cluster + solo renders | Both pass |
+| Generated observability suite | 22 methods pass in 21.257 s; zero errors |
+| Same finite mutation list | 21 runtime assertion kills, one destructive-source refusal before child; zero errors or survivors |
+| Existing four-answer generation matrix | Four pass, zero fail |
+| Operating closure coupling/credential-pattern scan | Template and both renders clean |
+| Reused project verifier, fixture, guard, Copier configuration and matrix runner | Byte-identical to accepted base |
+
+The first run and every correction remain in evidence; they are not relabeled
+as passing. Each mutant retains exact changed bytes, source-gate result, selected
+cell and both streams. The packet includes source pins, prior authority, actual
+RED, both GREEN/mutant runs, matrix logs and the assertion correction diff for
+o's admission. The final handoff commit changes only this ledger and SPEC status;
+installed evidence-delta compares the committed operating/test/CI inputs with
+the tested head. Current-head hosted CI is not yet claimed.
+
+Request o's Sol code review on the exact local handoff head under
+`01M3WGYTB630GAQV10RAMRGSRB`. No author reviewer, self-acceptance, integration,
+provider wiring or live adoption. The runtime boundary remains reviewed
+cooperating code plus committed fixed policy; hostile self-registration/races
+remain outside scope. Notification zero means adapter acceptance, with documented
+possible duplicate retry after a checkpoint failure. Documentation impact is
+covered by generated HOST_OBSERVABILITY guidance and dated CLUSTER provenance.

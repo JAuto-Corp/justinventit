@@ -1,8 +1,9 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **Actual tests-only generated RED recorded; GREEN implementation and finite witnesses authored, generated GREEN pending.**
+Status: **Local GREEN: 22 generated methods, 21 runtime assertion kills, one source refusal and four matrix cases pass. O-commissioned code review pending.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
-at `be4952b835bc17da51a60304fba2271acb6fcacb` and awaits the hosted lane;
+at `be4952b835bc17da51a60304fba2271acb6fcacb`; its hosted CI is green and
+integration awaits a hosted-lane gap;
 o explicitly authorizes this next local slice in parallel with that wait.
 Author a, director o, integrator i. Extraction charter X1–X6 applies.
 
