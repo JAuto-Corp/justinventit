@@ -2,7 +2,7 @@
 
 A generated project must launch the runtime/model/effort recorded for its own seat and resume only its own saved session; extract the existing launcher, its validation/probe closure, and thin boot templates.
 
-Status: **Sol SPEC audit ACCEPT-WITH-FOLDS at `3664edf`; three folds incorporated below, RED authorized by o (`01M3V124X7NG8MEAC6DDF05Z6B`, 2026-10-01). RED review at `dd61731` returned BLOCK (five P2s); all five test folds are incorporated before GREEN under o's `01M3V2KNHWH5HXJ47ZFN3SQZ8E` disposition.** Author a; director o; integration i. Authorized after W-C1 ACCEPT at `22cb948c632d2797dd650b221b1308126f607cea` (dispatch `01M3TZPPXSV6GJRH27BQ7K1T7A`, 2026-10-01). W-A/W-C1 dependencies have landed at main `aa49d9783`; implementation and GREEN evidence are recorded in `docs/reviews/W-C2-LEDGER.md`. The full independent code review remains due.
+Status: **Sol SPEC audit ACCEPT-WITH-FOLDS at `3664edf`; three folds incorporated below, RED authorized by o (`01M3V124X7NG8MEAC6DDF05Z6B`, 2026-10-01). RED review at `dd61731` returned BLOCK (five P2s); all five test folds are incorporated before GREEN under o's `01M3V2KNHWH5HXJ47ZFN3SQZ8E` disposition.** Author a; director o; integration i. Authorized after W-C1 ACCEPT at `22cb948c632d2797dd650b221b1308126f607cea` (dispatch `01M3TZPPXSV6GJRH27BQ7K1T7A`, 2026-10-01). W-A/W-C1 dependencies have landed at main `aa49d9783`; implementation and GREEN evidence are recorded in `docs/reviews/W-C2-LEDGER.md`. The full Sol xhigh code review at `e541d32` returned two traced P2s (C1/C2); their RED-first corrections and evidence are in the ledger. O will personally read the correction diff under `01M3V636X28ET6V9PTHMKR638Z`; no further model review is commissioned.
 
 ## Intent
 

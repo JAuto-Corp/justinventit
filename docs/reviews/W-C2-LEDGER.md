@@ -155,3 +155,20 @@ UUID; rollout lookup requires exactly one file. The finite mutant set adds six
 traced regressions: UUID validation, rollout/event uniqueness, trust/effort newline
 normalization and model type coercion. Existing trust/tier mutants follow the
 changed helper interfaces; their behavioral assertions remain unchanged.
+
+Corrected generated acceptance at `3dec693` passes all **20 methods**, zero
+failures/errors. All **29 finite launch mutants** fail assertions, with **zero
+test errors**; the six new C1/C2 mutants each exercise their traced guard. No
+additional cells or review round were introduced. Mailbox production/test/runner
+inputs are byte-identical in the committed trees to the accepted `e541d32` subject;
+the installed evidence-delta receipt supports carrying its 27-method/21-mutant
+evidence forward, with the already disclosed mutant cleanup limitation unchanged.
+
+The four-answer generation/coherence matrix also passes at `3dec693`. The final
+correction subject only adds this result and updates SPEC/review status; committed
+input comparison records unchanged template/runtime/test/CI bytes. Correction
+logs, generated closure, 29 changed mutant files, review verdict and o's exact
+instruction are sealed separately from the original GREEN packet. Hosted CI
+follows the pushed correction subject, with duplicate-run cancellation verified
+at terminal status. Next: o's personal correction review, then i integration after
+verdict and current-head CI; no further model review and no author merge.
