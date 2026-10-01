@@ -229,3 +229,18 @@ project identity that the actual W-C1 writer always emits.
 
 No shared mailbox/launcher production helper, locking, host effect, scheduler or
 provider invocation changes. Current GREEN and 35-witness results follow below.
+
+
+### Code-fold validation at `9ac4506e17a03161fb8131f6a31695924abfc9da`
+
+Fresh actual Copier output passes all **25 methods, zero errors**, including the
+real release update, legacy-target runtime refusals and hash-equal rollback. All
+**35 finite witnesses** are valid: **31 runtime assertion kills, three harness
+assertion kills, one unsafe-effect refusal before any child**; zero survivors or
+errors. C1–C4 each kills reintroduction of its reviewed defect.
+
+This final ledger-only commit leaves explicit render/runtime/test/CI inputs
+unchanged from `9ac4506`. Mailbox/launcher production inputs remain unchanged
+from their actual 27/20-method runs; no fresh W-C1/W-C2 mutant run is claimed.
+Exact-head hosted CI and o's personal diff verdict are next, then i integration.
+No author acceptance, merge, host activation or W-C4 implementation occurred.
