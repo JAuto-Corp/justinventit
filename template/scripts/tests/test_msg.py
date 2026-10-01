@@ -372,8 +372,8 @@ exec "$REAL_FLOCK" "$@"''')
         self.assertEqual(self.views()[0]["body"], LITERAL)
 
     def test_C1_I2_failed_tail_inspection_preserves_authority(self):
-        for tool, option in (("wc", "-l"), ("tail", "-c"), ("tail", "-n")):
-            for action in ("read", "append"):
+        for tool, option in (("wc", "-l"), ("tail", "-c"), ("tail", "-n"), ("wc", "-c")):
+            for action in ("read", "append", "replay"):
                 with self.subTest(tool=tool, option=option, action=action):
                     self.state = self.root / ("state-" + tool + option + action)
                     self.env["JV_STATE_ROOT"] = str(self.state)
@@ -386,10 +386,12 @@ exec "$REAL_FLOCK" "$@"''')
   exit 2
 fi
 exec "$REAL_TOOL" "$@"''')
-                    args = ["read", "a"] if action == "read" else ["send", "o", "a", "new"]
+                    args = (["read", "a"] if action == "read" else
+                            ["send", "o", "a", "retained" if action == "replay" else "new"])
                     try:
                         r = self.run_msg(*args, env={**fault, "REAL_TOOL": shutil.which(tool),
-                            "FAULT_OPTION": option, "FAULT_TRACE": trace, "MSG_HUB_ID": ULID2})
+                            "FAULT_OPTION": option, "FAULT_TRACE": trace,
+                            "MSG_HUB_ID": ULID if action == "replay" else ULID2})
                         self.assertTrue(trace.is_file(), "authority inspection fault was not reached")
                         self.assertEqual(snapshot(self.state), before, "failed inspection changed durable state")
                         self.assertEqual(r.returncode, 3, r.stderr + r.stdout)
