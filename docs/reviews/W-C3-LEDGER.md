@@ -181,3 +181,26 @@ CI now runs the actual liveness/update runner and finite mutants, retaining comp
 receipts. The current-head framework CI and one independent full code review are
 still required before o acceptance and i integration. No live adopter or host
 scheduler has been changed.
+
+
+## Final author validation at `7ae1abef00c3b741b10f5bd5c15c481484c2fb73`
+
+The delivered Python and shell liveness helpers are mandatory members of the
+source-gate closure. Fresh real Copier output passes all **21 methods, zero
+errors**, including upgrade/runtime refusal/rollback. The final **31-witness**
+run has **27 runtime assertion kills, three harness assertion kills and one
+unsafe-effect seed refused before execution**, with zero survivors, setup/syntax
+failures or errors. The exact schedule-deletion witness is killed independently
+of the heartbeat floor. Both-project reads and legacy-target reads are witnessed
+by the corresponding R3/R4 mutants; unsafe signal/tmux seeds remain unexecuted.
+
+Earlier GREEN and finite-run receipts are retained as dated predecessors; the
+`7ae1abe` fresh renders and final 31 outcomes are the current local evidence.
+Mailbox/launcher regression inputs remain unchanged from their actual `7ef8853`
+runs. Their 27/20 passes carry by committed-input comparison. The earlier four-
+answer matrix is explicitly pre-roster-fix evidence; current-head hosted CI
+reruns that matrix plus the full W-C3 suite and mutants before integration.
+
+This ledger-only follow-up does not change test/render/runtime inputs. Next:
+one o-commissioned full code review, exact-head CI, o's verdict and i's integration.
+No author acceptance, author merge, live provider test or host activation occurred.
