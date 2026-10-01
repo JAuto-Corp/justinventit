@@ -168,6 +168,35 @@ analogy. Existing security, correctness and effect gates remain binding.
 Why: the owner-visible milestone was getting displaced by ceremony and speculative work.
 Origin: **JA, 2026-09-30**, `FOCUS.md` and `PONYTAIL-BOOT-v1.md` Notch-up.
 
+### Focus on director wake
+
+After draining and reconciling mail, the commissioned director checks the project's
+`docs/FOCUS.md` before acting on a wake. Re-read its steering content when the file
+changed or two hours passed since the last read; after context loss or missing
+read history, read it again. Other seats retain their ordinary boot/dispatch reads.
+
+An installed wake adapter should emit the steering section before `## Parked`,
+capped at 60 lines, and warn if the whole page exceeds 60 lines. Keep the full
+page on disk and trim it rather than silently treating an oversized page as fine.
+Bind the director identity, FOCUS path and digest/read-time state to this project;
+one project's read must never suppress another project's focus. The source helper
+is silent on errors, so missing output is not proof that focus was refreshed.
+
+Claude's source uses UserPromptSubmit. A Codex adapter needs a real wake/doorbell
+delivery path that supplies the same bounded content; an AGENTS pointer alone
+does not inject it. These are adapter requirements, not installed functionality.
+Until an adapter is adopted, perform the read explicitly through the runtime's
+file tools. The 60-line check can use the existing `wc -l docs/FOCUS.md` command;
+no new checker or state service is required by this guidance.
+
+Why: a director can wake with valid mail but stale milestone priorities; change-or-
+interval refresh keeps repeated wakes cheap. Origin: **JA, 2026-10-01**, owner
+request `01M3W3HQ04X8DAA7JRBGSKHPX2` and the existing `usage/focus-hook.py` behavior.
+The W-D3 documentation scope is o ruling `01M3WRVHBX8WVT27ETPC8A8X46` (2026-10-01).
+Runtime installation remains separate (framework issue #79, alongside the
+Codex bridge in PR #34); this page neither installs a hook nor changes a host
+configuration.
+
 After ruling a recurring mechanical failure class, the director can grant a bounded
 standing authority: named holder, exact predicate/evidence, permitted action, invalidations
 or expiry, and escalation on mismatch/recurrence. Record each use on the existing PR/work

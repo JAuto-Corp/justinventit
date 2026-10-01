@@ -1,6 +1,7 @@
 # Active milestone
 
-Project-owned: read at ordinary boot and before dispatch. Keep under 60 lines; update a
+Project-owned: read at ordinary boot, before dispatch and on director wake per DELIVERY.
+Keep under 60 lines; update a
 row when state changes. Detailed evidence belongs in the linked work record.
 Pattern and rationale: `docs/DELIVERY.md` — Active milestone and standing authorities.
 
