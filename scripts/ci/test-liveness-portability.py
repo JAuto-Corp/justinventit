@@ -134,7 +134,8 @@ def main():
         assert saved,'update changed saved user answers'
         assert owned.read_bytes()==owned_before,'update overwrote project-owned AGENTS'
         assert all((upgrade/p).read_bytes()==v for p,v in legacy.items()),'update changed legacy runtime state'
-        assert new_answers['_commit']==head,'candidate source not recorded in answers'
+        resolved=run('upgrade-resolve-answer',['git','-C',template,'rev-parse',new_answers['_commit']]).stdout.strip()
+        assert resolved==head,'candidate source not recorded in answers'
         updated=scratch/'updated consumer'
         shutil.copytree(upgrade,updated,ignore=shutil.ignore_patterns('.git','__pycache__'))
         (evidence/'upgrade-after-sha256.json').write_text(json.dumps(hashes(upgrade),indent=2)+'\n')

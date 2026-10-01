@@ -192,6 +192,11 @@ class Liveness(unittest.TestCase):
             f.cadence(wake_count=40); fcntl.flock(held,fcntl.LOCK_UN)
         out,err=child.communicate(timeout=5);self.assertEqual(child.returncode,0,out+err)
         self.assertEqual(f.fields(p)['wake_count'],'41')
+        with lock.open('a') as held:
+            fcntl.flock(held,fcntl.LOCK_EX);before=p.read_bytes();started=time.monotonic()
+            r=self.ok(f.run('heartbeat-hook.sh',timeout=4))
+            self.assertLess(time.monotonic()-started,3);self.assertTrue(r.stderr.strip())
+            self.assertEqual(p.read_bytes(),before,'timed-out hook changed cadence')
 
     def test_t2_writer_faults_are_atomic(self):
         """I2 refusal: checked lock/write/rename failure, no candidate debris."""
@@ -314,15 +319,17 @@ class Liveness(unittest.TestCase):
     def test_t5_backoff_stable_episode_recovery_and_dormancy(self):
         """I5 positive: last successful report controls finite backoff and reset."""
         f=self.f;self.stale();self.sweep();first=f.alerts()[0]['episode']
-        for delta,wanted in ((2699,1),(2700,2),(8099,2),(8100,3),(18899,3),(18900,4)):
+        for delta,wanted in ((2699,1),(2700,2),(8099,2),(8100,3),(18899,3),(18900,4),
+                             (40499,4),(40500,5),(83699,5),(83700,6),(170099,6),(170100,7),
+                             (256499,7),(256500,8)):
             f.now=EPOCH+delta;self.sweep();self.assertEqual(len(f.alerts()),wanted)
             self.assertEqual(f.alerts()[-1]['episode'],first,'additional schedule detector changed episode')
         f.cadence();self.sweep();self.stale();self.sweep()
-        self.assertEqual(len(f.alerts()),5);self.assertNotEqual(f.alerts()[-1]['episode'],first)
+        self.assertEqual(len(f.alerts()),9);self.assertNotEqual(f.alerts()[-1]['episode'],first)
         second=f.alerts()[-1]['episode'];brief=f.root/'brief';brief.write_text('done')
         f.cadence(state='dormant',next_wake_at='none',cadence_seconds=0,conclusion='done',brief=brief)
         self.sweep();f.now+=1;self.stale();self.sweep()
-        self.assertEqual(len(f.alerts()),6);self.assertNotEqual(f.alerts()[-1]['episode'],second)
+        self.assertEqual(len(f.alerts()),10);self.assertNotEqual(f.alerts()[-1]['episode'],second)
 
     def test_t5_dry_run_never_writes_stall_or_recovery(self):
         """I5 refusal: no directory/lock/log creation, no state clearing or budget use."""
