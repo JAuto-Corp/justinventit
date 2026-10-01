@@ -93,6 +93,15 @@ class ReadSpy:
   data=self.readline()
   if not data: raise StopIteration
   return data
+class PartialAppend:
+ def __init__(self,file): self.file=file
+ def __getattr__(self,name): return getattr(self.file,name)
+ def __enter__(self): return self
+ def __exit__(self,*args): return self.file.__exit__(*args)
+ def write(self,data):
+  self.file.write(data[:max(1,len(data)//2)]);self.file.flush()
+  with _builtin_open(os.environ['JV_TEST_FAULT_MARKER'],'w') as out: out.write('partial append')
+  raise OSError('fixture partial append failure')
 def wrapped(original,path,mode='r',*args,**kwargs):
  absolute=os.path.abspath(os.fspath(path)) if isinstance(path,(str,bytes,os.PathLike)) else ''
  fault=os.environ.get('JV_OBS_FAULT')
@@ -100,6 +109,8 @@ def wrapped(original,path,mode='r',*args,**kwargs):
   with _builtin_open(os.environ['JV_TEST_FAULT_MARKER'],'w') as out: out.write(fault)
   raise OSError('fixture append failure')
  file=original(path,mode,*args,**kwargs)
+ if 'a' in mode and ((fault=='partial-ledger' and absolute.endswith('/observability/usage.tsv')) or (fault=='partial-sink' and absolute.endswith('/observability/disk-alerts.jsonl'))):
+  return PartialAppend(file)
  return ReadSpy(file,path) if 'r' in mode and selected(path) else file
 builtins.open=lambda path,mode='r',*a,**k: wrapped(_builtin_open,path,mode,*a,**k)
 io.open=lambda path,mode='r',*a,**k: wrapped(_io_open,path,mode,*a,**k)

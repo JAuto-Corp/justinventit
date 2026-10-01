@@ -146,3 +146,18 @@ cooperating code plus committed fixed policy; hostile self-registration/races
 remain outside scope. Notification zero means adapter acceptance, with documented
 possible duplicate retry after a checkpoint failure. Documentation impact is
 covered by generated HOST_OBSERVABILITY guidance and dated CLUSTER provenance.
+
+## Code review fold RED (2026-10-01)
+
+Sol xhigh blocked exact `7a02335037daba959e729ca6f22a33522a578970` with five P2
+findings. O `01M3WKZWR6WM0DZ02KQZRKKEVN` admits one fold: F1/F5 append-only
+newline framing/recovery, F2 provider-isolated huge numeric rejection, F3 newest
+credits independent of quota windows, F4 live-equivalent history ranges. No
+truncation or destructive recovery. A complete history record retains the
+five-field TSV contract; JSONL sources retain JSON records.
+
+This tests-only commit adds one method per finding (27 total) and a synthetic
+partial-write seam. All 22 existing test method ASTs are unchanged. Actual
+committed generated RED must precede implementation. After GREEN, rerun every
+existing mutant plus one traced fault mutation per finding; then new immutable
+evidence and o-commissioned narrow fold review. Publication remains held.

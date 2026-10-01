@@ -335,6 +335,103 @@ class Observability(unittest.TestCase):
         self.assertEqual((r.returncode,r.stdout,r.stderr),(0,'',''))
         self.assertEqual(snapshot(f.root),before)
 
+    def test_r1_partial_alert_append(self):
+        """Code F1→I6: retain failed bytes; only a complete own row can checkpoint."""
+        f=self.f;f.disk(percent=90)
+        alerts=f.host/'observability/disk-alerts.jsonl'
+        state=f.host/'observability/disk-state.json'
+        r=f.run('disk-watch.sh',env={'JV_OBS_FAULT':'partial-sink'})
+        self.assertNotEqual(r.returncode,0);self.assertTrue(f.fault.exists())
+        fragment=alerts.read_bytes();self.assertTrue(fragment);self.assertFalse(fragment.endswith(b'\n'))
+        self.assertFalse(state.exists(),'partial delivery checkpointed')
+        report=self.report(f.run('disk-watch.sh'))
+        self.assertTrue(alerts.read_bytes().startswith(fragment+b'\n'),'retry concatenated onto partial alert')
+        self.assertIn('alerts-skipped:1',report['warnings'])
+        lines=alerts.read_bytes().splitlines(keepends=True)
+        self.assertEqual(len(lines),2);self.assertTrue(all(line.endswith(b'\n') for line in lines))
+        accepted=json.loads(lines[1]);self.assertEqual(accepted['percent'],90)
+        self.assertEqual(len(json.loads(state.read_text())),1)
+        before=alerts.read_bytes();self.report(f.run('disk-watch.sh'))
+        self.assertEqual(alerts.read_bytes(),before,'accepted delivery was not suppressed')
+
+    def test_r2_huge_provider_number(self):
+        """Code F2→I2: 10**400 cannot escape provider isolation or fabricate zero."""
+        f=self.f
+        for bad in ('anthropic','openai'):
+            self.sample();f.ledger.unlink(missing_ok=True)
+            if bad=='anthropic':f.anthropic_data(used=10**400)
+            else:f.rollout(used=10**400)
+            good='openai-wk' if bad=='anthropic' else 'anthropic-wk'
+            for entry in ('pace.sh','usage-hook.sh'):
+                r=f.run(entry)
+                self.assertNotIn('Traceback',r.stderr,'numeric overflow escaped the provider boundary')
+                self.assertEqual(r.returncode==0,entry=='usage-hook.sh')
+                rows=self.by_series(f.report(r));self.assertIn(good,rows)
+                self.assertEqual(rows[good]['used'],40);self.assertNotIn(bad+'-wk',rows)
+                self.assertIn('\t'+good+'\t',f.ledger.read_text())
+                self.assertNotIn('\t'+bad+'-wk\t',f.ledger.read_text())
+
+    def test_r3_independent_latest_credits(self):
+        """Code F3→I3: newest credits win independently of weekly fallback."""
+        f=self.f
+        weekly={'secondary':{'used_percent':40,'window_minutes':10080,'resets_at':f.now+302400},
+                'credits':{'has_credits':True,'unlimited':False,'balance':'100'}}
+        short={'primary':{'used_percent':90,'window_minutes':300,'resets_at':f.now+16200},
+               'credits':{'has_credits':True,'unlimited':False,'balance':'80'}}
+        for separate in (False,True):
+            old=f.rollout(rate_limits=weekly,age=1)
+            newer=f.rollout(rate_limits=short,name='newer.jsonl')
+            if not separate:
+                old.write_bytes(old.read_bytes()+newer.read_bytes());newer.unlink();os.utime(old,(f.now,f.now))
+            for entry in ('pace.sh','usage-hook.sh'):
+                f.history([(f.now-1800,'openai-credits',110,0,0)])
+                rows=self.by_series(self.report(f.run(entry,env={'JV_USAGE_ANTHROPIC_FILE':None})))
+                self.assertEqual(rows['openai-credits']['balance'],80)
+                self.assertEqual(rows['openai-credits']['spend_per_hour'],60)
+                self.assertEqual(rows['openai-wk']['used'],40)
+                self.assertNotIn('target',rows['openai-credits'])
+        old.unlink()
+        r=f.run(env={'JV_USAGE_ANTHROPIC_FILE':None});self.assertNotEqual(r.returncode,0)
+        rows=self.by_series(f.report(r));self.assertNotIn('openai-wk',rows)
+        self.assertEqual(rows['openai-credits']['balance'],80)
+        # A parseable record without its terminating newline is still incomplete.
+        newer.write_bytes(newer.read_bytes().rstrip(b'\n'));os.utime(newer,(f.now,f.now))
+        r=f.run(env={'JV_USAGE_ANTHROPIC_FILE':None});self.assertNotEqual(r.returncode,0)
+        self.assertNotIn('openai-credits',self.by_series(f.report(r)))
+        self.assertIn('openai-rows-skipped:1',f.report(r)['warnings'])
+
+    def test_r4_history_ranges(self):
+        """Code F4→I2/I3: an invalid 999% sample is counted and cannot alter burn."""
+        f=self.f;f.anthropic_data(used=25);reset=f.now+302400
+        f.history([(f.now-3600,'anthropic-wk',999,reset,604800),
+                   (f.now-1800,'anthropic-wk',20,reset,604800)])
+        before=f.ledger.read_bytes()
+        r=f.run(env={'JV_USAGE_CODEX_ROOT':None});self.assertNotEqual(r.returncode,0)
+        report=f.report(r);row=self.by_series(report)['anthropic-wk']
+        self.assertEqual((row['used'],row['burn_per_hour']),(25,10))
+        self.assertIn('history-skipped:1',report['warnings'])
+        self.assertTrue(f.ledger.read_bytes().startswith(before),'invalid bytes were destroyed')
+
+    def test_r5_unterminated_history(self):
+        """Code F5→I2/I4: ignore the unfinished row; repair only by appending."""
+        f=self.f;f.anthropic_data(used=25);reset=f.now+302400
+        f.history([(f.now-1800,'anthropic-wk',20,reset,604800)])
+        fragment=f.ledger.read_bytes().rstrip(b'\n');f.ledger.write_bytes(fragment)
+        r=f.run(env={'JV_USAGE_CODEX_ROOT':None});self.assertNotEqual(r.returncode,0)
+        report=f.report(r);row=self.by_series(report)['anthropic-wk']
+        self.assertIsNone(row['burn_per_hour'])
+        self.assertIn('history-skipped:1',report['warnings'])
+        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\n'),'retry concatenated onto history tail')
+        self.assertEqual(len(f.ledger.read_bytes().splitlines()),2)
+        f.history([]);f.fault.unlink(missing_ok=True)
+        r=f.run(env={'JV_USAGE_CODEX_ROOT':None,'JV_OBS_FAULT':'partial-ledger'})
+        self.assertNotEqual(r.returncode,0);self.assertTrue(f.fault.exists())
+        fragment=f.ledger.read_bytes();self.assertTrue(fragment);self.assertFalse(fragment.endswith(b'\n'))
+        r=f.run(env={'JV_USAGE_CODEX_ROOT':None});self.assertNotEqual(r.returncode,0)
+        self.assertIn('history-skipped:1',f.report(r)['warnings'])
+        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\n'))
+        self.assertEqual(len(f.ledger.read_bytes().splitlines()),2)
+
     def test_t7_both_entries_generated_and_missing_helper(self):
         """I7: both generated consumers execute and missing closure refuses."""
         f=self.f;self.sample()
