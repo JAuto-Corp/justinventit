@@ -54,6 +54,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
+    parser.add_argument("--only", action="append", default=[], help="run a named planned mutant; repeatable")
     args = parser.parse_args()
     project = args.project.resolve()
     evidence = args.evidence.resolve()
@@ -86,11 +87,22 @@ def main():
         ("R7-I6-secret-stderr", lambda s: once(s, '  HUB_DB_KEY="$(_hub_env_val HUB_SERVICE_KEY)"',
                                                '  HUB_DB_KEY="$(_hub_env_val HUB_SERVICE_KEY)"\n  printf "%s\\n" "$HUB_DB_KEY" >&2'),
          "test_F2_F3_I6_remote_success_no_artifacts_key_only_on_stdin"),
+        ("I6-implicit-env", lambda s: once(s, '_hub_load_target() {\n',
+                                          '_hub_load_target() {\n  MSG_ENV_FILE="${MSG_ENV_FILE:-$JV_PROJECT_ROOT/.env.local}"\n'),
+         "test_I6_bad_config_never_executes_or_requests"),
+        ("I6-key-argv", lambda s: once(s, 'curl -q -sS --max-time',
+                                      'curl -q -H "Authorization: Bearer $HUB_DB_KEY" -sS --max-time'),
+         "test_F2_F3_I6_remote_success_no_artifacts_key_only_on_stdin"),
         ("F4-I5-leading-dash", lambda s: once(s, 'grep -F -- "$2" "$1"', 'grep -F "$2" "$1"'),
          "test_F4_I5_search_later_matches_dash_text_and_errors"),
         ("F4-I5-first-nonmatch", lambda s: once(s, '    1) return 0 ;;', '    1) return 1 ;;'),
          "test_F4_I5_search_later_matches_dash_text_and_errors"),
     ]
+    if args.only:
+        unknown = set(args.only) - {m[0] for m in mutations}
+        if unknown:
+            raise ValueError("unknown mutants: " + str(sorted(unknown)))
+        mutations = [m for m in mutations if m[0] in args.only]
     results = []
     for name, mutate, cell in mutations:
         candidate = evidence / (name + ".sh")

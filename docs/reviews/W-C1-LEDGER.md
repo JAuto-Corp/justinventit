@@ -48,3 +48,33 @@ Director records: SPEC disposition `01M3TT0Y6SQFQ2YEJH35GKMPT8`; RED disposition
 `01M3TVPVBVP6B2CESG77B69JSJ`. Original audit records are retained in the extraction
 evidence packets. Earlier RED packets remain immutable. Initial RED is explicitly
 feature absence: the generated CLI was missing, so no negative guard had yet run.
+
+## Implementation and validation record
+
+Runtime extraction `411ccad` preserved the noncomment lines of 16 authority,
+framing, durability, identity and completion helper functions. The two changed
+core functions add project metadata/path validation and clearer lock or
+unverified-append diagnostics. Configuration, target selection and search are
+the intentional behavior changes. Initialization uses the existing project
+directory as a bootstrap lock before creating state, then the store identity
+lock to serialize binding the same ID from different project roots.
+
+The final RED review folds were committed before implementation (`dbdfcb1`).
+The first implementation run exposed two fixture cleanup errors: the universal
+offline PATH retained failed `flock`/`sync` shims during healthy controls. The
+shims are now removed after their fault window; assertions were unchanged.
+
+At `411ccad`, both real Copier consumers and all 24 parameterized test methods
+passed; the existing generation matrix passed 4/4. Fifteen initial invariant
+mutants were killed. Reconciliation with the SPEC's planned configuration
+mutants then found one survivor: implicit selection of a valid product-local
+env file. The earlier cells supplied no valid fallback file, so they could not
+discriminate that defect. One focused witness was added for this survivor and
+observed failing against the mutant while passing against the implementation.
+The separate key-in-argv mutant was killed without adding a cell. Final evidence
+must retain the survivor, its corrective RED, and the complete 17-mutant run.
+
+R8 and R10 remain accepted residuals. Supplemental inspection of changed files
+and selected rendered links is useful bounded evidence, not a replacement for
+the missing comprehensive oracle in R10. These results do not constitute the
+required independent GREEN code review or the integrator's merge decision.

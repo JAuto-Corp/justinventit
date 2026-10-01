@@ -711,6 +711,13 @@ else:
         self.refuse(["hub", "open"], r"(?i)(HUB_|project|config)", env={"MSG_ENV_FILE": cfg, **curl})
         self.assertFalse((self.root / "calls.jsonl").exists())
         self.assertFalse(self.state.exists())
+        # I6 survivor: a VALID implicit file must still be ignored. An absent
+        # fallback file cannot discriminate removal of explicit selection.
+        explicit = Path(self.hub_config()["MSG_ENV_FILE"])
+        (self.projects[0] / ".env.local").write_text(explicit.read_text())
+        self.refuse(["hub", "open"], "MSG_ENV_FILE", env={"MSG_ENV_FILE": None, **curl})
+        self.assertFalse((self.root / "calls.jsonl").exists())
+        self.assertFalse(self.state.exists())
 
     def test_I7_executable_syntax_and_unconfigured_help(self):
         for script in (SCRIPT, PEER_SCRIPT):
