@@ -174,5 +174,6 @@ older “owed opinion” fallback wording, without changing initial audit cardin
 
 The entry projections are hand-written until policy generation exists. Reading this policy
 sets instruction behavior; it does not install hooks, reviewer pins or model enforcement.
-Pinned reviewers and runtime adapters are separate extraction slices. The framework's
+Pinned reviewer charters and Claude projections are described in `REVIEW_AGENTS.md`.
+Runtime adapters remain a separate extraction slice. The framework's
 sensitivity check and runner-owned ledger remain specified, not shipped (TDD_GATE §3).
