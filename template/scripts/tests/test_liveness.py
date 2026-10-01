@@ -31,7 +31,9 @@ class Containment(unittest.TestCase):
                 p = root / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text('#!/bin/sh\nexit 0\n')
             self.assertEqual(runtime_findings(root), [])
             target = root / 'scripts/stall-watchdog.sh'
-            seeds = ('kill -9 "$pid"', 'builtin kill -TERM "$pid"', 'tmux send-keys x',
+            seeds = ('if kill -TERM "$pid"; then :; fi', '/usr/bin/tmux send-keys x',
+                     '/bin/kill -TERM "$pid"', 'if /bin/kill -TERM "$pid"; then :; fi',
+                     'kill -9 "$pid"', 'builtin kill -TERM "$pid"', 'tmux send-keys x',
                      'exec curl https://invalid.example', 'subprocess.run(["anything"])',
                      'os.kill(123,9)', '"$RESPAWN_HOOK" a', 'cat /proc/123/environ',
                      'cat /home/'+'justi/private', 'echo JA'+'UTO_ROLE')
@@ -39,6 +41,10 @@ class Containment(unittest.TestCase):
                 with self.subTest(seed=seed):
                     target.write_text('#!/bin/sh\n'+seed+'\n')
                     self.assertTrue(runtime_findings(root), 'source-gate bypass; unsafe child remains unexecuted')
+            target.write_text('#!/bin/sh\nexit 0\n')
+            helper=root/'.claude/hooks/lib/utils.sh';helper.parent.mkdir(parents=True,exist_ok=True)
+            helper.write_text('#!/bin/sh\nif /bin/kill -TERM "$pid"; then :; fi\n')
+            self.assertTrue(runtime_findings(root),'RED-R2: sourced helper effect escaped closure gate')
             self.assertEqual(render_findings('_subdirectory: template\n'), [])
             for key in ('_tasks', '_migrations', '_jinja_extensions'):
                 self.assertTrue(render_findings(key+': []\n'))
@@ -99,14 +105,26 @@ class Liveness(unittest.TestCase):
         f=self.f
         self.ok(f.run('cadence.sh','A','awake','300','alpha intent'))
         self.ok(f.run('cadence.sh','A','awake','600','beta intent',peer=1))
-        before=snapshot(f.store(1))
-        canary=f.store(1)/'cadence/a.txt'
-        with opened([canary]) as events:
-            seats,_=self.sweep('--dry-run')
-        self.assertFalse(any(events),'observer opened another project cadence')
-        self.assertEqual(before,snapshot(f.store(1)))
-        self.assertEqual(set(seats),{'a'})
-        self.assertTrue(all(r['project_id']=='alpha' for r in seats.values()))
+        for peer in (0,1):
+            f.record(peer)
+            f.cadence(peer,state='standby',cadence_seconds=0,next_wake_at='event',doorbell='mailbox:a')
+            f.mail(ages=(2200+peer*2000,),peer=peer)
+            f.process(peer,pid=4101+peer)
+        for peer in (0,1):
+            for dry in (False,True):
+                with self.subTest(peer=peer,dry=dry):
+                    foreign=f.store(1-peer);before=snapshot(foreign)
+                    watched=[p for p in foreign.rglob('*') if p.is_file()]
+                    owned=[f.store(peer)/x for x in ('cadence/a.txt','sessions/a.json','mail')]
+                    own_before=[snapshot(p) if p.is_dir() else p.read_bytes() for p in owned]
+                    with opened(watched) as events:
+                        seats,_=self.sweep(*(['--dry-run'] if dry else []),peer=peer)
+                    self.assertFalse(any(events),'RED-R3: observer opened foreign roster/mail/cursor/cadence')
+                    self.assertEqual(before,snapshot(foreign))
+                    self.assertEqual(own_before,[snapshot(p) if p.is_dir() else p.read_bytes() for p in owned])
+                    self.assertEqual(set(seats),{'a'})
+                    self.assertEqual(seats['a']['project_id'],('alpha','beta')[peer])
+                    self.assertEqual(seats['a']['backlog_seconds'],2200+peer*2000)
         worktree=f.root/'independent worktree'; shutil.copytree(f.projects[0],worktree)
         f.projects[0]=worktree
         # Code may execute from another worktree, but binding remains the original project root.
@@ -389,10 +407,24 @@ class Liveness(unittest.TestCase):
         self.assertTrue(receipt['project_edits_preserved']);self.assertTrue(receipt['legacy_state_preserved'])
         self.assertTrue(receipt['rollback_equal']);self.assertEqual(receipt['external_pacemaker'],'tmux-supervisor')
         f=Fixture(self,(Path(receipt['updated_consumer']),PEER));f.cadence();self.assertFalse(runtime_findings(f.projects[0]))
-        for key,value in receipt['legacy_knobs'].items():
+        legacy=f.projects[0]/'context/cadence'
+        hooks=f.root/'legacy hooks';hooks.mkdir()
+        knobs={**receipt['legacy_knobs'],'PACEMAKER_CADENCE_DIR':str(legacy),
+               'PACEMAKER_STATE_DIR':str(legacy/'.pacemaker-state')}
+        for key in ('PACEMAKER_RESPAWN_HOOK','PACEMAKER_SMS_CMD'):
+            target=hooks/(key+'.sh');target.write_text('#!/bin/sh\nexit 99\n');target.chmod(0o755)
+            knobs[key]=str(target)
+        watched=[p for root in (legacy,hooks) for p in root.rglob('*') if p.is_file()]
+        self.assertGreaterEqual(len(watched),4,'legacy cadence/dedup and action targets must exist')
+        for key,value in knobs.items():
             with self.subTest(key=key):
-                r=f.run('pacemaker.sh',env={key:value});self.assertNotEqual(r.returncode,0)
+                before=[snapshot(root) for root in (legacy,hooks,f.state)]
+                with opened(watched) as events:
+                    r=f.run('pacemaker.sh',env={key:value})
+                self.assertNotEqual(r.returncode,0)
                 self.assertIn('migrat',r.stderr.lower());self.assertIn(key,r.stderr)
+                self.assertFalse(any(events),'RED-R4: refused knob accessed a legacy target')
+                self.assertEqual(before,[snapshot(root) for root in (legacy,hooks,f.state)])
         guidance=(f.projects[0]/'docs/PACEMAKER.md').read_text().lower()
         for phrase in ('breaking-change','jv-v0.2.3','git revert','report-only','canary','lease','namespace'):
             self.assertIn(phrase,guidance)

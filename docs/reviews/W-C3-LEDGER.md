@@ -129,3 +129,15 @@ RED run; no runtime file changed.
 Next gate: o commissions the one tests-only RED review. The existing hosted
 framework CI is separate from these deliberately RED liveness cells. No author
 acceptance or GREEN implementation precedes that review disposition.
+
+
+## RED review disposition and containment folds
+
+Sol's tests-only review is BLOCK on four P1 containment findings. O's
+`01M3VA2QS9QVC3E487FA897MYD` directs a new RED commit for all four, then GREEN
+without another RED review. R1→I6/F5 adds unexecuted compound `if kill` and
+absolute tmux/kill seeds. R2→I6/F5 covers the sourced hook utility dependency
+with a helper-effect seed. R3→I1/I7 watches both projects' roster, mail, cursors
+and cadence during normal and dry-run sweeps. R4→I1/I7/F1 snapshots and watches
+all seeded legacy targets around each refused upgrade knob. The schedule-
+deletion mutant and actual updated-runtime migration proof remain GREEN gates.
