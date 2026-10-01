@@ -50,6 +50,15 @@ def replay_without_comparison(text):
     return changed
 
 
+def unchecked_tail_inspection(text):
+    changed, count = re.subn(
+        r' \|\| \{ echo "ERROR \(hub\): authority (?:line count|tail read|record read) failed" >&2; return 3; \}',
+        '', text)
+    if count != 3:
+        raise ValueError("expected three authority inspection status guards")
+    return changed
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", required=True, type=Path)
@@ -97,6 +106,15 @@ def main():
          "test_F4_I5_search_later_matches_dash_text_and_errors"),
         ("F4-I5-first-nonmatch", lambda s: once(s, '    1) return 0 ;;', '    1) return 1 ;;'),
          "test_F4_I5_search_later_matches_dash_text_and_errors"),
+        ("C1-I2-inspection-status", unchecked_tail_inspection,
+         "test_C1_I2_failed_tail_inspection_preserves_authority"),
+        ("C2-I3-lookup-status", lambda s: once(s, '[[ "$lookup_rc" -eq 1 ]] || exit 3',
+                                              ': # mutant accepts lookup errors as absent IDs'),
+         "test_C2_I3_lookup_error_never_appends_replay"),
+        ("C3-I1-path-delimiter", lambda s: once(once(s, 'proj_file="${key%${sep}*}"',
+                                                    'proj_file="${key%%${sep}*}"'),
+                                              'view="${key##*${sep}}"', 'view="${key#*${sep}}"'),
+         "test_C3_I1_completion_repair_preserves_control_byte_root"),
     ]
     if args.only:
         unknown = set(args.only) - {m[0] for m in mutations}

@@ -23,6 +23,9 @@ safe filename components, a dedicated remote client and the reviewed search fixe
 | JV 2026-10-01, W-C1 SPEC F1–F3 | Reject nested state aliases before access, disable curl defaults and bypass local initialization on remote reads to keep project and credential boundaries explicit |
 | JV 2026-10-01, W-C1 SPEC F4; JA issue #3818 | Search must continue after ordinary misses and terminate grep options so later matches and leading-dash text remain reachable |
 | JV 2026-10-01, W-C1 RED R1–R7/R9 | Offline child environments, distinct project canaries, targeted lock/readback faults and both-stream secret checks keep tests contained and guards observable |
+| JV 2026-10-01, W-C1 code C1; JA issue #3820 | Check every authority inspection command before truncation: a failed read is not evidence of a torn record |
+| JV 2026-10-01, W-C1 code C2; JA issue #3821 | Distinguish identity lookup errors from normal misses so an unreadable log cannot admit duplicate or conflicting authority |
+| JV 2026-10-01, W-C1 code C3; JA issue #3822 | Split recovery keys at the final delimiter because valid filesystem paths may themselves contain the separator byte |
 
 The caller supplies the project ID at adoption; no source paths, personal account
 values, live credentials or product data are carried into configuration. Runtime

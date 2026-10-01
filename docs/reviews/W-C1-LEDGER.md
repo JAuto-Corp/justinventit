@@ -78,3 +78,38 @@ R8 and R10 remain accepted residuals. Supplemental inspection of changed files
 and selected rendered links is useful bounded evidence, not a replacement for
 the missing comprehensive oracle in R10. These results do not constitute the
 required independent GREEN code review or the integrator's merge decision.
+
+## Full code review and narrow folds
+
+Sol xhigh reviewed `c6e823651` and returned **BLOCK** on 2026-10-01 with three
+probe-confirmed findings. The director's disposition
+`01M3TY63QDW52AQJ01QAGHJ7PD` requires a RED cell for each, these three fixes only,
+and one narrow re-review. No full-review acceptance is claimed.
+
+| Finding | Trace | Fold |
+| --- | --- | --- |
+| C1, P1 | I2 | Check `wc` and both `tail` command statuses before interpreting a tail as corrupt or truncating authority |
+| C2, P1 | I3 | Give lookup errors a distinct failure status and abort append; only an absent log or normal no-match permits a new ID |
+| C3, P2 | I1 | Split completion recovery keys at their final separator, preserving control bytes in the original projection path |
+
+RED commit `69a6a13` adds three methods: inspection failures during read/append,
+identical/conflicting replay under lookup failure, and completion recovery from
+read/replay/append under a root containing byte `0x1c`. The focused runner exited
+1 with 11 assertion failures and no fixture errors before runtime edits. An
+earlier uncommitted RED run also exposed two cleanup errors after the first path
+failure; independent per-case cleanup was corrected before the RED commit.
+The same three methods pass with the folds. Three targeted mutants accompany
+the fixes; complete generated-suite and mutant results belong in the new packet.
+
+All three defects reproduced on an unmodified copy of the pinned JA script,
+using synthetic scratch data only: C1 deleted 137 authority bytes, C2 appended
+a conflicting second record under one ID, and C3 changed a 7-byte outside-store
+canary to 395 bytes while leaving the intended view absent. Each run exited 0.
+Directed source issues are [#3820](https://github.com/JAuto-Corp/customer-portal/issues/3820),
+[#3821](https://github.com/JAuto-Corp/customer-portal/issues/3821) and
+[#3822](https://github.com/JAuto-Corp/customer-portal/issues/3822), all `tooling`;
+issue bodies/labels were read back. JA source remains unchanged.
+
+R8/R10 remain the previously accepted residuals. The earlier GREEN packet and
+hosted pass describe `c6e823651`; they do not establish these folds or supersede
+the BLOCK verdict. A fresh packet and the director's narrow review are required.

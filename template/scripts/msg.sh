@@ -154,14 +154,15 @@ _authority_barrier() {
 _log_truncate_torn_tail() {
   local f="$1"
   [[ -s "$f" ]] || return 0
-  local complete keep
-  complete="$(wc -l < "$f")"
-  if [[ -n "$(tail -c 1 "$f")" ]]; then
+  local complete keep last_byte last_line
+  complete="$(wc -l < "$f")" || { echo "ERROR (hub): authority line count failed" >&2; return 3; }
+  last_byte="$(tail -c 1 "$f")" || { echo "ERROR (hub): authority tail read failed" >&2; return 3; }
+  if [[ -n "$last_byte" ]]; then
     keep="$complete"
-  elif ! _log_valid "$(tail -n 1 "$f")"; then
-    keep=$((complete - 1))
   else
-    return 0
+    last_line="$(tail -n 1 "$f")" || { echo "ERROR (hub): authority record read failed" >&2; return 3; }
+    if _log_valid "$last_line"; then return 0; fi
+    keep=$((complete - 1))
   fi
   echo "WARN (hub): torn trailing record in '$f' — truncating to last valid record (§5 recovery)" >&2
   if [[ "$keep" -le 0 ]]; then : > "$f"
@@ -169,10 +170,17 @@ _log_truncate_torn_tail() {
 }
 
 _log_record_for() {
-  local id="$1" line
-  line="$(grep -F -m1 "\"hub_id\":\"$id\"" "$HUB_EVENT_LOG" 2>/dev/null)" || return 1
-  [[ -n "$line" ]] || return 1
-  _log_valid "$line" || return 1
+  local id="$1" line rc=0
+  [[ -e "$HUB_EVENT_LOG" ]] || return 1
+  line="$(grep -F -m1 "\"hub_id\":\"$id\"" "$HUB_EVENT_LOG" 2>/dev/null)" || rc=$?
+  case "$rc" in
+    0) ;;
+    1) return 1 ;; # A successful search with no match permits a new identity.
+    *) echo "ERROR (hub): authority identity lookup failed" >&2; return 3 ;;
+  esac
+  [[ -n "$line" ]] && _log_valid "$line" || {
+    echo "ERROR (hub): authority identity lookup returned an invalid record" >&2; return 3;
+  }
   _log_payload "$line"
 }
 
@@ -283,8 +291,9 @@ _repair_complete_projections_locked() {
     metadata="${desired[$key]}"
     recipient="${metadata%%:*}"
     canon_id="${metadata#*:}"
-    proj_file="${key%%${sep}*}"
-    view="${key#*${sep}}"
+    # JSON escapes control bytes; only the path can contain an earlier separator.
+    proj_file="${key%${sep}*}"
+    view="${key##*${sep}}"
     _append_missing_projection_view "$proj_file" "$view" "$recipient" "$canon_id" || return $?
   done
 }
@@ -326,6 +335,9 @@ hub_append() {
       _repair_complete_projections_locked || exit $?
       _project_event_locked "$canon" || exit $?
       exit 0
+    else
+      local lookup_rc=$?
+      [[ "$lookup_rc" -eq 1 ]] || exit 3
     fi
 
     _repair_complete_projections_locked || repair_rc=$?
