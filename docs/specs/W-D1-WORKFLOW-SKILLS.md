@@ -4,7 +4,11 @@ One procedure source serves both runtimes: move the existing workflow skills to
 `.agents/skills`, reconcile their procedures with JV's current policy, and generate
 Claude's copies and command pointers with the existing projection tool.
 
-Status: **SPEC for o audit; no implementation authorized by this document.**
+Status: **SPEC audit ACCEPT-WITH-FOLDS; revised for o's personal fold check.**
+Sol xhigh audited `7010c0a12`; o ruling `01M3WQGV8BVDFMD9F4CVY0TJTH`
+(2026-10-01) admits F1–F3 and both oracle migrations below. No tests or
+implementation before that fold check. The separate RED review is explicitly
+skipped; actual committed RED remains required.
 Author a; director o; integrator i. Commission: o
 `01M3WP17Q4ZVHS6GKC67P84WNG` (2026-10-01), next slice in the accepted extraction
 plan. Charter: `JV-EXTRACTION-PASS.md`, X1–X6. Base:
@@ -44,7 +48,9 @@ upstream skills; it is not evidence for these six workflows.
   isolation/TDS adapters. No hidden implementation of a deferred slice.
 - A new orchestration registry, convergence engine, model router, policy engine,
   runtime receipt protocol, issue tracker or mutable state format.
-- Moving all remaining domain, verify, chain, patterns or e2e skills. Selected
+- Moving all remaining domain, verify, chain, patterns or e2e skills. The retained
+  `verify/complete.md` authority correction and its command pointer are the bounded
+  F1 exception. Selected
   workflows cease depending on stale chain/audit procedures; unrelated existing
   skills remain a separate surface, not silently certified by this extraction.
 - General semantic verification of Markdown, hostile checkout isolation, arbitrary
@@ -82,6 +88,19 @@ Current commands duplicate procedures and current entry transitions reference
 and `test-skill-multiskill.py` asserts the old work path and bare wrapper files.
 Those are real consumers to migrate, not evidence to ignore.
 
+Audit-added dependency closure: the entry's review stage still requires
+`template/.claude/skills/orchestrators/verify/complete.md`. Its pre-integration
+issue closure and marker-only override guidance are competing authority, even
+after the six selected skills are corrected (F1). JA
+`docs/agentic/GATE_INTEGRITY.md`, read-only snapshot/hash recorded separately,
+provides the gate-triage source. JV has no shipped GATE_INTEGRITY document yet;
+do not introduce a dangling reference. Retain that policy's invariant verification,
+durable record and defect-tracking bar, with o's explicit per-instance director
+authorization ruling for overrides. This is guidance reconciliation, not a new
+token service or hook implementation.
+The existing `.claude/commands/verify/complete.md` also repeats early issue closure;
+replace its procedure copy with a thin pointer to the reconciled completion gate.
+
 ## Bounded design
 
 ### Canonical files and routes
@@ -112,7 +131,8 @@ the source template so they cannot remain competing discoveries. Remove bare
 projected skill. Keep existing work/capture namespaced commands as deterministic
 thin pointers to canonical procedures; add pointers for the four additional work
 modes. Their descriptions and target paths are generated from a fixed mapping;
-they carry no independent procedure steps. Other commands stay untouched.
+they carry no independent procedure steps. F1 also makes the retained verify
+completion command a thin pointer; other commands stay untouched.
 
 Extend `scripts/generate-skill-surfaces.py` with the fixed six-name, flat-file
 mapping, preserving the exact upstream fixture validation. Source roots require
@@ -124,6 +144,16 @@ Missing, extra, symlinked or executable canonical files fail before writes.
 `--check` never mutates. Regeneration owns only these named projection directories
 and command files; refuse static symlink ancestors rather than follow them.
 Do not remove an unknown/user-owned directory to make a check pass.
+
+**F2:** preflight all selected projection targets before any materialization,
+including the three pinned upstream pairs sharing `materialize`. Any entry not
+in that target's declared canonical file set is an unknown entry: refuse it,
+whether file, directory or symlink; never delete it. A directory occupying an
+expected regular-file position, or a non-directory projection root, also refuses
+without recursive replacement. Preserve the entire target tree, sentinel bytes,
+entry types and permissions on these refusals. Known regular projection files
+may still be refreshed from canonical bytes, and absent expected files created.
+The existing check-mode refusal and clean-regeneration tests keep their assertions.
 
 The independent route checker validates this fixed inventory, frontmatter,
 physical-copy equality, canonical/Claude discovery cardinality at all depths,
@@ -164,6 +194,18 @@ unverified facts and requires receiver reorientation; it does not stage unknown
 changes. Sprint-detail expands accepted scenarios and requests disposition for
 contract changes rather than fabricating execution or weakening assertions.
 
+**F1:** reconcile the retained `verify/complete.md` gate and its output table.
+The author records readiness and links `Fixes #N` in the PR; issues close only
+when the assigned integrator merges. A phase validation report must distinguish
+local verification from integration and never claim closed issues prematurely.
+No `[EVIDENCE_OVERRIDE:<reason>]` marker grants its own authorization. Overrides
+require explicit per-instance director authorization and the invariant/evidence/
+tracked-defect record defined in the neutral `docs/GATE_INTEGRITY.md` projection.
+Link that one policy from the completion gate and new workflow guidance, rather
+than duplicating exception rules. Existing hooks can mechanically recognize a
+marker; their recognition is not authorization. Hook enforcement changes remain
+W-D3, and this slice must not claim those hooks validate the approval.
+
 ### Entry, compatibility and provenance
 
 Update the template's entry transition pointer to canonical work, add the six-skill
@@ -172,6 +214,9 @@ example that references the old path. Add `template/docs/WORKFLOW_SKILLS.md` for
 route/mode mapping, explicit capability limits, upgrade instructions and dated
 source dispositions. It is a manual, not another rule body. Add a CHANGES entry
 for the project-owned AGENTS pointer; existing projects retain their AGENTS edits.
+The F1 entry delta also points to `docs/GATE_INTEGRITY.md`: a small neutral
+extraction of the inspected gate-triage source and o's override ruling. Record its
+dated why/origin; source-specific trap signatures and live exceptions stay behind.
 
 A real task-disabled Copier update from the base must remove clean old framework
 routes, install new ones and preserve marked project-owned AGENTS/state bytes.
@@ -186,15 +231,32 @@ provenance only. Portability corrections are labelled as corrections made here,
 not attributed to source enforcement. The operating six-skill tree and aliases
 contain no JA identity, host paths, project refs, live labels or secret values.
 
+**F3:** add a bounded secret-content scan over **all shipped Markdown guidance**:
+every `template/**/*.md` and `template/**/*.md.jinja` (including hidden skill and
+command trees, entry contracts and docs), and every corresponding generated `.md`
+file in both disposable consumers. Scan inline prose and code fences alike;
+neither canonical/projection equality nor labelled provenance exempts a secret.
+The finite shape set is private-key PEM headers, GitHub token prefixes, AWS access
+key IDs, provider `sk-` key prefixes, three-part JWT-shaped tokens, and a nonempty
+literal credential assigned to an API-key/token/secret/password field. Treat
+explicit `<placeholder>` and template-variable examples as placeholders, not
+literal credentials. Pin the exact patterns and synthetic positive/negative
+controls in the tests before implementation; no entropy classifier or claim of
+complete secret detection. Diagnostics identify path, line and pattern class,
+never the matched value. Unknown formats are an explicit limitation of the
+proposed bounded check, not a claim that arbitrary text is secret-free. Existing
+baseline hits, if any, must be dispositioned; do not hide them behind a broad
+directory exclusion to obtain GREEN.
+
 ## Invariants and finite proof
 
 | ID | Invariant | Positive / refusal cells |
 |---|---|---|
 | I1 / X3,X5 | Exactly six canonical workflow routes, complete declared procedures, byte-identical Claude copies and unambiguous aliases. | T1+: two real Copier consumers have every named route/mode; T1−: missing procedure, duplicate nested discovery and stale alias each produce a named structural failure. |
 | I2 / X3,X4 | Selected procedures route to current neutral policy; no retained competing convergence or provider-tier authority. | T2+: required policy references resolve and the instruction inventory retains grounding/trace/evidence obligations; T2−: broken policy pointer or reintroduced old convergence directive is detected. Independent review checks meaning beyond the bounded textual assertions. |
-| I3 / X4,X5 | Planning/execution/capture/team/lifecycle procedures preserve the declared outcome and truthful evidence/authority boundaries. | T3+: a read-through fixture maps the six entry requests and all declared work/capture modes to the expected procedure and required instruction clauses; T3−: remove the integrator-only boundary or claim automatic capture from a signal and the selected instruction assertion fails. No model execution claimed. |
-| I4 / X1,X2,X6 | Operating guidance uses only project-owned targets and installed capabilities, with source facts kept as labelled provenance. | T4+: independently named solo/cluster projects resolve neutral guidance and no source coupling; T4−: seed the source staging fallback or absolute host target as Markdown data and the bounded coupling scan refuses it. |
-| I5 / X3,X5 | Check/regeneration/update are deterministic and preserve unrelated and project-owned files. | T5+: regenerate twice with identical bytes, check is read-only, real clean-base update preserves project-owned markers; T5−: drift fails check without repair, static symlink ancestor refuses before writes, and edited legacy framework content is preserved/conflicted. |
+| I3 / X4,X5 | Planning/execution/capture/team/lifecycle procedures and the reachable retained completion gate preserve the declared outcome and truthful evidence/authority boundaries. | T3+: a read-through fixture maps the six entry requests and all declared work/capture modes to the expected procedure and required instruction clauses; T3−: remove the integrator-only boundary or claim automatic capture from a signal and the selected instruction assertion fails. F1 adds T3-retained-gate-authority below. No model execution claimed. |
+| I4 / X1,X2,X6 | Operating guidance uses only project-owned targets and installed capabilities, with source facts kept as labelled provenance; all shipped Markdown guidance passes the bounded secret-content check. | T4+: independently named solo/cluster projects resolve neutral guidance and no source coupling or defined credential-shape hit; T4−: seed the source staging fallback or absolute host target as Markdown data and the bounded coupling scan refuses it. F3 adds T4-inline-synthetic-secret below. |
+| I5 / X3,X5 | Check/regeneration/update are deterministic and preserve unrelated and project-owned files; unknown projection entries are refused without deletion. | T5+: regenerate twice with identical bytes, check is read-only, real clean-base update preserves project-owned markers; T5−: drift fails check without repair, static symlink ancestor refuses before writes, and edited legacy framework content is preserved/conflicted. F2 adds T5-unknown-projection-directory below. |
 | I6 / X1,X4,X5,X6 | Evidence uses genuine Copier output, pins subject/source, distinguishes structural proof from behavior and never executes source procedures. | T6+: raw render/check/update streams, file hashes and dated disposition coverage are complete; T6−: an unknown/extra executable payload in a workflow directory is refused, and an unsafe source command example is scanned as data with zero effect calls. |
 
 Tests use stdlib unittest and the existing pinned Copier 9.17.1, one local heavy
@@ -204,6 +266,32 @@ different project names). No home/provider credentials in child environments.
 Generated skill prose is read as UTF-8 only. Known unsafe seeds never become
 executed program images. Capture caller-owned fixture sentinel hashes before/after
 regeneration/update; use only scratch Git repositories for update/rollback proof.
+
+The three admitted additional cells are bounded corrections, not new invariants:
+
+- **T3-retained-gate-authority (F1→I2/I3):** traverse the actual entry review pointer
+  to the retained completion gate in both renders, including its slash-command
+  pointer. Positive: `Fixes #N`/integrator
+  merge owns issue closure and the override reference resolves to the per-instance
+  director rule. Refusal: restoring either the old direct `gh issue close` step
+  or the old marker-only authorization instruction fails the corresponding
+  authority assertion. Assert the body, output table and thin command pointer;
+  a clean new work
+  skill cannot mask the reachable old gate.
+- **T5-unknown-projection-directory (F2→I5):** clean regeneration succeeds. Then
+  plant an unknown directory with a sentinel under a workflow projection and,
+  separately, a pinned upstream projection; include a drifted known file to catch
+  partial repair before refusal. Run actual regeneration (not `--check`). Require
+  named nonzero refusal and an identical complete tree snapshot, including the
+  sentinel bytes, types and permissions. Fixed variants cover an extra regular
+  file and a directory at an expected-file name; all remain scratch-owned.
+- **T4-inline-synthetic-secret (F3→I4/X6):** the clean complete guidance set and
+  explicit placeholder controls pass. Seed synthetic examples for the finite
+  credential families into an otherwise allowed Markdown body; include inline
+  and fenced examples and a manual outside the six-skill inventory, in template
+  and generated consumers. Require named refusal with no canary value in output;
+  remove the seeded data and require the restored positive check to pass. No real
+  key, environment file or provider data is read.
 
 Finite sensitivity set, fixed before RED:
 
@@ -220,25 +308,33 @@ Finite sensitivity set, fixed before RED:
 | M9 | T5/I5 | Drop the projection byte-comparison branch | Drift-control assertion fails despite the mutated check's zero exit. |
 | M10 | T5/I5 | Omit one workflow pair from regeneration | Repair/idempotence assertion fails. |
 | M11 | T6/I6 | Add an executable workflow payload | Inventory/type refusal before any payload execution. |
+| M12 | T3-retained-gate-authority / F1→I2,I3 | Restore the retained completion gate's premature issue close and marker-only override text | Authority assertions fail on each restoration; corrected control passes. |
+| M13 | T5-unknown-projection-directory / F2→I5 | Restore deletion of an unknown projection entry in `materialize` | Actual-regeneration refusal/unchanged-tree assertion fails; sentinel loss cannot count as repair. |
+| M14 | T4-inline-synthetic-secret / F3→I4,X6 | Omit non-skill Markdown guidance from the secret scan | A synthetic credential in the omitted manual produces a missed-hit assertion failure. |
 
-M1–M8/M11 are data mutations proving checker/assertion sensitivity. M9–M10 are
-reviewed narrow generator-code mutations; retain their changed bytes and exact
+M1–M8/M11/M12 are data mutations proving checker/assertion sensitivity. M9–M10/M13
+are reviewed narrow generator-code mutations; M14 is a narrow scan-scope mutation.
+M13 executes only against disposable fixture-owned projection trees, never source
+or user state. Retain their changed bytes and exact
 selected test results. Do not count setup errors as kills or structural failures
 as live agent behavior. Add a cell only for a surviving admitted witness or traced
 review finding, per the current review policy.
 
 ## Gates and requested audit decision
 
-This commit is SPEC-only. o commissions the SPEC/test-list audit; at most two
-rounds before a scope decision. After admission, commit tests first and obtain
-actual RED (missing routes/clauses, no setup errors), then the tests-only RED review
-unless o explicitly waives that separate gate. Implement the admitted surface,
+This revision is SPEC-only. Sol xhigh returned ACCEPT-WITH-FOLDS at `7010c0a12`;
+o `01M3WQGV8BVDFMD9F4CVY0TJTH` admits F1–F3 and personally checks this fold diff
+before RED. The same ruling explicitly skips the separate RED review because the
+audit bounded the test list. After o's fold check, commit tests first and obtain
+actual RED (missing routes/clauses, no setup errors); cite the ruling ID in the
+RED commit. Preserve actual failure-first evidence despite the review waiver.
+Implement the admitted surface,
 run the same generated suite, all finite witnesses and the four-answer matrix,
 then request one full exact-head review through o. Publication only after o's
 acceptance; i integrates after current-head hosted CI is green and JA lane idle.
 
-The audit is also asked to admit these **oracle migrations**, not assertion
-weakening: `test-skill-multiskill.py`'s existing entry test changes its work path
+o `01M3WQGV8BVDFMD9F4CVY0TJTH` **admits both oracle migrations**, preserving
+existing guarantees: `test-skill-multiskill.py`'s existing entry test changes its work path
 from the removed nested directory to the canonical one; its bare scope/check
 command check accepts the actual direct skill route while namespaced modes still
 require real pointer files. Other existing assertions and upstream pins stay
@@ -246,10 +342,13 @@ unchanged. The old tests' literal legacy paths cannot remain true after I1.
 
 Proposed changed surface: six canonical directories; their generated copies;
 removal of five old nested directories; selected command pointers; entry/Claude
-map and one command-authoring example; generator/checker, matrix route resolution,
+map and one command-authoring example; the retained `verify/complete.md` authority
+correction, its thin command pointer and neutral GATE_INTEGRITY guidance;
+generator/checker, matrix route resolution,
 the two named legacy assertions, new suite/runner and CI/artifact wiring;
 WORKFLOW_SKILLS manual, CHANGES, this SPEC and the review ledger. No hook/launcher,
-provider receipt schema or other skill refactor is included.
+provider receipt schema or other skill refactor is included. F3's read-only scan
+covers all shipped guidance without authorizing unrelated content rewrites.
 
 Evidence packet includes the source hash inventory and snapshots, destination
 consumer inventory, scope/diff, context card, raw proof, witness classification
