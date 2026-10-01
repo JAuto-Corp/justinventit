@@ -272,6 +272,11 @@ class Liveness(unittest.TestCase):
         for state in ('booted','parked'):
             f.cadence(state=state,heartbeat_at=iso(f.now-90000),next_wake_at='none',cadence_seconds=0)
             seats,_=self.sweep('--dry-run');self.assertNotIn('heartbeat-floor',seats['a']['reasons'])
+        # I3: an owned roster path that is a file is invalid evidence, not an empty roster.
+        malformed=f.store()/'sessions';malformed.write_text('not a directory')
+        r=f.run('stall-watchdog.sh','--dry-run')
+        self.assertNotEqual(r.returncode,0,'malformed roster path silently became empty')
+        self.assertTrue(r.stderr.strip())
 
     def test_t4_oldest_streams_broadcast_and_no_consumption(self):
         """I4 positive: continuous arrivals and other cursors cannot hide oldest mail."""
