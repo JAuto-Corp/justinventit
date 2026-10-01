@@ -1,8 +1,8 @@
 # W-C5 observability review and evidence ledger
 
-Status: all five code-review findings and the TSV framing ruling are folded.
-Actual regression RED, corrected generated GREEN, every mutant and the matrix
-are complete. O-commissioned narrow fold review remains pending.
+Status: narrow review confirms the five earlier fixes, but one introduced
+candidate-read regression requires correction. Its actual RED is recorded;
+corrected implementation awaits generated GREEN, all mutants and o admission.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -231,3 +231,11 @@ credits 80. CLI/hook must retain 40%, append its history, count the skipped file
 and report partial collection truthfully (nonzero CLI, zero hook). Restoring
 readability may add credits 80 but never replace weekly 40%. All 28 preexisting
 methods remain AST-identical; no implementation changes in this RED commit.
+
+Actual generated RED `1d907a94fa86d52453ca7f4eb6571dc33edb2868`: 29 methods,
+28 prior passes, one intended assertion failure (selected `openai-wk` missing),
+zero errors. Per-file metadata/read checks now preserve previously selected
+observations, count failed candidates, and retain truthful partial-collection
+status. Fixed policy adds the traced R6 image and repins the inspected closure;
+no runner dynamically registers images. Existing prior test expectations remain
+unchanged. Generated guidance explains the partial-result behavior.

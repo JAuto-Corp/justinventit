@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "authority": "Committed guard+policy, changed through reviewed diff; accident boundary only. Candidate self-registration and hostile filesystem races excluded. See SPEC threat model.",
-  "phase": "Code-review fold; author-inspected fixed images; narrow independent review pending",
+  "phase": "Candidate-failure correction; author-inspected fixed images; o exact-head admission pending",
   "programs": {
     "scripts/pace.sh": {
       "images": [
@@ -71,107 +71,111 @@
         },
         {
           "name": "green-baseline",
-          "sha256": "c52c4770e4b42a909328f025171120a57535715236563d6bce95635079422719"
+          "sha256": "5c688be2a7d4b363d34f92c9be79d06a09e0e8a9718c37881eacf7484f3157c1"
         },
         {
           "name": "home-fallback",
-          "sha256": "74eb95054b74a89941ff03fb330236cefd0b06970f04b9428009e13a102539af"
+          "sha256": "eae2f3c45756e64563e3fc1deb60f58642fd229cb5256470fe6e60d716291c5d"
         },
         {
           "name": "malformed-zero",
-          "sha256": "01f6ae1548422b910a99d0f6fe361201142e443a54f4a903a7559eaa20900bfc"
+          "sha256": "554ce3a9bf613f4578852bd5922757b4fe0bc7d5355f8408c9b293f7c8633a09"
         },
         {
           "name": "prompt-data",
-          "sha256": "0376014bbcfa3546bd9aca548b3bdfd94e3b08005441cf70770cc2cbc0423862"
+          "sha256": "c50b9cb93f5b7d6330c2c06c08182bba6611c5d0ac499e908f6dc18446ccce1b"
         },
         {
           "name": "ignore-age",
-          "sha256": "155fe58a3a0aec0e63c140113fecad4bd33b202d0f8a8a390820c36b18af7df2"
+          "sha256": "4df8d5fcee88672fa8b739d977bccc32b627f41a2b85d439571c2fd85601543f"
         },
         {
           "name": "pace-equality",
-          "sha256": "ea66d792da7fe96e42e938c8c5ab8cacb5865e12099ecbc1e11dc3e1fe7c85f1"
+          "sha256": "83556703b2ab55fa212eccc97f5bd4c6dc2419ce0384dfa2a9c286abd11a350c"
         },
         {
           "name": "reset-filter",
-          "sha256": "57f661ae528f348e5b91ede560d057fab34c61de86de969a3d12e002ffb01284"
+          "sha256": "617e83df48832cabb2d8e756b9b70fb8d60aacdedbe621f195ae15eb5665a51b"
         },
         {
           "name": "credit-quota",
-          "sha256": "6e4c8d528b3ed978de4c47febcdc8e0e06f94ed468b6ddc42e21af210e33a9bc"
+          "sha256": "6698d58f65f0178160f3d1a11bfe46b025c89ded93c8a398439aeb9a9bc46b5c"
         },
         {
           "name": "old-over-fresh",
-          "sha256": "01b5ca4b8d7a89187e47b07e4c660b108acc3f3ff1d978dc7d88ca982e676345"
+          "sha256": "b83e094d05ed148347b8106a5d15c000b5769d54aadcbac417148a3bb804aa23"
         },
         {
           "name": "ignore-lock",
-          "sha256": "9365b1d230618f74633191a0218da885e99defa5c91744298fa320cb640f1b58"
+          "sha256": "38ad39129f944a36276a05e20a83a1aec1a5a9923faea112a076044cc86482c4"
         },
         {
           "name": "project-suppression",
-          "sha256": "404342a087d91c3955ac836694868d349df40be1a5519e6a01fc1fa792a5e72e"
+          "sha256": "2b7458263a12427856cdd1214924a18b97d6380d48b149cb625a5b794599a054"
         },
         {
           "name": "disk-equality",
-          "sha256": "d0479e460ea091510da759c130e8a22156afacec71ca543b1002547521e78da4"
+          "sha256": "e919a49749e0fcd08a36bed9a6fe7394a694bc889a37976889088232f2fe6670"
         },
         {
           "name": "premature-checkpoint",
-          "sha256": "775dba266b0ef20b3fda850cee8b36c8d3f3109f2d0668475fa2d1e4f535fa03"
+          "sha256": "c95bd4725a8d5d98fd2e2f8208a22c6afde627d93c3a9a11a79d0ff755924f42"
         },
         {
           "name": "F3-primary-weekly",
-          "sha256": "7a8be7bbb8e27d3b86febf099d25becdeb34dc9fa51dc04e15b74be546061b79"
+          "sha256": "d064fb429718e550dbcbe8e3a129769f9a9c36b1984c3dda275fb96cbe106c92"
         },
         {
           "name": "F4-display-name",
-          "sha256": "1492e3915dca0e3a5fd1d0d34291da2f0fc2a542dded4b589c86c05b4244aca1"
+          "sha256": "af60ba5a514a2c17a5c5a6d645462dc6606316307d2c9a56c7a90240326ad8da"
         },
         {
           "name": "F5-abort-providers",
-          "sha256": "294cf3ab0f27f0f7d453b4df2f40b6a7fb98077c982bd58397dcca69a90885bd"
+          "sha256": "10572dfa4023cd935a088bbb12c1ae80ed2288d5acb964f2e1822d7b7ff8d1cb"
         },
         {
           "name": "F5-secondary-first",
-          "sha256": "7c467af80d509f5013bfd7ab6e979bd7de42665e7b9d145e7941a27adc7adcc0"
+          "sha256": "f50a2c13d6626366caa72ff93d137ee2c7c051138d27ccb9019ca42799f87ca0"
         },
         {
           "name": "F6-no-min-span",
-          "sha256": "1f9b1c13deb75e034187fe7c07e765942d3df2b3110178b3e5411e108e67784e"
+          "sha256": "ca928e2068d143493883ce01803506e38e246bb42db0aeb834940ca819cb5f48"
         },
         {
           "name": "F6-no-cutoff",
-          "sha256": "21fe121a3b316368951978a699e5898685eb427e3020f52dbe7848dff9934616"
+          "sha256": "8da76eaba10e8f24c41be61436859cf964836a0953daf94e1922e14fd4f5a84c"
         },
         {
           "name": "F7-read-all",
-          "sha256": "852de8139c4edbe8594ea22f208ef3ef7dc924b065bd4f3af931e5be53e5ce22"
+          "sha256": "cd4c8ac39063500381a6739c8e5d6669c95f1f6b56cda2480a3b6dca36bed0fd"
         },
         {
           "name": "R1-alert-framing",
-          "sha256": "1ab5c0b13be639c8ce32d3f33b5b9622f56f567ba50952bf06e6309c2dcf9d03"
+          "sha256": "8780c0b430a5b3bbd7a6f85a4d0ffdae57b8c90718a4129e6c012a67c2e8c590"
         },
         {
           "name": "R2-huge-zero",
-          "sha256": "a1d31379ff584530034ce0af23a527d201c8bbee56d0b56f495d5b7dc6a284e6"
+          "sha256": "f3a78de60e227ab84edbfcffc1f0c1b242c3e19698241a2e670ca1a763352714"
         },
         {
           "name": "R3-weekly-credits",
-          "sha256": "b434b3024c364d0e73d3e18a6ebaeec6c24e487eee9ff9e45f39b64e2d03bcee"
+          "sha256": "31fe718a2a770436510380f33a85b04b5b228888e369011b909a43fe209c732b"
         },
         {
           "name": "R4-history-range",
-          "sha256": "39a0b671e3c2dd7b22252535af449381dec55afa275ae97b52128a15092ce9ea"
+          "sha256": "46b42f9dd47bd3a27c614e3a94686a914f2d0ff92d0e0bd7c7e8a7a1371ab6a7"
         },
         {
           "name": "R5-unframed-history",
-          "sha256": "540b5d5b6b4b2ff87fd5371912e9918e04246bd36201f5a5ef39c2c2f665a425"
+          "sha256": "4e37818434a7991cb1aa572f4303e11f84c7eb6c53efadeead7f27458db0a3c8"
         },
         {
           "name": "R5-tsv-marker",
-          "sha256": "430ea1d95877caf84156f392832c7e2292edbff88856b8a4fe23adf783758714"
+          "sha256": "8c7ee116e1f5a79468436f74951dd4a342e7a2e1bee3ece871d13e56cad01c21"
+        },
+        {
+          "name": "R6-candidate-failure",
+          "sha256": "0c49f37534495acf59a76edb7c11309897fc3415493abd8f372ee10ef3fee45b"
         }
       ],
       "edges": "stdlib contextlib, datetime, fcntl, hashlib, json, math, os, pathlib, re, stat, subprocess, sys, tempfile, time. Bounded selected data reads; private host-state writes; flock; df argv (fixture stub); explicit notifier argv+JSON stdin (fixture executable). Checkpoint replaces/unlinks only its own mkstemp. No provider/network/mail/process-discovery/native cleanup edges. Code fold: same stdlib/command closure; append-only framing repairs own alert/history files, no truncation/deletion or sidecar; bounded alert/history data inspection."

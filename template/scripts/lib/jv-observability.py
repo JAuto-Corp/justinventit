@@ -128,14 +128,21 @@ def anthropic(value,now):
 
 def codex(value,now,warnings):
     root=checked(value,'dir')
-    files=list(root.glob('*/*/*/*.jsonl'))
-    for path in files:checked(str(path),'file')
-    files.sort(key=lambda path:(path.stat().st_mtime,str(path)),reverse=True)
+    files=[];failed_files=0
+    for path in root.glob('*/*/*/*.jsonl'):
+        try:
+            checked(str(path),'file')
+            files.append((path.stat().st_mtime,path))
+        except (OSError,Unavailable):failed_files+=1
+    files.sort(key=lambda item:(item[0],str(item[1])),reverse=True)
     short_rows=[];weekly_rows=None;credit_row=None;skipped=0
-    for path in files[:6]:
-        age=now-path.stat().st_mtime
-        if age<0:continue
-        data,truncated=bounded(path,400000,tail=True)
+    for stamp,path in files[:6]:
+        try:
+            age=now-stamp
+            if age<0:continue
+            data,truncated=bounded(path,400000,tail=True)
+        except (OSError,Unavailable):
+            failed_files+=1;continue
         if truncated:data=data.partition(b'\n')[2]
         for line in reversed(data.splitlines(keepends=True)):
             try:
@@ -174,7 +181,8 @@ def codex(value,now,warnings):
             if weekly_rows is not None and credit_row is not None:break
         if weekly_rows is not None and credit_row is not None:break
     if skipped:warnings.append('openai-rows-skipped:'+str(skipped))
-    return (weekly_rows or short_rows)+([credit_row] if credit_row is not None else []),weekly_rows is None
+    if failed_files:warnings.append('openai-files-skipped:'+str(failed_files))
+    return (weekly_rows or short_rows)+([credit_row] if credit_row is not None else []),weekly_rows is None,failed_files
 
 
 def history(path,errors,warnings):
@@ -236,8 +244,9 @@ def usage(directory,now,errors,warnings):
         try:
             rows=collect(os.environ[key],now,warnings) if label=='openai' else collect(os.environ[key],now)
             if label=='openai':
-                rows,incomplete=rows
+                rows,incomplete,failed_files=rows
                 if incomplete:errors.append('openai-weekly-unavailable')
+                if failed_files:errors.append('openai-candidates-unavailable')
             observations.extend(rows)
         except (OSError,OverflowError,ValueError,TypeError,KeyError,AttributeError,Unavailable):errors.append(label+'-unavailable')
     if not observations and not errors:errors.append('providers-unconfigured')

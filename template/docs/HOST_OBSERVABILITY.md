@@ -28,7 +28,11 @@ primary or secondary window must be exactly 10,080 minutes. Short windows below
 evidence, fallback tries the next candidate; short-only evidence remains weekly
 unavailable. The newest valid credit balance is selected independently across the same
 bounded records/files, even from a short-only record while weekly evidence falls
-back to an older record. It is a separate balance/spend series, with explicit `has_credits=true`, `unlimited=false` and finite nonnegative balance.
+back to an older record. A failed candidate is skipped and counted; selected
+weekly data is retained and appended to history. Such partial collection returns
+nonzero from the CLI and zero from the hook. Later credit search can add credits,
+but cannot remove or replace selected weekly observations.
+It is a separate balance/spend series, with explicit `has_credits=true`, `unlimited=false` and finite nonnegative balance.
 
 Weekly target is elapsed percentage of the window; within ±10 points inclusive
 is `on-pace`. Burn uses same-series/reset/window samples from the last three

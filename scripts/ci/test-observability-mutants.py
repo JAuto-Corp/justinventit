@@ -47,6 +47,7 @@ MUTANTS=[
  ('R4-history-range',CORE,'value=number(json.loads(value),10**20 if credit else 100)','value=number(json.loads(value),10**20)','r4_history_ranges','runtime'),
  ('R5-unframed-history',CORE,"            if not line.endswith(b'\\n'):raise ValueError('incomplete history row')",'            pass # accept unfinished history','r5_unterminated_history','runtime'),
  ('R5-tsv-marker',CORE,"separator=b'\\tpartial\\n' if history_row else b'\\n'","separator=b'\\n'",'r5_truncated_last_field','runtime'),
+ ('R6-candidate-failure',CORE,'            data,truncated=bounded(path,400000,tail=True)\n        except (OSError,Unavailable):\n            failed_files+=1;continue','            data,truncated=bounded(path,400000,tail=True)\n        except (OSError,Unavailable):\n            raise Unavailable("candidate-failed")','r6_unreadable_older_candidate','runtime'),
 ]
 
 

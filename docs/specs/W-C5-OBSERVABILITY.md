@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **Code-review fold locally GREEN: 28 generated methods, 27 runtime assertion kills, one source refusal and four matrix cases pass. Narrow independent fold review pending.**
+Status: **Narrow-review candidate-failure correction: actual 29-method RED recorded; corrected implementation authored, committed generated GREEN pending.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb`; its hosted CI is green and
 integration awaits a hosted-lane gap;
@@ -387,3 +387,18 @@ credits, history range, unframed history admission and dropped TSV invalidation.
 Rerun the entire 28-witness list (27 runtime and one source refusal), not only
 new mutants. Narrow independent review covers the fold delta. No publication
 or live adoption is authorized by local evidence.
+
+### Narrow-review R6: preserve selected observations
+
+O `01M3WNBK3AP54VXS4ZY2292HQF` confirms F1–F5 and admits one introduced
+regression fix (I2/I3). Per-candidate metadata/read failures are skipped/counted,
+never allowed to discard weekly data already selected while the credits search
+continues. Collection remains honest: candidate failures produce a fixed CLI
+error/nonzero status plus skip count; the hook stays zero. Valid observations
+and their history persist. One new RED cell checks newest weekly 40% plus an
+unreadable older candidate; restoring it can add credits 80 but cannot replace
+weekly with its older 70%. One traced mutation removes per-file containment.
+All 28 prior cells and mutations remain, giving 29 methods and 29 finite
+witnesses (28 runtime + one source refusal). After GREEN and all-mutant rerun,
+o personally checks the fold diff and rules on the exact head; no further Sol
+round. Publication remains held.
