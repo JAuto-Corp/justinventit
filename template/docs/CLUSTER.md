@@ -238,3 +238,10 @@ canonical guidance and that seat's mailbox. Project instructions and explicit
 dispatch supply authority. Offline acceptance renders cluster and solo consumers,
 uses allowlisted utilities and fake providers under scratch homes, and runs
 `scripts/tests/test_launch.py`; it is not live-provider compatibility evidence.
+
+## Optional shared host observations
+
+[Host observability](HOST_OBSERVABILITY.md) documents the explicit usage inputs,
+shared history and selected-filesystem alerts. `pace.sh`, `usage-hook.sh` and
+`disk-watch.sh` require existing project binding plus an explicit host root.
+They install no hooks, query no providers and perform no cleanup.

@@ -1,52 +1,156 @@
 {
   "schema": 1,
   "authority": "Committed guard+policy, changed through reviewed diff; accident boundary only. Candidate self-registration and hostile filesystem races excluded. See SPEC threat model.",
-  "phase": "tests-only RED",
+  "phase": "GREEN operating closure; author-inspected fixed image pins, independent acceptance pending",
   "programs": {
     "scripts/pace.sh": {
       "images": [
         {
           "name": "inert-data-calibration",
           "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "e9206617e8d1632ff0a11df658798643fc940c9f83f672ee46a32d677794b501"
         }
       ],
-      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+      "edges": "bash builtins, dirname, cd/pwd; exec bash scripts/lib/jv-observability.sh usage; no other edges."
     },
     "scripts/usage-hook.sh": {
       "images": [
         {
           "name": "inert-data-calibration",
           "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "3d869dcd9eba3c841cf2a0ff7bf3c0f14f060e8eb49dc49edf8bec6b7acf2d3a"
+        },
+        {
+          "name": "other-seat-hook",
+          "sha256": "fe69f9613300912afb88e89c9ab9c449dcf26ba5e9457f66b7005d08fc4d7068"
         }
       ],
-      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+      "edges": "role check before any data/helper access; dirname, cd/pwd; bash shared dispatcher hook, errors suppressed. No installed hook."
     },
     "scripts/disk-watch.sh": {
       "images": [
         {
           "name": "inert-data-calibration",
           "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "a27d2eedf4f1c82c6cf2721f821d099d7270ed0c9cfe57afe9d84c5e4d49f956"
         }
       ],
-      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+      "edges": "bash builtins, dirname, cd/pwd; exec bash shared dispatcher disk. No deletion edge."
     },
     "scripts/lib/jv-observability.sh": {
       "images": [
         {
           "name": "inert-data-calibration",
           "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "fe3a9f25e13d11cb05f0d3692e0fc8a095393f6a18858b76fddb81fa3d88c333"
+        },
+        {
+          "name": "binding",
+          "sha256": "ae9a00dd655058761bee0f94d7347723a5da163aab518d1f3b8b8e0f20ad6967"
         }
       ],
-      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+      "edges": "bash builtins, dirname, cd/pwd; source fixed jv-project.sh, call configure and pure verify only; exec python3 fixed helper."
     },
     "scripts/lib/jv-observability.py": {
       "images": [
         {
           "name": "inert-data-calibration",
           "sha256": "9f56e761d79bfdb34304a012586cb04d16b435ef6130091a97702e559260a2f2"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "85e5eb546ba791c2ccc1b1763be2af6a7432727a7b5ed1ebdc16b4e81269e02b"
+        },
+        {
+          "name": "home-fallback",
+          "sha256": "484c02b1076b506d14a1914bde21e6ac8534850e537e75a22b6479c56b7089b1"
+        },
+        {
+          "name": "malformed-zero",
+          "sha256": "48a777a3e769fe74870678e2e0e28647459449a23d3364bef16ccc5557b92f8c"
+        },
+        {
+          "name": "prompt-data",
+          "sha256": "0c7c9f409b2f6c1f0b995c615810635a2a7f6e0a67bf2ae87b4854544a3713ca"
+        },
+        {
+          "name": "ignore-age",
+          "sha256": "65598483d2e0cbf60ae0649a7a87e05b3109e3d1c3f88a5d3273eda00fa8a1e5"
+        },
+        {
+          "name": "pace-equality",
+          "sha256": "9f1bc3e82a4ce5db421f24cf77120b70ebf5b25b9d19e2ebe469210df23ac2aa"
+        },
+        {
+          "name": "reset-filter",
+          "sha256": "aecd88cd35e638cb139fc65f53565a69955d6dfe35d2f3f2b5a1ca349d68b616"
+        },
+        {
+          "name": "credit-quota",
+          "sha256": "abd766c16ea3a0f7b35ee221d01c56636e744db8f3b18216560a05a99d75475c"
+        },
+        {
+          "name": "old-over-fresh",
+          "sha256": "e7c1919ab72eb1b4b9d1d394d01ac5d44f083444e0bad9860c5966c02a2f7553"
+        },
+        {
+          "name": "ignore-lock",
+          "sha256": "98ca65ef88d7dc549151776f33aa3fd8325d76a94412e94e8dac901e099618b4"
+        },
+        {
+          "name": "project-suppression",
+          "sha256": "535e3b2e1bce25c52e2b24f9175b987d18f3c9cf41141191f4a5d9c7c0596dab"
+        },
+        {
+          "name": "disk-equality",
+          "sha256": "dad8f065f584676ad3f15be6e918937a4d4216fdc9686c35510de1ce7a1a942b"
+        },
+        {
+          "name": "premature-checkpoint",
+          "sha256": "f204b84c28d37720b3b40c6b6a48f3c4b45b71676766ef9275796c2758244715"
+        },
+        {
+          "name": "F3-primary-weekly",
+          "sha256": "fb41aa0dcf2923ae7c7653e868a505b3a4f9dc3831a3d181029d8e1ba1a78ec1"
+        },
+        {
+          "name": "F4-display-name",
+          "sha256": "dbfa6e90350d77b6403a1a20757689b2682800873fb8eef61afc5b7f9ca29628"
+        },
+        {
+          "name": "F5-abort-providers",
+          "sha256": "1d29b03e6cbe50c2ee441f31139c2070f614383bb573c86188503c59f1ce523e"
+        },
+        {
+          "name": "F5-secondary-first",
+          "sha256": "bf251b5095f96ca70e10820677775b64bff8a4b0816f603e895d96dceef4a4d3"
+        },
+        {
+          "name": "F6-no-min-span",
+          "sha256": "3c6f237db6a30d74341ff67d4de5d6d2bd9f67702b31dda4439dc791c3f21942"
+        },
+        {
+          "name": "F6-no-cutoff",
+          "sha256": "c2f5cd947726b2dfed82c4fa1ae2886eeefdcc5b37a5eaeb3bde78767dd6d242"
+        },
+        {
+          "name": "F7-read-all",
+          "sha256": "d53b4d0dbb3011213d831d05087e13c49344e33175e85ce6b5898e31b0e8080f"
         }
       ],
-      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+      "edges": "stdlib contextlib, datetime, fcntl, hashlib, json, math, os, pathlib, re, stat, subprocess, sys, tempfile, time. Bounded selected data reads; private host-state writes; flock; df argv (fixture stub); explicit notifier argv+JSON stdin (fixture executable). Checkpoint replaces/unlinks only its own mkstemp. No provider/network/mail/process-discovery/native cleanup edges."
     },
     "scripts/lib/jv-project.sh": {
       "images": [
@@ -55,7 +159,7 @@
           "sha256": "80ec586deab5d4e9623bc15068e191708b5b4b68d8b29cdcdae05d4496a0daa8"
         }
       ],
-      "edges": "Accepted shared binding helper"
+      "edges": "Unchanged accepted helper: used configure/verify paths invoke bash builtins, realpath, find, jq. Uncalled initializer includes flock, mkdir, mktemp, mv, rm; no observability invocation initializes binding."
     }
   }
 }

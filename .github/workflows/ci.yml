@@ -101,6 +101,32 @@ jobs:
             ${{ runner.temp }}/wc3-mutants/*/stderr
           if-no-files-found: warn
 
+      - name: Portable host observability
+        run: python3 scripts/ci/test-observability-portability.py --evidence "${{ runner.temp }}/wc5-green"
+
+      - name: Finite observability mutants
+        run: >-
+          python3 scripts/ci/test-observability-mutants.py
+          --green-evidence "${{ runner.temp }}/wc5-green"
+          --evidence "${{ runner.temp }}/wc5-mutants"
+
+      - name: Upload observability receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w-c5-observability-evidence
+          path: |
+            ${{ runner.temp }}/wc5-green/*.json
+            ${{ runner.temp }}/wc5-green/*.stdout
+            ${{ runner.temp }}/wc5-green/*.stderr
+            ${{ runner.temp }}/wc5-green/runner-error.txt
+            ${{ runner.temp }}/wc5-mutants/results.json
+            ${{ runner.temp }}/wc5-mutants/*/source-gate.json
+            ${{ runner.temp }}/wc5-mutants/*/mutation.json
+            ${{ runner.temp }}/wc5-mutants/*/stdout
+            ${{ runner.temp }}/wc5-mutants/*/stderr
+          if-no-files-found: warn
+
       - name: Portable frontend-design acceptance
         # The R4 wrapper first retains: bash scripts/ci/test-skill-portability.sh
         run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh

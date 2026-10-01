@@ -1,7 +1,7 @@
 # W-C5 observability review and evidence ledger
 
-Status: o admitted the folded SPEC; tests-only RED authored. No runtime
-implementation, generated RED outcome or hosted CI is claimed yet.
+Status: actual generated RED recorded; GREEN implementation and finite witnesses
+authored. Generated GREEN, mutant results and independent code review remain pending.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -73,3 +73,23 @@ The operating scripts/helpers remain absent. Each runtime method asserts the
 missing closure before creating a candidate child. The committed Copier runner
 will render real cluster/solo consumers with tasks disabled and retain the
 actual RED result before any implementation is added.
+
+## Actual RED and GREEN construction
+
+Tests-only commit `d76cb4251e968e55c9d1896c40a4c9fb2f8de1dc` rendered real Copier
+9.17.1 cluster/solo projects. The identical runner exited 1 with two harness
+passes, 18 intended missing-feature assertion failures and **zero errors**;
+no runtime candidate child ran. Private `wc5-red-classification.json` records
+the classification and raw `/tmp/jv-wc5-red` logs are retained for the packet.
+
+The nested-alias fixture was moved into the selected year/month/day session
+layout before GREEN; its refusal assertion is unchanged. The first working-tree
+implementation run passed all 20 methods. This is preliminary, not committed
+Copier evidence. The GREEN closure reuses the unchanged project verifier and
+stdlib collection/state operations. Fixed allowlist entries name every reviewed
+helper/command and each of the 21 safe runtime mutations; the destructive purge
+seed remains unlisted data. Neither runner dynamically admits candidate images.
+
+Generated operator documentation and CI steps cover the new utility/suite and
+finite mutations. No live adoption, hosted CI or independent acceptance is
+implied by author inspection or local checks.

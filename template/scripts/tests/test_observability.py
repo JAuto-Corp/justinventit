@@ -77,7 +77,7 @@ class Observability(unittest.TestCase):
             with self.subTest(env=env): self.assertNotEqual(f.run(env=env).returncode,0)
         alias=f.root/'host-alias';alias.symlink_to(f.host)
         self.assertNotEqual(f.run(env={'JV_HOST_ROOT':alias}).returncode,0)
-        nested=f.codex/'alias.jsonl';nested.symlink_to(f.anthropic)
+        nested=f.codex/'2026/01/01/alias.jsonl';nested.symlink_to(f.anthropic)
         self.assertNotEqual(f.run(env={'JV_USAGE_ANTHROPIC_FILE':None}).returncode,0)
         nested.unlink()
         fifo=f.providers/'pipe';os.mkfifo(fifo)
