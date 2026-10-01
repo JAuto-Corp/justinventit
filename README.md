@@ -104,6 +104,7 @@ Key design decisions validated by independent research:
 - [Architecture](docs/ARCHITECTURE.md) — Why each layer exists
 - [Customization](docs/CUSTOMIZATION.md) — How to extend without breaking sync
 - [Self-Improvement](docs/SELF_IMPROVEMENT.md) — Friction journal and upstream contribution
+- [Lessons](docs/LESSONS.md) — General engineering and agentic lessons, with dated origins
 - [Brownfield Migration](docs/MIGRATION.md) — Bringing an existing project into the framework
 
 ## Origin
