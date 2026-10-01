@@ -421,7 +421,7 @@ class Observability(unittest.TestCase):
         report=f.report(r);row=self.by_series(report)['anthropic-wk']
         self.assertIsNone(row['burn_per_hour'])
         self.assertIn('history-skipped:1',report['warnings'])
-        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\n'),'retry concatenated onto history tail')
+        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\tpartial\n'),'retry concatenated onto history tail')
         self.assertEqual(len(f.ledger.read_bytes().splitlines()),2)
         f.history([]);f.fault.unlink(missing_ok=True)
         r=f.run(env={'JV_USAGE_CODEX_ROOT':None,'JV_OBS_FAULT':'partial-ledger'})
@@ -429,8 +429,23 @@ class Observability(unittest.TestCase):
         fragment=f.ledger.read_bytes();self.assertTrue(fragment);self.assertFalse(fragment.endswith(b'\n'))
         r=f.run(env={'JV_USAGE_CODEX_ROOT':None});self.assertNotEqual(r.returncode,0)
         self.assertIn('history-skipped:1',f.report(r)['warnings'])
-        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\n'))
+        self.assertTrue(f.ledger.read_bytes().startswith(fragment+b'\tpartial\n'))
         self.assertEqual(len(f.ledger.read_bytes().splitlines()),2)
+
+    def test_r5_truncated_last_field(self):
+        """O F5 ruling: a shortened numeric last field stays invalid after repair."""
+        f=self.f;f.anthropic_data(used=25);reset=f.now+302400
+        f.history([(f.now-1800,'anthropic-wk',20,reset,604800)])
+        fragment=f.ledger.read_bytes().rstrip(b'\n')[:-1]  # 604800 cut to 60480
+        f.ledger.write_bytes(fragment)
+        for count in (2,3):
+            r=f.run(env={'JV_USAGE_CODEX_ROOT':None});self.assertNotEqual(r.returncode,0)
+            report=f.report(r);self.assertIn('history-skipped:1',report['warnings'])
+            self.assertIsNone(self.by_series(report)['anthropic-wk']['burn_per_hour'])
+            lines=f.ledger.read_bytes().splitlines()
+            self.assertEqual(len(lines),count)
+            self.assertEqual(lines[0],fragment+b'\tpartial')
+            self.assertEqual(len(lines[0].split(b'\t')),6,'fragment became a five-field observation')
 
     def test_t7_both_entries_generated_and_missing_helper(self):
         """I7: both generated consumers execute and missing closure refuses."""

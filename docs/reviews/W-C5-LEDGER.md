@@ -161,3 +161,13 @@ partial-write seam. All 22 existing test method ASTs are unchanged. Actual
 committed generated RED must precede implementation. After GREEN, rerun every
 existing mutant plus one traced fault mutation per finding; then new immutable
 evidence and o-commissioned narrow fold review. Publication remains held.
+
+O clarification `01M3WM6DM4G89F8H5HRXPPJ4PE`: JSONL uses newline-only sealing;
+an otherwise valid unframed JSON object can legitimately become readable later.
+TSV fragments instead receive TAB `partial` NEWLINE, so truncated numeric last
+fields can never become valid five-field rows. Append-only, no sidecar or format
+migration. Add one explicit truncated-last-field cell; update only the new F5
+RED expectations to the ruling. The original 22 methods remain unchanged.
+First actual generated RED at `ddec3a4`: 22 existing passes, five intended
+assertion failures and zero errors. The additional cell gets a committed RED
+before GREEN as well; total 28 methods.
