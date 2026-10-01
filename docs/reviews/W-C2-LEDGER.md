@@ -54,3 +54,70 @@ The review's two notes preserve the feature-absence disclosure and scratch bindi
 ## Next permitted action
 
 After committing/running the five RED folds, proceed to the authorized GREEN implementation without another RED review. W-A and W-C1 must land before changing their shared surfaces. No second SPEC audit, no independent acceptance by the author, and no author merge. The full independent code review remains due at GREEN; the pilot governs any traced fixes.
+
+## GREEN implementation and evidence
+
+Dependencies #67/#68/#69 landed in order; i confirmed main
+`aa49d9783a0c6b1cb566d3c48728f5365ae60e21` and combined-main CI success.
+The author rebased onto that main before implementation. The pre-rebase RED
+history remains at `archive/w-c2-red-before-rebase-20261001`; rebased RED
+`ab452db` still yields 18 feature-absence failures and zero errors.
+
+Implementation `e607267` adds the complete generated launcher, boot/templates,
+Codex helper and bundled schema/evaluator. W-C1's identity functions move into
+one shared helper; mailbox transport semantics remain unchanged. The schema
+keeps source constraints except the approved project-ID grammar. The evaluator
+matches Node's mechanical TypeScript erasure exactly after only shebang, usage
+extension and default-schema-path edits. Plain Node executes the delivered file.
+
+First implementation verification passed 17/18 methods. Its only failure was
+an exact-gitdir documentation assertion split across a newline. `52ffc9f` fixes
+the wording and passes all 18 methods. Two manually seeded fixtures were corrected
+to include W-C1's required project binding; fresh-bootstrap cases still exercise
+empty state. The allowlist adds the mailbox's existing `od`/`awk` dependencies.
+No production guard or expected refusal was relaxed for fixture setup.
+
+The first finite launch-mutant run at `52ffc9f` produced 21 assertion kills and
+two error-only results: missing project-qualified handle and missing `--resume`
+argument. Neither error-only result counted as a kill. `18c2fcc` adds explicit
+handle/argument assertions in the existing cells. Real Copier cluster/solo
+acceptance at that commit passes **18 methods, zero failures/errors**; all **23
+launch mutants** then fail assertions with **zero test errors**. The 23 include
+separate name/profile variants and reuse newest-rollout substitution for R4;
+the final raw output shows the same-workdir wrong/missing-own-thread witnesses.
+Source schema's two relaxed-schema controls remain in the generated suite.
+
+Accepted mailbox regression passes **27 methods** at `52ffc9f`; the installed
+delta helper confirms its production/test/runner inputs are unchanged at
+`18c2fcc`. All **21 accepted mailbox mutants** still fail assertions after their
+disposable copies include the shared helper. As in the accepted W-C1 packet,
+its nested-alias mutant also has one cleanup FileNotFoundError after 16 assertion
+failures; that cleanup error is disclosed and supplies no independent kill.
+The ordinary unmutated mailbox suite has no errors.
+
+Generated operating scans, seeded scanner refusals, fixture calibration, lock
+and pathname-replacement barriers, and the reviewed zero-external-command
+assertion pass. The CI job now runs launch acceptance alongside mailbox and the
+existing framework gates. Local evidence runs one heavy lane sequentially.
+The sealed packet retains initial failures and invalid mutant attempts as well
+as final outcomes, rendered input hashes/closure, source mappings, transformation
+proof and the actual SPEC/RED verdicts.
+
+Remaining boundaries: synthetic providers prove the launcher contract, not live
+provider compatibility or credentials; Codex stored names are intended/unverified,
+post-exit attribution remains advisory, UUID recovery and profile/gitdir adapter
+packaging are deferred. Claude's inherited pane exit convention is not a health
+verdict. No source/host configuration adoption, liveness/lease implementation,
+author acceptance or merge is included.
+
+Next: o commissions one full independent code review of the GREEN subject under
+the recorded Sol availability exception; i alone integrates after o's verdict
+and current-head CI. No additional SPEC/RED review or retroactive provider-diversity
+round is introduced.
+
+The local four-answer generation/coherence matrix at `18c2fcc` also passes:
+solo/greenfield/none, cluster/brownfield/Supabase, cluster/brownfield/Postgres,
+and cluster/greenfield/none. The final review-head commit only updates this ledger
+and SPEC status; the installed delta helper records unchanged executable inputs.
+Hosted CI and its duplicate-run cancellation receipts are captured separately
+from the immutable local GREEN packet.
