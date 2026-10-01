@@ -21,6 +21,7 @@ class Fixture(BaseFixture):
         self.host = self.root / 'shared host'; self.foreign_host = self.root / 'foreign host'
         self.env.pop('JV_WATCHDOG_PROC_ROOT')
         self.env.update(JV_HOST_ROOT=str(self.host), JV_TEST_MEMORY='8192',
+                        JV_CAPACITY_FIXTURE_ROOT=str(self.root),
                         JV_CAPACITY_CALLS=str(self.root/'capacity-calls.jsonl'),
                         JV_CAPACITY_FAULT_MARKER=str(self.root/'fault-reached'))
         self.children = []; self.owned = []; self.handles = []; self.releases = []
@@ -71,6 +72,10 @@ try: target=os.readlink('/proc/self/fd/'+fd)
 except OSError: pass
 with pathlib.Path(os.environ['JV_CAPACITY_CALLS']).open('a') as out:
  out.write(json.dumps({'command':'flock','args':args,'target':target})+'\\n')
+# R2: never forward a pathname/command form or an off-fixture FD to native.
+root=pathlib.Path(os.environ['JV_CAPACITY_FIXTURE_ROOT']).resolve()
+if not fd.isdecimal() or not target or not pathlib.Path(target).resolve().is_relative_to(root):
+ sys.exit(92)
 fault=os.environ.get('JV_CAPACITY_FLOCK_FAULT')
 if target==os.environ['JV_HOST_ROOT']+'/locks/build.lock' and (fault=='all' or
  (fault=='probe' and fd!=os.environ.get('JV_BUILD_LOCK_FD'))):
@@ -122,6 +127,16 @@ os.execv(NATIVE,['mv',*sys.argv[1:]])
         if 'input' not in defaults:
             defaults.setdefault('stdin', subprocess.DEVNULL)
         return subprocess.run(list(map(str, argv)), **defaults)
+
+    def environment(self, peer=0, overrides=None):
+        env=super().environment(peer,overrides)
+        # Check configured open roots BEFORE the candidate shell can redirect.
+        for key in ('JV_HOST_ROOT','JV_STATE_ROOT','JV_PROJECT_ROOT'):
+            value=env.get(key)
+            if value and Path(value).is_absolute():
+                self.case.assertTrue(Path(value).resolve().is_relative_to(self.root),
+                                     'nonfixture configured path; no candidate child')
+        return env
 
     def run(self, *command, guarded=False, peer=0, env=None, **kwargs):
         return self.run_argv(self.argv(command, guarded, peer), peer, env, **kwargs)

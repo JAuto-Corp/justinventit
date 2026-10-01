@@ -1,6 +1,6 @@
 # W-C4 host capacity review and evidence ledger
 
-Current stage: all admitted SPEC folds applied; tests-only RED is ready for o's Sol one-shot review. No production implementation, GREEN runtime proof or integration yet.
+Current stage: Sol RED review folds admitted by o; one tests-only correction commit before GREEN. No production implementation or GREEN runtime proof yet.
 
 O's `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01) accepts W-C3 at `e04c9a4` and commissions W-C4. The admitted scope is only the landed build-lock/build-guarded pair; the unlanded host-reap portion waits. This scope resolves the extraction brief's original “once d lands it” condition for the separate reaper. Author a; director o; integrator i.
 
@@ -62,3 +62,21 @@ separate regression check and cannot turn this RED into W-C4 GREEN. Next gate:
 o's Sol one-shot RED review and posted verdict, then implementation if admitted.
 Per o's throttle direction, no correctness-fold status mail is sent; any scope
 or owner decision would receive the requested one-line packet. None is needed.
+
+## RED review disposition
+
+O `01M3WAG9NWPS2CA4X0FE6Z4PTG` admits every correctness finding, directs
+one new RED commit, then GREEN with no further RED round. R1 closes source
+helper/launcher edges and wrapped effects. R2 checks source host-path opens,
+fixture roots and native-flock targets before execution/delegation. R3 uses
+locked canonical and unrelated FDs together. R4 adds the independent
+Python-held canonical lock across both entries and projects. SPEC F1–F3 stay.
+
+The two new harness methods first reproduced **9 assertion failures, zero
+errors** against the old gates; unsafe shell seeds stayed data, and the native
+flock calibration used only a disposable sibling canary. After gate fixes,
+all **4 containment/calibration methods pass**. The 15 production methods
+remain feature-absence RED until the wrappers exist. The committed Copier
+RED rerun and subsequent GREEN results will be retained separately. Six
+review-traced mutants extend the finite set to 23. No runtime kill or lock
+lifetime proof is claimed by the missing-feature RED.

@@ -40,6 +40,40 @@ class Containment(unittest.TestCase):
             for key in ('_tasks','_migrations','_jinja_extensions'):
                 self.assertTrue(render_findings(key+': []\n'))
 
+    def test_r1_r2_closure_wrapped_effects_and_host_opens(self):
+        """R1→I6/I7, R2→I1/I7: refuse extra helpers and host opens as DATA."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for rel in CLOSURE:
+                p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('exit 0\n')
+            helper=root/'scripts/lib/extra.sh';helper.write_text('env /bin/kill -TERM 99999\n')
+            entry=root/CLOSURE[0]
+            for seed in ('source "$SCRIPT_DIR/lib/extra.sh"', '. "$SCRIPT_DIR/lib/extra.sh"',
+                         'bash "$SCRIPT_DIR/lib/extra.sh"', 'env /bin/kill -TERM 99999',
+                         'env X=1 command /usr/bin/tmux list-sessions',
+                         'exec {fd}>"/tmp/not-a-fixture.lock"',
+                         'LOCK_DIR="${JV_HOST_ROOT:-/var/lock}"', 'LOCK_DIR="$HOME/locks"'):
+                with self.subTest(seed=seed):
+                    entry.write_text(seed+'\n')
+                    self.assertTrue(runtime_findings(root),'unsafe seed would execute')
+            entry.write_text('source "$SCRIPT_DIR/lib/jv-project.sh"\n')
+            self.assertEqual(runtime_findings(root),[])
+
+    def test_r2_native_flock_boundary(self):
+        """R2→I1/I7: pathname and foreign FDs never reach native flock."""
+        f=Fixture(self,(PROJECT,PEER))
+        # Disposable sibling canary, never a real host lock.
+        with tempfile.TemporaryDirectory() as tmp:
+            target=Path(tmp)/'foreign.lock'
+            r=subprocess.run([f.bin/'flock','-n',target,'true'],env=f.environment(),capture_output=True)
+            self.assertEqual(r.returncode,92);self.assertFalse(target.exists())
+            with target.open('w') as foreign:
+                r=subprocess.run([f.bin/'flock','-n',str(foreign.fileno())],env=f.environment(),
+                                 pass_fds=(foreign.fileno(),),capture_output=True)
+                self.assertEqual(r.returncode,92)
+                with target.open('r') as probe:
+                    fcntl.flock(probe,fcntl.LOCK_EX|fcntl.LOCK_NB)
+
     def test_t7_fixture_memory_flock_and_closed_stdin(self):
         """I7/F2/F3: calibrate test seams without executing missing production."""
         f=Fixture(self,(PROJECT,PEER));env=f.environment()
@@ -154,6 +188,20 @@ class Capacity(unittest.TestCase):
         self.assertEqual(f.lock.stat().st_ino,inode)
         f.receipt('five contenders refused; poisoned/absent info did not grant ownership',inode=inode)
 
+    def test_r4_python_canonical_owner(self):
+        """R4→I2: independent Python ownership denies both entries/projects."""
+        f=self.f;f.lock.parent.mkdir(parents=True)
+        with f.lock.open('a') as owner:
+            fcntl.flock(owner,fcntl.LOCK_EX)
+            inode=f.lock.stat().st_ino
+            for peer in (0,1):
+                for guarded in (False,True):
+                    with self.subTest(peer=peer,guarded=guarded):
+                        r,p=self.mark(peer,guarded=guarded)
+                        self.assertEqual(r.returncode,1,r.stdout+r.stderr);self.assertFalse(p.exists())
+                        self.assertEqual(f.lock.stat().st_ino,inode)
+        self.reacquire()
+
     def test_t3_crash_background_and_node_lifetime(self):
         """I3/F1: retained FD excludes contenders until explicit fixture release."""
         f=self.f
@@ -193,9 +241,14 @@ while test ! -e "$8"; do sleep .01; done
             with self.subTest(marker=marker):
                 r,p=self.mark(env={'JV_BUILD_LOCK_FD':marker})
                 self.assertEqual(r.returncode,65);self.assertFalse(p.exists())
-        with (f.root/'unrelated').open('w') as wrong, f.lock.open('a') as unlocked:
-            for handle in (wrong,unlocked):
-                r,p=self.mark(env={'JV_BUILD_LOCK_FD':str(handle.fileno())},pass_fds=(handle.fileno(),))
+        with f.lock.open('a') as unlocked:
+            r,p=self.mark(env={'JV_BUILD_LOCK_FD':str(unlocked.fileno())},pass_fds=(unlocked.fileno(),))
+            self.assertEqual(r.returncode,65);self.assertFalse(p.exists())
+        # R3→I4: both files locked, so only the inode check can reject this FD.
+        with f.lock.open('a') as owner, (f.root/'unrelated').open('w') as wrong:
+            fcntl.flock(owner,fcntl.LOCK_EX);fcntl.flock(wrong,fcntl.LOCK_EX)
+            for peer in (0,1):
+                r,p=self.mark(peer,env={'JV_BUILD_LOCK_FD':str(wrong.fileno())},pass_fds=(wrong.fileno(),))
                 self.assertEqual(r.returncode,65);self.assertFalse(p.exists())
         with f.lock.open('a') as owner, f.lock.open('a') as other:
             fcntl.flock(owner,fcntl.LOCK_EX)

@@ -2,7 +2,7 @@
 
 Heavy commands from different projects on one machine must compete for the same kernel lock; extract the two landed wrappers and require an explicit shared host root.
 
-Status: **Sol SPEC audit ACCEPT-WITH-FOLDS at `bef4650`; all three correctness folds admitted by o (`01M3VEJ0X8AVHG1BVDY22DHZG5`) as the final SPEC round, then RED. No implementation yet.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
+Status: **Sol SPEC audit ACCEPT-WITH-FOLDS at `bef4650`; all three correctness folds admitted by o (`01M3VEJ0X8AVHG1BVDY22DHZG5`) as the final SPEC round, then RED. RED review correctness folds admitted by o (`01M3WAG9NWPS2CA4X0FE6Z4PTG`); one tests-only fold commit, then GREEN without another RED round.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
 
 ## Intent
 
@@ -111,3 +111,23 @@ SPEC + test-list audit by o's commission → tests-first RED with intended failu
 Before each render, disallow executable Copier tasks/extensions. Before each runtime or mutant child, check the complete operating closure and its permitted path/effect boundary. Fixtures use private temporary host roots and project stores, real kernel flock on those files, marker commands and synthetic memory observations. Only handles for processes spawned by the current fixture may be terminated for the required crash witness or teardown; cleanup must wait/reap them and never act on PIDs read from production metadata. Source fixtures are reading evidence, not executables to run unchanged.
 
 Retain exact source hashes/read scope, RED/GREEN logs, child-lifetime/reacquisition evidence, mutated inputs and outcome classification in sealed packets. Preserve upstream source provenance without making JA names or issue numbers runtime rules. Run affected accepted regressions only if their shared inputs change, plus the current generated matrix/CI before integration. No local proof authorizes installation on a live host.
+
+## RED review folds (2026-10-01)
+
+O admits all four correctness findings from Sol's RED review, with no additional RED round.
+R1→I6/I7 closes the declared source/launch dependency edges and rejects wrapped
+effect commands before execution. R2→I1/I7 gates host fallback/open sources and
+configured roots before candidate execution, and refuses pathname/foreign-FD
+flock calls before native delegation. These are bounded checks for this known
+shell closure, not an arbitrary-shell security sandbox. Calibration canaries
+are disposable fixture files, never live host locks. R3→I4 holds the canonical
+lock and an unrelated descriptor simultaneously, so inode validation is the
+discriminating refusal. R4→I2 uses an independent Python-held canonical flock
+to deny both entry scripts across both projects. Retain SPEC F1–F3 unchanged.
+
+Add six finite review witnesses: remove dependency-edge checking (R1), remove
+wrapped-effect checking (R1), remove host-path source checking (R2), remove
+native-flock confinement (R2), omit inode validation (R3), and acquire a
+different common inode (R4). Total: 23 planned mutants, with harness kills
+distinguished from runtime kills and unsafe-source refusals. No new product
+behavior or recovery scope.
