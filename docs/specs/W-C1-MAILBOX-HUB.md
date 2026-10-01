@@ -1,7 +1,8 @@
 # W-C1: portable mailbox and bounded hub client
 
-Status: proposed; pre-code SPEC/test-list audit pending. No implementation or
-passing behavior evidence is claimed by this document.
+Status: SPEC r2; four findings from the independent Sol xhigh audit folded below.
+The director authorized RED after this final SPEC revision, without another
+SPEC round. No implementation or passing behavior evidence is claimed.
 
 ## Intent
 
@@ -43,6 +44,8 @@ they do not become an installed or running projector through this slice.
   Two distinct IDs under one state root do not affect each other. Reusing an
   initialized ID for another project root fails before touching mail. Path
   components supplied as roles or archive task IDs cannot escape the store.
+  Every accessed state path is checked for symlink aliases before reading or
+  mutating it, including nested directories, mailbox files and cursor files.
 - **I2 — Authority before delivery (X4).** The existing exclusive append lock,
   byte-length framing, trailing-record repair, readback and file/directory
   durability barriers remain on the authoritative write path. A failed lock or
@@ -66,13 +69,16 @@ they do not become an installed or running projector through this slice.
   flags are refused before append. Unicode, quotes, backslashes and embedded
   newlines survive send/read/search/archive. Direct and broadcast mail retain
   independent per-reader cursors; peek does not consume mail.
+  Search continues after ordinary nonmatches and treats leading-dash search
+  text literally in both live and archive files.
 - **I6 — Explicit remote target (X2, X6).** Remote reads require an explicit
   dedicated hub configuration file bound to the selected project ID. There is
   no host-home or product-env discovery. Credentials are read as data, never
   sourced as shell code, never placed in curl argv, and never printed by target
   inspection or failure diagnostics. Missing/mismatched configuration,
   malformed transport fields, network errors and non-2xx responses fail loud.
-  Remote reads do not initialize a local mailbox store.
+  Curl ignores its default configuration (`-q` is its first argument). Successful
+  and failing remote reads create no local state artifacts.
 - **I7 — Delivered portability (X3–X6).** The CLI and its documentation render
   through Copier and execute in scratch consumer projects. Existing solo
   generation remains inert until the CLI is explicitly configured and invoked.
@@ -100,9 +106,15 @@ The project root is canonicalized physically. The store is
 A small identity record binds the store to the ID and canonical project root.
 Initialization is serialized with a store lock and uses an atomic record
 write. An existing nonempty unmarked store or mismatched identity is refused;
-no implicit migration or ownership reassignment occurs. Symlinked project-store
-or mail directories are refused rather than allowing distinct names to alias
-one store. The parent state root may itself be a canonicalized filesystem path.
+no implicit migration or ownership reassignment occurs. After canonicalizing
+the parent state root, reject symlinks at every accessed state-path component:
+project store, identity/lock files, mail directory, authority and projection
+files, cursor directories/files, archive directories/files, temporary repair
+files and trigger. Dangling symlinks are also refused. Check before any read,
+append, truncate, lock, replace or cursor mutation, so a symlink into a second
+project exposes no records and changes neither project's artifacts. The parent
+state root may itself be a canonicalized filesystem path. This is a cooperating
+filesystem contract, not protection against a hostile concurrent symlink swap.
 
 Legacy independent `MSG_MAILROOT`, `HUB_EVENT_LOG`, `HUB_APPEND_LOCK` and
 `HUB_DRAIN_TRIGGER` overrides are refused when nonempty, with migration guidance.
@@ -133,13 +145,18 @@ names or fallback search remain. `HUB_PROJECT_ID` must match `JV_PROJECT_ID`.
 `HUB_URL` is an HTTPS origin without userinfo, query, fragment or embedded
 control characters. Curl configuration values reject control characters,
 quotes and backslashes before interpolation. The key is passed using curl's
-configuration stdin. Error output is bounded to a safe operation/status message;
+configuration stdin. Invoke curl with `-q` as its first argument so `.curlrc`
+cannot add targets, tracing or output writes. Error output is bounded to a safe operation/status message;
 raw response bodies and credential-bearing curl diagnostics are not echoed.
 
 `hub target` prints only the selected project ID, env-file path and URL; it
 requires valid target identity and URL but need not read or print the service
 key. `hub seats|open|mine|blocked [--json]` retain the existing legacy queries.
 Plain send and hub writes continue to work without any remote credentials.
+All five remote verbs (`target`, `seats`, `open`, `mine`, `blocked`) bypass local
+store initialization on both success and every failure path. Configuration
+validation may read the explicit project root and env file, but never creates
+state-root, store, lock, trigger, mail or cursor artifacts.
 
 The identity assertion in an env file is not database tenancy enforcement.
 Each project must have its own dedicated database/projection store and its own
@@ -204,8 +221,12 @@ always-refusing CLI cannot satisfy negative cells.
 | I4-A | Completion normalizes duplicate mixed-case recipients into one authority record and exact per-recipient views; same-ID retry, fresh read and unrelated append each repair a missing view | Persistent view failure stays recorded/unknown; historical repair failure refuses an unrelated append as not recorded; changed completion content under the same ID remains refused |
 | I5-A | Three/four-argument send, alert/request prefix, attached correlation ID and literal `--`; dispatch/status/rule/thread/finding/attention payloads; completion optional fields; stdin/body-file input | Five-position send, bare/empty correlation flag, malformed required fields/enums, invalid checklist JSON, and illegal/missing completion flag values fail with operation-specific diagnostics and unchanged authority |
 | I5-B | Unicode and escaped/newline bodies survive read, literal search and date-filtered archive under inherited `xpg_echo`; peek preserves offsets; broadcast/direct reads remain independent | Re-reading consumed mail emits no old records; one reader cannot consume another's cursor; invalid path identifiers produce no cursor/archive; failed archive extraction does not advance its cursor |
-| I6-A | Fake curl receives the expected seats/open/mine/blocked URL and a synthetic key only on stdin; raw/readable output works; target inspection creates no local store | Absent file, wrong project, product-only env, malformed URL/key, HTTP failure and network failure fail without calling an unintended target or exposing the synthetic key in argv/stdout/stderr; env-file shell syntax never executes |
+| I6-A | Fake curl receives the expected seats/open/mine/blocked URL and a synthetic key only on stdin; raw/readable output works; every remote verb creates no local artifacts | Absent file, wrong project, product-only env, malformed URL/key, HTTP failure and network failure fail without calling an unintended target, exposing the synthetic key or creating any local artifacts; env-file shell syntax never executes |
 | I7-A | Pinned Copier renders cluster and solo answers; generated shell syntax/executable modes, relative links and local smoke pass; existing generation matrix remains green | Coupling scan seeded with a source-host path and secret scan seeded with a synthetic credential both detect their seeds; real changed operating files and rendered outputs pass clean; missing executable is not counted as successful refusal |
+| F1→I1 | Regular files in two initialized projects remain readable and writable independently | Alias each accessed path class (including mailbox, cursor directory and cursor file) into the second project, including dangling aliases; attempted read/write/archive/repair refuses, outputs no foreign body, and byte snapshots of both projects remain unchanged |
+| F2→I6 | Capture actual curl argv and require `-q` at index zero before other options | Fake curl models a populated `.curlrc` by exposing a decoy target/trace artifact unless its first argument is `-q`; no decoy request, trace or leaked key is permitted |
+| F3→I6 | Parameterize all five remote verbs with a nonexistent state root; successful calls leave it absent | Missing/mismatched config, bad arguments and network/HTTP failures across seats/open/mine/blocked leave the state root absent and create no lock/trigger/cursor artifacts |
+| F4→I5 | A later mailbox and a later archive match after earlier nonmatches; leading-dash literal text matches in both live/archive paths, including under `xpg_echo` | Earlier nonmatches cannot hide later results; leading-dash text cannot act as flags; a complete no-match search exits normally without records; genuine grep errors remain failures |
 
 Source regression mapping at GREEN must account for the source test families:
 HUB/S2P0 write shapes and target resolution; finding route/resolve; P0 identity;
@@ -219,12 +240,17 @@ remove identity binding or path validation; skip append lock/barrier; weaken
 same-ID comparison; skip completion recovery; loosen send arity; reintroduce
 implicit env selection or put a key in argv. Run the existing cells against
 each mutant. Add a cell only for a surviving mutant, traced to its invariant.
+Each F1–F4 witness also gets its discriminating mutant: skip a nested symlink
+check, remove/move curl's first `-q`, initialize state on remote paths, restore
+either search bug. Security/locking corrections retain the narrow review gate.
 
 ## Evidence and gates
 
-1. Director commissions the required independent SPEC/test-list audit before
-   any implementation. Preserve required opinion cardinality and cross-family
-   review; no same-author substitution is claimed.
+1. Completed independent SPEC/test-list audit of `3fd69a374`: Sol xhigh, fresh
+   context, REJECT with F1–F4. Director's 2026-10-01 disposition allows this
+   cross-model substitution because the other provider is throttled, and directs
+   folding all four findings into r2 then RED with no third SPEC round. This is
+   an explicit disposition, not a claim that the initial audit passed.
 2. Write tests and retain a RED commit/run. A missing CLI is the initial positive
    absence witness, not evidence that negative-input guards are correct. Review
    the tests and their operation-specific negative oracles before implementation.
@@ -232,7 +258,8 @@ each mutant. Add a cell only for a surviving mutant, traced to its invariant.
    GREEN, finite mutants, existing generation matrix and the coupling/secret
    scans. Retain commands, versions, exit codes, source/candidate hashes and
    scratch paths in a sealed evidence packet. No live product service is used.
-4. Full cross-family code review via the director at the exact GREEN head;
+4. Full independent code review via the director at the exact GREEN head under
+   the director's active provider disposition;
    traced fixes get RED/mutant evidence and security/locking fixes get the
    required narrow review. Director verdict precedes integrator-owned merge.
 
@@ -247,6 +274,13 @@ These are historical evidence references, not operating rules or project pins.
 | JA 2026-08-02, `3ae8cf9fe`, PR #3446 | One completion authority record and repairable recipient views avoid duplicate results and lost completion delivery |
 | JA 2026-09-24, `e0128d1a6`, PR #3579 | Explicit hub targeting separates control-plane reads from product storage; extraction removes the temporary fallback |
 | JA 2026-09-30, portability audit §3 and extraction charter X2 | Explicit ID/roots and separate stores prevent same-seat collisions; baseline projection tables still lack multi-project tenancy |
+| JV 2026-10-01, W-C1 SPEC audit of `3fd69a374`, F1–F4 | Nested state aliases, default curl configuration, remote startup side effects and literal-search failures need explicit witnesses; the inherited search bugs are separately filed in JA |
+
+Audit source: host record `jv-wc1-spec-audit-sol.md`, with findings reproduced
+in the four traced test rows above. Director disposition: mailbox event
+`01M3TT0Y6SQFQ2YEJH35GKMPT8`. The separate [JA search issue
+#3818](https://github.com/JAuto-Corp/customer-portal/issues/3818) is a follow-up
+only; this slice changes JV and leaves JA code and operating state untouched.
 
 ## Reviewer context card
 
