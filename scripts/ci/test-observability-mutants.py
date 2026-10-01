@@ -19,7 +19,7 @@ CORE='scripts/lib/jv-observability.py'
 SHELL='scripts/lib/jv-observability.sh'
 MUTANTS=[
  ('binding',SHELL,'_jv_verify_store\n',': # bypass binding\n','t1_binding_and_paths','runtime'),
- ('home-fallback',CORE,"        if key not in os.environ:continue", "        if key not in os.environ:os.environ[key]=str(Path(os.environ['HOME'])/('anthropic.json' if label=='anthropic' else 'sessions'))",'t1_binding_and_paths','runtime'),
+ ('home-fallback',CORE,"        if key not in os.environ:continue", "        if key not in os.environ:os.environ[key]=str(Path(os.environ['HOME'])/('anthropic.json' if label=='anthropic' else 'sessions'))",'t1_no_home_fallback','runtime'),
  ('malformed-zero',CORE,'used=number(value);','used=number(0 if value is None else value);','t2_formats_stale_and_invalid','runtime'),
  ('prompt-data',CORE,"                limits=record.get('rate_limits')", "                if 'content' in record:record=json.loads(record['content'])\n                limits=record.get('rate_limits')",'t2_formats_stale_and_invalid','runtime'),
  ('ignore-age',CORE,"'stale':age>1800", "'stale':False",'t2_formats_stale_and_invalid','runtime'),
@@ -31,7 +31,7 @@ MUTANTS=[
  ('project-suppression',CORE,"[day,str(target),row['metric'],bucket]", "[day,str(target),row['metric'],bucket,os.environ['JV_PROJECT_ID']]",'t4_shared_suppression_and_concurrency','runtime'),
  ('disk-equality',CORE,'due=value>=85','due=value>85','t5_thresholds_and_no_cleanup','runtime'),
  ('premature-checkpoint',CORE,'                notify(directory,row)\n                checkpoint(state,keys+[key]);keys.append(key)', '                checkpoint(state,keys+[key]);keys.append(key)\n                notify(directory,row)','t6_adapter_failure_and_retry','runtime'),
- ('other-seat-hook','scripts/usage-hook.sh','[[ "${JV_ROLE:-}" == [oO] ]] || exit 0',': # no role filter','t6_hook_no_access_and_fail_open','runtime'),
+ ('other-seat-hook','scripts/usage-hook.sh','[[ "${JV_ROLE:-}" == [oO] ]] || exit 0',': # no role filter','t6_bound_other_seat_no_access','runtime'),
  ('source-purge','scripts/disk-watch.sh','set -euo pipefail','set -euo pipefail\nrm -f -- "$JV_DISK_SECONDARY_ROOT"/wsl-crash-*.dmp',None,'source-refusal'),
  ('F3-primary-weekly',CORE,'if minutes==10080:',"if key=='primary':",'f3_two_windows','runtime'),
  ('F4-display-name',CORE,"series='anthropic-model-'+hashlib.sha256(name.encode()).hexdigest()","series='anthropic-model-'+name",'f4_label_canary','runtime'),

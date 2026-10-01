@@ -89,6 +89,20 @@ class Observability(unittest.TestCase):
         self.assertEqual(before,[snapshot(f.store(i)) for i in range(2)])
         self.assertEqual(self.by_series(self.report(f.run()))['anthropic-wk']['used'],40)
 
+    def test_t1_no_home_fallback(self):
+        """I1/I2 surviving home-fallback mutant: populated HOME is not authority."""
+        f=self.f;self.sample()
+        (f.home/'anthropic.json').write_bytes(f.anthropic.read_bytes())
+        legacy=f.home/'sessions/2026/01/01/rollout.jsonl'
+        legacy.parent.mkdir(parents=True);legacy.write_bytes((f.codex/'2026/01/01/rollout.jsonl').read_bytes())
+        os.utime(legacy,(f.now,f.now))
+        before=snapshot(f.home)
+        r=f.run(env={'JV_USAGE_ANTHROPIC_FILE':None,'JV_USAGE_CODEX_ROOT':None})
+        self.assertNotEqual(r.returncode,0)
+        self.assertEqual(f.report(r)['observations'],[])
+        self.assertEqual(snapshot(f.home),before)
+        self.assertFalse(f.ledger.exists())
+
     def test_t1_two_projects_shared_history(self):
         """I1/I4: both real generated tiers share host facts, not project quotas."""
         f=self.f;self.sample();provider_before=snapshot(f.providers)
@@ -159,7 +173,9 @@ class Observability(unittest.TestCase):
                 try:
                     for entry in ('pace.sh','usage-hook.sh'):
                         r=f.run(entry);self.assertEqual(r.returncode==0,entry=='usage-hook.sh')
-                        self.assertEqual(self.by_series(f.report(r))[good]['used'],40)
+                        rows=self.by_series(f.report(r))
+                        self.assertIn(good,rows,'bad provider discarded the independent valid observation')
+                        self.assertEqual(rows[good]['used'],40)
                         self.assertIn('\t'+good+'\t',f.ledger.read_text())
                         self.assertNotIn('\t'+bad+'-wk\t',f.ledger.read_text())
                 finally:path.chmod(0o600)
@@ -311,6 +327,13 @@ class Observability(unittest.TestCase):
         self.assertEqual(snapshot(f.root),before)
         r=f.run('usage-hook.sh',env={'JV_PROJECT_ID':None});self.assertEqual(r.returncode,0)
         self.assertNotEqual(f.run(env={'JV_PROJECT_ID':None}).returncode,0)
+
+    def test_t6_bound_other_seat_no_access(self):
+        """I6 surviving role-filter mutant: valid binding must not mask access."""
+        f=self.f;self.sample();before=snapshot(f.root)
+        r=f.run('usage-hook.sh',env={'JV_ROLE':'a'})
+        self.assertEqual((r.returncode,r.stdout,r.stderr),(0,'',''))
+        self.assertEqual(snapshot(f.root),before)
 
     def test_t7_both_entries_generated_and_missing_helper(self):
         """I7: both generated consumers execute and missing closure refuses."""

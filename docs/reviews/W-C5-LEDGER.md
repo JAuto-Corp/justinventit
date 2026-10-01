@@ -93,3 +93,27 @@ seed remains unlisted data. Neither runner dynamically admits candidate images.
 Generated operator documentation and CI steps cover the new utility/suite and
 finite mutations. No live adoption, hosted CI or independent acceptance is
 implied by author inspection or local checks.
+
+## Finite witness calibration
+
+Real generated GREEN at `290ee0071a5d621e2a0069d24e8e17f81b941595` passed all
+20 methods (21.172 s). The first 22-mutant run produced 18 assertion kills,
+one destructive-source refusal, two survivors and one invalid error result;
+it is not a passing mutation gate. All raw outcomes remain retained.
+
+- HOME fallback survived because the configured-input refusal case supplied no
+  usable HOME data. Add one T1 cell with valid synthetic legacy files and both
+  explicit inputs unset; require unavailable, no observations/history.
+- Removed role filter survived because the original non-director witness also
+  removed project ID, making the binding check mask the missing filter. Retain
+  that cell and add one T6 cell with valid binding plus non-director role;
+  require silent success and identical complete fixture state.
+- Provider-abort mutation omitted the good series and the test raised `KeyError`.
+  Add an explicit presence assertion before the unchanged 40% expectation. The
+  original result is an error, never retroactively counted as a kill.
+
+These are exactly the admitted stop-rule corrections for surviving/invalid
+finite witnesses. No prior expected value or refusal assertion is weakened.
+The baseline now has 22 methods; the same 22 mutation seeds remain. The source
+closure/pins are unchanged. The code-review packet includes the assertion diff
+for o's admission and the rerun's actual classification.
