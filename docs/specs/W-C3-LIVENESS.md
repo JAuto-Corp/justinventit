@@ -74,6 +74,26 @@ Serialize a project's observer state update with a checked lock; two local sweep
 
 `--dry-run` reports the same proposed decisions and performs zero mutations: no mkdir, lock-file creation, log append, identity initialization, episode write or recovery cleanup. A prior stalled episode and a healthy/recovered seat must both remain byte-identical after dry-run. No default-on daemon or scheduler is installed; invocation and process-root configuration are an operator adoption step.
 
+### Testable local output and locking interface
+
+The tests use JSONL observer output: one `kind: seat` decision per enumerated
+letter, followed by one `kind: complete` accounting record. Decisions identify
+`project_id`, `role`, `registered`, `reasons`, and, for standby, `process`,
+`backlog_seconds` (null when unknown) and an `observation` that labels the
+limited evidence. Stable reason tokens are `schedule-overdue`, `heartbeat-floor`,
+`mail-backlog`, `mail-unknown`, `missing-cadence`, `invalid-cadence` and
+`unearned-dormancy`. Completion carries `enumerated`, `evaluated`, `unknown` and
+`reported`; evaluated + unknown equals enumerated. This is local diagnostic
+output, not a new backend or protocol-complete seat status.
+
+The append sink is `watchdog/alerts.jsonl`, with project, role, reasons and
+`episode`. Per-seat delivery checkpoints are `watchdog/<letter>.json` with a
+bounded integer `count`; the tests assert behavior across epochs rather than
+prescribing the remaining internal fields. Writers cooperate through
+`cadence/.<letter>.lock`, observer sweeps through `watchdog/.sweep.lock`.
+Naming these local files lets tests use real OS locks and explicit failed
+sink/checkpoint witnesses without adding production test switches.
+
 ## Invariants and finite tests
 
 | ID | Required behavior |

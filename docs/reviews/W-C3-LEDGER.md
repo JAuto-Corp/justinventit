@@ -76,3 +76,27 @@ W-C2 integrated-main CI36833759217 passed atcdeb36e; i's exact receipt
 `01M3V882A2ZNRVEN73D70BGXHQ` confirms its landing is complete. Next authorized
 action: bounded tests-first RED, then o commissions one RED review, then GREEN
 and one code review. No runtime implementation before the RED disposition.
+
+
+## RED candidate (tests only)
+
+The folded SPEC now names the local JSONL decision/accounting format and lock
+paths so the bounded tests can assert coverage and use real OS locks. This adds
+no runtime implementation. `test_liveness.py` contains T1–T7 positive/refusal
+witnesses with the five audit folds explicitly traced. The finite mutant list
+remains 26; mutants follow implementation and are not claimed at RED.
+
+The new portability runner gates each pinned Copier input before rendering,
+passes `--skip-tasks`, and rejects custom render tasks/extensions/migrations.
+Unsafe legacy/current pacemaker bodies are data only: their runtime findings
+are retained, never treated as a source-gate pass. Generated tests recheck the
+complete liveness closure before each child; missing closure is feature-absence
+RED. Two separate containment/clock calibration cells do not execute production.
+The F5 gate is bounded source inspection, not a hostile-code sandbox.
+
+The release-to-candidate witness uses the actual `jv-v0.2.3` saved cluster
+defaults, a project-owned AGENTS edit and untracked legacy cadence/dedup state.
+It runs Copier update and reverts the resulting adoption commit in disposable
+Git state, comparing all file hashes. Updated migration refusal remains a
+separate gated runtime cell. No source scripts, host processes, provider homes
+or released pacemaker are executed. Runtime acceptance remains pending.
