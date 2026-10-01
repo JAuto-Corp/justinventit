@@ -147,17 +147,15 @@ team_size:
   default: 1
   when: "{{ orchestration_tier == 'cluster' }}"
 
-# external_pacemaker is the #1 structural fix for the wake-loop SPOF: an
-# out-of-band supervisor that re-injects the resume prompt so in-turn
-# ScheduleWakeup becomes a fast-path optimization rather than the sole
-# continuity mechanism. Only relevant once there is a cluster to keep alive.
+# Saved values remain compatible across updates. All selected modes now enable
+# the same report-only producer/observer contract; no scheduler is installed.
 external_pacemaker:
   type: str
-  help: "Out-of-band wake-loop supervisor (eliminates the 'live process, dead loop' SPOF)"
+  help: "Enable report-only liveness observation (operator invokes it; no automatic recovery or scheduler installation)"
   choices:
-    "None — rely on in-turn ScheduleWakeup only (not recommended for clusters)": none
-    "Host cron — a host-level cron supervisor injects the resume prompt": host-cron
-    "tmux supervisor — send-keys the resume prompt into the agent pane": tmux-supervisor
+    "None — leave the generated Stop heartbeat hook inert": none
+    "Host cron choice — enable heartbeat for an operator-invoked observer": host-cron
+    "tmux supervisor choice — enable heartbeat; report-only, no prompt injection": tmux-supervisor
   default: tmux-supervisor
   when: "{{ orchestration_tier == 'cluster' }}"
 

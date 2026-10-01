@@ -58,3 +58,12 @@ _jv_project_configure() {
   JV_STATE_ROOT="$(realpath -m -- "$JV_STATE_ROOT")"
   JV_STORE="$JV_STATE_ROOT/$JV_PROJECT_ID"
 }
+
+# Pure observer binding verification: no initialization, locks or writes.
+_jv_verify_store() {
+  _jv_check_state_paths
+  [[ -d "$JV_STORE" && -f "$JV_STORE/project.json" ]] || _jv_fail "project binding is missing"
+  jq -e --arg id "$JV_PROJECT_ID" --arg root "$JV_PROJECT_ROOT" \
+    '.project_id == $id and .project_root == $root' "$JV_STORE/project.json" >/dev/null 2>&1 \
+    || _jv_fail "project identity is bound to a different root or invalid"
+}

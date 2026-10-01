@@ -76,6 +76,31 @@ jobs:
       - name: Portable seat launch, boot and schema
         run: python3 scripts/ci/test-launch-portability.py
 
+      - name: Portable cadence, report-only liveness and upgrade
+        run: python3 scripts/ci/test-liveness-portability.py --evidence "${{ runner.temp }}/wc3-green"
+
+      - name: Finite liveness and containment mutants
+        run: >-
+          python3 scripts/ci/test-liveness-mutants.py
+          --green-evidence "${{ runner.temp }}/wc3-green"
+          --evidence "${{ runner.temp }}/wc3-mutants"
+
+      - name: Upload liveness receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w-c3-liveness-evidence
+          path: |
+            ${{ runner.temp }}/wc3-green/*.json
+            ${{ runner.temp }}/wc3-green/*.stdout
+            ${{ runner.temp }}/wc3-green/*.stderr
+            ${{ runner.temp }}/wc3-green/runner-error.txt
+            ${{ runner.temp }}/wc3-mutants/results.json
+            ${{ runner.temp }}/wc3-mutants/*/source-gate.json
+            ${{ runner.temp }}/wc3-mutants/*/stdout
+            ${{ runner.temp }}/wc3-mutants/*/stderr
+          if-no-files-found: warn
+
       - name: Portable frontend-design acceptance
         # The R4 wrapper first retains: bash scripts/ci/test-skill-portability.sh
         run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh
