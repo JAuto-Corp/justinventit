@@ -1,6 +1,6 @@
 # W-C4 host capacity review and evidence ledger
 
-Current stage: Sol SPEC audit ACCEPT-WITH-FOLDS; o authorizes all three folds as the final SPEC round, then RED. No implementation, runtime proof or integration yet.
+Current stage: all admitted SPEC folds applied; tests-only RED is ready for o's Sol one-shot review. No production implementation, GREEN runtime proof or integration yet.
 
 O's `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01) accepts W-C3 at `e04c9a4` and commissions W-C4. The admitted scope is only the landed build-lock/build-guarded pair; the unlanded host-reap portion waits. This scope resolves the extraction brief's original “once d lands it” condition for the separate reaper. Author a; director o; integrator i.
 
@@ -30,3 +30,35 @@ The auditor's notes confirm shared-root coverage, byte identity of all five
 source files with `57d273154`, and that stdin loss arose only in the later
 background reaper launch. RED and code review remain Sol one-shots, with
 o posting verdicts. No additional SPEC round, author review or scope expansion.
+
+
+## Tests-only RED at `ddac7619829b9a3d566b4100db350ba539b5fcc7`
+
+SPEC folds were committed first at `ff98c94`. The real Copier 9.17.1 runner
+renders cluster alpha and solo beta with tasks disabled and closed child
+environments. Both renders succeed. Of **16 methods**, the two independent
+source-gate/fixture calibration methods PASS, and **14 runtime methods fail
+with missing build-lock/build-guarded closure assertions; zero errors**. No
+candidate runtime child executes. This is feature-absence RED, not behavioral
+proof of the future lock, lifetime, I/O or refusal implementation.
+
+The fixture calibration proves synthetic memory selection, actual private-file
+flock contention status 75 versus injected inspection error 74, and EBADF on
+closed FD 0. Unsafe source seeds remain data. Runtime fixtures are prepared to
+use only private host/project roots and fixture-created Popen/pidfd handles;
+the test process adopts its own orphaned descendants for bounded cleanup. The
+crash/background/Node lifetime cells themselves remain unexecuted at RED.
+
+The source gate covers both planned wrappers and their sole shared project
+helper, admitting only memory and own-descriptor observations from `/proc`.
+It is bounded inspection, not a hostile-code sandbox. Memory and metadata/lock
+faults are injected at explicit utility boundaries, without a production test
+flag. The planned source metadata temporary prefix `.info` is the retained
+write/rename injection seam.
+
+The final ledger follow-up does not change explicit render/test inputs. The
+finite 17 mutants remain planned, not executed. Existing framework CI is a
+separate regression check and cannot turn this RED into W-C4 GREEN. Next gate:
+o's Sol one-shot RED review and posted verdict, then implementation if admitted.
+Per o's throttle direction, no correctness-fold status mail is sent; any scope
+or owner decision would receive the requested one-line packet. None is needed.
