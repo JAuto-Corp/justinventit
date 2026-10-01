@@ -227,8 +227,8 @@ ambiguous evidence exits 5, abnormal runtime exits propagate (including 137),
 and planned 130/143 teardown may end at 0 without evidence. Matching evidence is
 reported as consistent, never as verified interactive-thread identity.
 
-Runtime limitation observed with Codex CLI 0.159.2 on 2026-09-30: the exact resolved
-gitdir must be an operator-supplied writable root. Resolve it from the seat cwd
+Runtime limitation observed with Codex CLI 0.159.2 on 2026-09-30:
+the exact resolved gitdir must be an operator-supplied writable root. Resolve it from the seat cwd
 with `git -C /absolute/worktree rev-parse --absolute-git-dir`; a parent `.git` or
 `.git/worktrees` entry was insufficient. W-D3 owns packaging those writable roots.
 The read-only tier preflight cannot verify gitdir writability.

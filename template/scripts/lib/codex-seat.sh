@@ -294,8 +294,8 @@ codex_seat_resume_guard() {
 # ---------------------------------------------------------------------------
 # Post-exit reconciliation
 # ---------------------------------------------------------------------------
-# The pre-boot probe asserts what the profile RESOLVES to; this asserts what the seat's own
-# session ACTUALLY ran at, once it has taken turns and written a turn_context. It cannot
+# The pre-boot probe asserts what the profile RESOLVES to; this observes what a
+# candidate rollout recorded, once it has taken turns and written a turn_context. It cannot
 # gate the launch (it runs after the pane exits) but it converts a silent tier drift into a
 # recorded, loud one instead of an assumption nobody ever checks.
 # Find the rollout belonging to an INTERACTIVE session: created at/after `since_epoch` and
@@ -367,7 +367,7 @@ codex_seat_reconcile_tier() {
     echo "              NOT verification: this rollout cannot be proven to belong to this launch."
     return 0
   fi
-  echo "ERROR: the seat's session ran at a DIFFERENT tier than the launch probe asserted." >&2
+  echo "ERROR: a candidate session in this workdir ran at a DIFFERENT tier than the launch probe asserted." >&2
   echo "    expected: $want_model / $want_effort" >&2
   echo "    actual:   ${got_model:-<none>} / ${got_effort:-<unset>}" >&2
   echo "    evidence: $session_file" >&2

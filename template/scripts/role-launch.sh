@@ -215,10 +215,8 @@ if [[ "$RUNTIME" == "codex" ]]; then
     echo "having been run). If resume fails to find it, the rename did not happen."
   fi
 
-  # Post-exit reconciliation: what the session ACTUALLY ran at, from its own rollout.
-  # Bound to THIS session by workdir + launch time. The previous global-newest-by-mtime
-  # lookup could reconcile against an unrelated Codex session that happened to run at the
-  # expected tier — reporting a clean tier for a seat that produced no evidence at all.
+  # Post-exit evidence is only narrowed by workdir + launch time; uniqueness
+  # cannot prove ownership. Matching evidence remains advisory (see helper).
   RECONCILE_RC=0
   ROLLOUT_AFTER="$(codex_seat__rollout_for_session "$WORKTREE" "$LAUNCH_EPOCH")"
   if [[ -n "$ROLLOUT_AFTER" ]]; then

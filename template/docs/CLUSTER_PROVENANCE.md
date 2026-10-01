@@ -37,7 +37,8 @@ for this script.
 Pinned source revision remains `57d273154cf029158b7cc118143808e524baf28c`:
 `scripts/role-launch.sh`, `scripts/boot-role.sh`, `scripts/lib/codex-seat.sh`,
 `docs/orchestration/role-templates/{O,I,IMPLEMENTER}.md`,
-`scripts/validate-seat-record.ts` and `docs/seat-record.schema.json`.
+`scripts/validate-seat-record.ts` and
+`docs/features/plans/b4-seat-records-b2-leases/seat-record.schema.json`.
 
 | Date / origin | Retained reason or intentional extraction difference |
 | --- | --- |
