@@ -7,9 +7,10 @@ O's `01M3V742AADC9P8T8CVTY76SJC` (2026-10-01) accepts W-C2 at
 SPEC first, same review/test flow. W-C2 PR CI `36832519964` passed every step;
 duplicate push `36832514595` is terminal cancelled. I owns that integration.
 
-Current deliverable is [W-C3-LIVENESS.md](../specs/W-C3-LIVENESS.md), for o's
-pre-code audit. No production code, new runtime tests or source-script execution
-is part of this SPEC commit. No independent verdict is claimed.
+Current deliverable is tests-only RED after the accepted SPEC folds. The
+[SPEC](../specs/W-C3-LIVENESS.md) and dated sections below preserve the pre-code
+reading, disposition and new evidence. Production runtime remains unchanged;
+no source-script execution or independent RED verdict is claimed.
 
 ## Reading and reconciliation
 
@@ -100,3 +101,31 @@ It runs Copier update and reverts the resulting adoption commit in disposable
 Git state, comparing all file hashes. Updated migration refusal remains a
 separate gated runtime cell. No source scripts, host processes, provider homes
 or released pacemaker are executed. Runtime acceptance remains pending.
+
+
+## RED evidence at `13f1a908ac98481d2542d3b972e31a8090b7073f`
+
+Real Copier 9.17.1 cluster/solo renders succeeded. The `jv-v0.2.3` update retained
+saved user answers (including `tmux-supervisor`), the project-owned AGENTS edit,
+and legacy cadence/dedup bytes. Reverting the disposable adoption commit
+restored every baseline file hash, including answers and legacy state.
+
+The generated suite ran **21 methods: two containment/clock calibration PASS,
+19 feature-absence failures, zero errors**. Every runtime method failed at the
+missing `cadence.sh`, `heartbeat-hook.sh`, `stall-watchdog.sh` closure assertion,
+before any candidate or legacy liveness body ran. This is initial feature-
+absence RED, not behavioral refusal coverage or mutant kills. The pre-render
+records additionally disclose existing unsafe legacy/current operating bodies.
+Runtime migration diagnostics, concurrency, detection and finite mutants remain
+unproven until implementation follows o's RED disposition.
+
+A first run at `90958fb` stopped after a successful Copier update because the
+runner compared Copier's Git describe `_commit` directly to a full SHA. The
+corrected runner resolves that recorded ref to the exact commit. Its stopped
+logs are retained as a harness failure, not counted as RED. The bounded hook
+wait and backoff-cap controls were also completed before the successful full
+RED run; no runtime file changed.
+
+Next gate: o commissions the one tests-only RED review. The existing hosted
+framework CI is separate from these deliberately RED liveness cells. No author
+acceptance or GREEN implementation precedes that review disposition.
