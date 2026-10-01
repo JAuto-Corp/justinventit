@@ -226,13 +226,10 @@ class Mailbox(unittest.TestCase):
         self.ok("archive", "a", "task-b", peer=True)
         a = self.state / "alpha"
         b = self.state / "beta"
-        paths = [Path("."), Path("mail"), Path("mail/cursors"),
-                 Path("mail/cursors/a-from-o-to-a.offset"), Path("mail/events.jsonl"),
-                 Path("mail/from-o-to-a.jsonl"), Path("mail/.hub-append.lock"),
-                 Path("mail/.hub-drain-trigger"), Path("mail/archive"), Path("mail/archive/a")]
-        # Include the implementation's initialized identity/lock and archive files.
-        paths += [p.relative_to(a) for p in a.iterdir() if p.is_file()]
-        paths += [p.relative_to(a) for p in (a / "mail/archive").rglob("*.jsonl")]
+        # Every initialized path, including archive cursor JSON and cursor locks;
+        # also cover the trigger and repair-temp names before they are created.
+        paths = list(dict.fromkeys([Path("."), *(p.relative_to(a) for p in a.rglob("*")),
+                                   Path("mail/.hub-drain-trigger"), Path("mail/events.jsonl.repair")]))
         for rel in paths:
             original = a / rel
             backup = self.root / "held-artifact"
@@ -269,8 +266,24 @@ class Mailbox(unittest.TestCase):
         self.assertEqual(self.events(), [])
         self.ok("send", "o", "a", "control")
         before = self.events()
+        # Do not let the new identity lock mask the inherited append/archive
+        # guard: allow real locks except on the selected transport lock FD.
+        real_flock = shutil.which("flock")
+        self.assertIsNotNone(real_flock)
+        selector = '''for arg in "$@"; do
+  case "$arg" in
+    [0-9]*) target=$(readlink "/proc/self/fd/$arg" 2>/dev/null || true) ;;
+    *) target="$arg" ;;
+  esac
+  case "$target" in */.hub-append.lock) exit 1 ;; esac
+done
+exec "$REAL_FLOCK" "$@"'''
+        env = {**self.stub("flock", selector), "REAL_FLOCK": real_flock}
         self.refuse(["send", "o", "a", "append"], r"(?i)lock", env=env)
-        self.refuse(["archive", "a", "locked"], r"(?i)lock", env=env)
+        # A shared-lock-only refusal reaches archive's own lock, not init.
+        env = {**self.stub("flock", 'test "${1:-}" != -s || exit 1\nexec "$REAL_FLOCK" "$@"'),
+               "REAL_FLOCK": real_flock}
+        self.refuse(["archive", "a", "locked"], r"(?i)shared.*lock", env=env)
         self.assertEqual(self.events(), before)
         self.assertEqual(len(self.views()), 1)
 
