@@ -1,0 +1,109 @@
+# W-C3: portable cadence and liveness observation
+
+A generated project must publish its own seat's cadence/heartbeat and report stalled or unevaluable seats without consuming mail, certifying liveness from unrelated processes, or acting on another project's sessions.
+
+Status: **SPEC proposed for o's pre-code audit; no RED or runtime implementation yet.** O accepted W-C2 at `1d6e3f9d7bf6b03964e854efa58bafb26261d666` and commissioned W-C3 SPEC first (`01M3V742AADC9P8T8CVTY76SJC`, 2026-10-01). W-C2 current-head CI passed; i owns integration. Author a, director o, integrator i. This slice serves extraction charter X1–X6.
+
+## Intent
+
+Extract the existing cadence writer and the source watchdog's useful observation, roster, oldest-undrained-mail and continued-stall reporting mechanisms into real Copier output. Bind every producer and consumer to W-C1/W-C2's explicit project identity and state root. Reconcile the existing JV heartbeat hook and pacemaker so there is one delivered liveness contract, with honest limits on what the evidence proves. A second project using the same seat letters must neither affect nor supply health evidence for the first.
+
+## Non-goals
+
+- No lease/CAS/token fencing, canary wakes, doorbell watcher, runtime capability negotiation, autonomous recovery, process termination, prompt injection, provider invocation, or respawn hook. No full SEAT_PROTOCOL conformance claim.
+- No scheduler installation, host propagation, notification service, credentials, hub/backend migration, registry ingest or multi-host supervision. This is an explicitly invoked, file-backed observer; cadence publication does not arm an actual wake.
+- No live-provider/host-process experiment, JA configuration/state mutation, legacy state migration, or source-specific process/session/transcript heuristics. Linux process inspection is optional and must use an explicitly selected host namespace; absence in a container is not host absence.
+- No unrelated lifecycle/schema/launcher/mailbox redesign, model policy or provider-hook parity. W-D3 owns runtime adapter installation. Preserve accepted mailbox and launcher behavior when sharing their identity helper.
+
+## Source, existing delivery and audit decisions
+
+Read-only source pin: `JAuto-Corp/customer-portal@57d273154cf029158b7cc118143808e524baf28c`.
+
+| Source read in full | Contribution / boundary |
+| --- | --- |
+| `scripts/cadence.sh` (166 lines) | State-aware numeric/context arguments, wake count, next-wake intent, atomic publication, doorbell and conclusion fields. Replace the global directory and validate identity/input. |
+| `scripts/heartbeat-hook.sh` (84) | Turn-end producer discipline and nonblocking hook behavior. It only appends an aggregate log; it does **not** supply the per-seat heartbeat the portable observer needs. |
+| `scripts/stall-watchdog.sh` (1340) | Roster union, explicit missing/unknown state, earned dormancy, active schedule/floor, oldest backlog, bounded process diagnostics, episode identity/backoff/recovery, dry-run and sweep completion. Omit the source's disabled-by-default destructive revival path and host integrations. |
+| `scripts/watchdog-propagate.sh` (159) | Artifact/source distinction and readback lesson. No deployment command is extracted or executed in this slice. |
+| `scripts/tests/watchdog-liveness.test.sh` (1189), `watchdog-mutation.test.sh` (305) | Behavioral positives/refusals and selective named mutant witnesses. Do not run these source suites: they contain source integration assumptions and armed kill-path fixtures. Map and adapt the relevant witnesses into disposable consumers. |
+| JV `template/scripts/pacemaker.sh` (344), standby test (168), `template/docs/PACEMAKER.md` (195), heartbeat-writer template (99) | Existing schedule observer, exact tmux targeting and heartbeat producer. The current writer actually updates `heartbeat_at`; the current pacemaker can inject prompts/respawn, skips standby, and deduplicates forever against a frozen epoch. |
+| JV `docs/SEAT_PROTOCOL.md` §§1–4a; W-C1/W-C2 generated identity/mail/launcher | Normative ownership/lease/canary rules and the delivered project namespace. Distinguish target protocol from this bounded extraction. |
+
+The pre-code audit must decide these concrete boundaries before implementation:
+
+1. **Report-only consolidation.** Deliver `stall-watchdog.sh` as the observer and make `pacemaker.sh` a thin entry to the same implementation. Retire its ungated prompt/respawn effects in new output rather than maintaining two conflicting liveness engines. This is an intentional change to existing JV behavior: an updated consumer must review adoption, reconfigure explicit identity, and arrange human/external recovery. Old action/notification knobs must refuse with migration guidance, never appear accepted while doing something different. Keep Copier answer keys/values compatible, but correct their help/docs so choosing a pacemaker does not promise automatic recovery or install a scheduler. No live consumer is updated by this PR.
+2. **Limited standby observation.** Preserve the source's backlog detection and optional process-presence diagnostic. An old heartbeat alone does not alert an idle event-driven seat. A matching process proves presence, not a working loop; clean mail plus present process is reported as limited observation, never protocol-complete health. Missing/unknown process evidence is reported as such, not as a lease-authoritative DEAD verdict. The normative leased-canary/heartbeat OR-pair remains unimplemented and explicitly documented; do not silently rewrite SEAT_PROTOCOL to endorse the source deviation.
+3. **File-backed scope.** Enumerate the union of local W-C2 seat records and cadence files, preserving the source's no-narrowing lesson. No hub query/fallback or credential copying. Record-only seats are reported missing cadence; cadence-only seats remain visible with an unregistered warning. This does not claim the protocol's multi-backend seat-control interface.
+
+If o rejects one of these choices, resolve that SPEC scope before RED. Do not build revival/leases as an unreviewed expansion to repair a scope disagreement.
+
+## Delivered contract
+
+### Identity and owned paths
+
+Require `JV_PROJECT_ID`, `JV_PROJECT_ROOT` and `JV_STATE_ROOT` using the accepted shared identity guard. State lives beneath `<JV_STATE_ROOT>/<JV_PROJECT_ID>`: `cadence/<lower-letter>.txt`, existing `sessions/<lower-letter>.json` and `mail/`, and observer-owned `watchdog/` state/logs. Producer CLI accepts one ASCII letter and normalizes it; the turn-end wrapper uses explicit `JV_ROLE` exported by W-C2. No fallback to `main`, cwd, `$HOME`, a shared legacy directory, or unqualified tmux names. Reject independent legacy path overrides rather than let them escape the namespace.
+
+Reuse project binding and nested-alias refusal before accessing state. The observer requires an existing valid project binding and does not bootstrap a missing store. Separate pure binding verification from initialization only if needed, preserving W-C1/W-C2 callers and testing that regression. Relative context is text; a dormant brief is an explicit absolute existing regular file, checked for existence only, never read as an instruction. Different worktrees retain their binding to the same configured project root.
+
+### Cadence and turn-end producer
+
+`cadence.sh <letter> awake|sleeping|standby|dormant [cadence_seconds] [--doorbell ...] [--conclusion ...] [--brief ...] [context...]` retains the source command shape. Map awake/sleeping to canonical `active` in newly written state; awake increments `wake_count`, sleeping preserves it. Active default cadence remains 900 seconds; explicit values must be positive decimal integers representable by the chosen date/arithmetic path. Standby/dormant force zero and retain the source's state-aware handling of an optional bare numeric positional argument. Standby requires `mailbox:<own-lower-letter>`; no implication that a watcher exists. Dormant requires a nonempty reason and an existing absolute brief. Invalid fields, unsupported flags, CR/LF injection or invalid prior data refuse without replacing the record.
+
+Retain the line-based cadence format: project/role identity, state, `heartbeat_at`, `next_wake_at`, `wake_count`, `cadence_seconds`, optional doorbell/conclusion/brief, context. State takes precedence over legacy next-wake markers. Active writes intended next-wake time, standby writes `event`, dormant writes `none`. Missing/stale markers cannot silently earn dormancy. Numeric/date parsing must be bounded and typed; do not let arithmetic overflow or prose crash the rest of a sweep.
+
+Both explicit cadence publication and the hook's heartbeat-only update route through one writer under the same checked per-seat lock, read the current record inside that lock, and atomically rename a private candidate. A failed lock/write/validation/rename leaves the prior record intact and removes temporary debris. Heartbeat-only updates preserve every intent/ceremony field and do not increment wake count or invent a schedule. They require an existing valid record: a Stop event alone cannot opt an unregistered seat into supervision.
+
+Deliver a provider-neutral `heartbeat-hook.sh` that invokes the heartbeat-only operation with explicit project identity/role. The generated Claude Stop action delegates to it in the existing cluster + external-pacemaker branch; solo/none remains an explicit no-op. Bound the hook's wait, emit a diagnostic on refusal, and return 0 to avoid trapping the runtime in a failing Stop hook. Test the neutral command and the actual rendered wrapper; Codex hook installation remains W-D3. The observer never writes cadence or heartbeat fields.
+
+### Observation and evidence limits
+
+One observer invocation performs one sweep. It reads a complete snapshot of each cadence record, validates identity and fields, and reports malformed/missing/unknown records while continuing to later seats. Invalid configuration or unsafe project binding fails before the sweep. A completion record reports enumerated, evaluated, malformed/unknown and reported counts; a partial sweep cannot claim full coverage. Exit 0 means the sweep completed, not that all seats are healthy; errors in required reads/writes produce a nonzero incomplete/degraded outcome with useful diagnostics.
+
+- **Active:** retain the source's schedule-overdue detector, `grace=max(2700,2*cadence_seconds)`, and independent heartbeat floor (1800-second floor; trip strictly after 3600 seconds). Report them separately. Preserve the source's earlier schedule-reference behavior and document its difference from the normative `max(heartbeat,next_wake)` table. No file mtime or unrelated transcript may satisfy a heartbeat. Missing timestamps or malformed cadence are unknown evidence, never invented proof of health or authority to recover. Booted/parked remain launcher-owned; no automatic floor-based action is introduced.
+- **Dormant:** suppress stall reports only with reason plus existing brief. Clear the prior alert episode on earned dormancy. Unearned dormancy is a finding, not silence.
+- **Standby mail:** inspect every inbound directed and broadcast projection non-consumingly using W-C1's reader+stream byte cursor. Exclude this seat's own outbound/self-note streams. Choose the oldest event strictly after each processing cursor, then the oldest across streams; continuous newer arrivals cannot reset its age. Validate offsets, line boundaries and timestamp JSON; unreadable/malformed/missing mailbox evidence is unknown, not zero backlog or a file-mtime fallback. Never invoke `msg.sh read` or advance any processing/notification cursor. A valid existing empty mailbox is distinguishable from a missing/unreadable store.
+- **Optional host process diagnostic:** use an explicitly configured absolute process-root (`JV_WATCHDOG_PROC_ROOT`); without it report process observation unavailable. Require exact NUL-delimited `JV_PROJECT_ID`, canonical `JV_PROJECT_ROOT` and `JV_ROLE` plus a supported interactive runtime argv. Exclude inherited shells, Claude print and Codex exec one-shots, including global flags and multiline argument values. Unreadable evidence is unknown. No pgrep/name-only or stale screen-glyph shortcut, and no signal is sent. Operator guidance requires the host namespace, never an in-sandbox empty `/proc` claim.
+
+The extraction makes no machine-level assertion that a present process is progressing, a declared doorbell is armed, or an old heartbeat means the process is dead. Those missing distinctions remain visible in each relevant report and in setup guidance.
+
+### Reporting, episodes and dry-run
+
+Retain the source's local append-only alert sink, with project/seat identity in each record; no desktop/SMS/network adapter or owner notification is called. Standard output describes decisions and sweep completion. Keep episode identity stable across continued stall, reference-source changes and additional detectors. Re-alert relative to the last successfully recorded alert: immediately, then grace, doubled intervals capped at 24 hours. Recovery/earned dormancy clears the episode, so a later stall starts fresh. Retire the current pacemaker's one-alert-ever frozen-reference behavior.
+
+Serialize a project's observer state update with a checked lock; two local sweeps cannot both publish the same ordinary due alert. Check append/publication outcomes; do not mark a failed alert as delivered. This local log is not an exactly-once notification transport: a crash after append but before checkpoint may duplicate the report on retry, and that boundary is documented. No new mailbox completion/notification system is added.
+
+`--dry-run` reports the same proposed decisions and performs zero mutations: no mkdir, lock-file creation, log append, identity initialization, episode write or recovery cleanup. A prior stalled episode and a healthy/recovered seat must both remain byte-identical after dry-run. No default-on daemon or scheduler is installed; invocation and process-root configuration are an operator adoption step.
+
+## Invariants and finite tests
+
+| ID | Required behavior |
+| --- | --- |
+| I1 | Producers, roster, mail reads and observer output/state remain bound to one explicit project/seat. Foreign roots, aliases and legacy overrides cannot redirect or certify evidence. |
+| I2 | Cadence/heartbeat publication is validated, atomic and serialized. Heartbeat-only updates preserve intent/ceremony; the observer never authors heartbeat or advances mail cursors. |
+| I3 | Every enumerated seat is accounted for; active schedule/floor and earned-dormant rules retain their defined boundaries. Missing/invalid evidence is visible and cannot abort later-seat evaluation silently. |
+| I4 | Standby backlog is the oldest undrained inbound event, independent of fresh arrivals. Process diagnostics require this project's exact interactive seat identity and never imply loop/canary health. |
+| I5 | Continued-stall reporting persists with bounded backoff, stable episodes and recovery reset; failed output is not recorded as delivered. Dry-run never mutates state. |
+| I6 | The delivered observer reports only. Legacy recovery options cannot invoke tmux, providers, signals, respawn hooks, external notification or schedules. Protocol and migration limits remain explicit. |
+| I7 | Real Copier cluster/solo output supplies the complete producer/consumer closure, neutral wrapper routing and project isolation. Accepted mailbox/launch inputs remain coherent after any shared-helper change. |
+
+Each row is a bounded positive/refusal pair; variants witness the same contract. RED is committed before runtime changes. Tests are not run against JA scripts or host state.
+
+| Cell | Invariants | Positive witness | Refusal / boundary variants |
+| --- | --- | --- | --- |
+| T1 | I1 | Two real consumers share one state root and seat letters; producer, roster/mail and reports remain disjoint, including worktrees and paths with spaces. | Wrong binding/root/letter, nested symlink and old path overrides refuse before access; foreign and legacy canaries retain bytes and access counters. |
+| T2 | I2 | Source command shapes write valid canonical state/count/intent; heartbeat-only update and rendered Stop wrapper preserve doorbell, schedule, reason and brief. Two cooperating writers under barriers preserve the later intent. | Invalid numeric/date/role/line input, missing dormant/standby evidence, invalid prior file, lock/write/validation/rename failure: no partial replacement. Hook refusal is bounded and diagnostic with exit 0; observer leaves heartbeat and cursors unchanged. |
+| T3 | I3 | Registry-only/cadence-only/unlisted letters are accounted for; overdue schedule and future-wake/old-heartbeat floor produce reports; healthy and earned-dormant controls stay quiet. | Missing/malformed/unknown records, stale `none`, missing timestamp, touched mtime, malformed numeric before a later valid seat, unearned dormancy and booted/parked scope; incomplete sweep cannot be mistaken for healthy completion. |
+| T4 | I4 | Distinct sender streams and broadcasts yield the oldest undrained event; project-qualified interactive processes yield presence only; idle standby with empty mail is not alerted solely for heartbeat age. | New arrivals mask neither the same-stream nor other-stream backlog; cursor offset/line/timestamp/read errors are unknown; self-outbound excluded; wrong project, shell, one-shot, flags, multiline argv, missing/unreadable process source never certify a healthy seat. |
+| T5 | I5 | Distinct simulated epochs demonstrate first alert, suppression, backoff re-alert, stable key as a second detector joins, full recovery and a fresh later episode. | Corrupt bounded counter, concurrent sweeps, failed append/checkpoint and dry-run on both stalled and recovery paths; no mark-delivered on failure, no dry-run writes or consumed budget. |
+| T6 | I6 | Both command names reach the same report-only observer; old action knobs refuse clearly and setup docs describe report-only migration, host namespace and deferred canary/leases. | Recording PATH denial stubs assert zero external tmux/provider/network/notification/scheduler calls; a bounded source gate rejects retained signal/revival code (shell builtins are not intercepted by PATH stubs). Seeded operating-file coupling/protocol-overclaim checks prove their sensitivity. |
+| T7 | I7 | Cluster + solo Copier renders execute the closure offline; cluster hook delegates, solo/none is intentionally inert; accepted mailbox/launch regressions and four-answer matrix pass. | Missing helper/dependency/config yields bounded diagnostic failure; remove neutral producer/wrapper target in a disposable render to prove no silent success claim. No source credentials, provider homes or live processes enter fixtures. |
+
+Finite initial mutants: remove project binding; use an unqualified cadence path; allow a nested alias (T1); ignore writer lock; heartbeat overwrite intent; publish invalid candidate (T2); enumerate records only; suppress on stale `none`; disable floor; silence unknown record (T3); select newest mail; share another stream's cursor; omit project from process match; admit one-shot runtime (T4); recompute episode key; never re-alert; retain episode on recovery; checkpoint failed alert; mutate during dry-run (T5); enable a legacy external effect (T6); replace active heartbeat wrapper with silent no-op (T7). Reuse existing source witness structure and accepted helpers; no open-ended cases. New cells require a surviving mutant or finding traced to I1–I7. Setup/syntax failures are not kills.
+
+## Provenance and delivery gates
+
+Carry dated why/origin notes into generated guidance: 2026-07-26 frozen-epoch silence and dry-run budget consumption; 2026-07-27 state-first/earned-dormant ceremony; 2026-07-28/29 source liveness review and `b88a10f15` off-by-default revival ruling; 2026-09-23 `317dd77f3` doorbell-only standby/process and one-shot exclusions; 2026-09-24 `e0128d1a6` roster union/read-target correction; 2026-09-27 `b73dfd1b4` fixture containment. Historical JA references are provenance, never operating rules. Record source hashes and which source tests were retained, adapted or deliberately excluded (especially destructive recovery).
+
+Flow: o commissions the SPEC audit under the current provider-availability disposition; cap two SPEC rounds, then o decides scope. After approval, commit/run bounded RED, one tests-only RED review, implementation, generated GREEN plus finite mutants, one full independent code review. Traced fixes require RED and killing mutants under the pilot, with o's round-cap disposition. Do not create provider-diversity debt from the recorded availability exception.
+
+One heavy local lane and one hosted CI lane; cancel duplicate push/PR CI and verify terminal cancellation. Evidence includes exact subject, source/test map, actual verdicts, rendered hashes/closure, both-polarity results, valid mutant outcomes, residuals and a sealed manifest. Carry unchanged evidence only with an explicit committed-input comparison; shared-helper or hook changes trigger their actual dependent regressions. I integrates after o's verdict and current-head CI. No author merge, host activation or live test is part of acceptance.
