@@ -371,6 +371,89 @@ exec "$REAL_FLOCK" "$@"''')
         self.assertEqual(len(self.events()), 4)
         self.assertEqual(self.views()[0]["body"], LITERAL)
 
+    def test_C1_I2_failed_tail_inspection_preserves_authority(self):
+        for tool, option in (("wc", "-l"), ("tail", "-c"), ("tail", "-n")):
+            for action in ("read", "append"):
+                with self.subTest(tool=tool, option=option, action=action):
+                    self.state = self.root / ("state-" + tool + option + action)
+                    self.env["JV_STATE_ROOT"] = str(self.state)
+                    self.ok("send", "o", "a", "retained", env={"MSG_HUB_ID": ULID})
+                    before = snapshot(self.state)
+                    trace = self.root / "inspection-fault"
+                    trace.unlink(missing_ok=True)
+                    fault = self.stub(tool, '''if [ "${1:-}" = "$FAULT_OPTION" ]; then
+  echo reached > "$FAULT_TRACE"
+  exit 2
+fi
+exec "$REAL_TOOL" "$@"''')
+                    args = ["read", "a"] if action == "read" else ["send", "o", "a", "new"]
+                    try:
+                        r = self.run_msg(*args, env={**fault, "REAL_TOOL": shutil.which(tool),
+                            "FAULT_OPTION": option, "FAULT_TRACE": trace, "MSG_HUB_ID": ULID2})
+                        self.assertTrue(trace.is_file(), "authority inspection fault was not reached")
+                        self.assertEqual(snapshot(self.state), before, "failed inspection changed durable state")
+                        self.assertEqual(r.returncode, 3, r.stderr + r.stdout)
+                        self.assertRegex(r.stderr, r"(?i)authority.*(count|read|inspect)")
+                    finally:
+                        (self.bin / tool).unlink()
+
+    def test_C2_I3_lookup_error_never_appends_replay(self):
+        self.ok("send", "o", "a", "retained", env={"MSG_HUB_ID": ULID})
+        before = snapshot(self.state)
+        for body in ("retained", "conflict"):
+            with self.subTest(body=body):
+                trace = self.root / "lookup-fault"
+                trace.unlink(missing_ok=True)
+                fault = self.stub("grep", '''if [ "${1:-}" = -F ] && [ "${2:-}" = -m1 ]; then
+  echo reached > "$FAULT_TRACE"
+  exit 2
+fi
+exec "$REAL_GREP" "$@"''')
+                try:
+                    r = self.run_msg("send", "o", "a", body, env={**fault,
+                        "REAL_GREP": shutil.which("grep"), "FAULT_TRACE": trace, "MSG_HUB_ID": ULID})
+                    self.assertTrue(trace.is_file(), "authority lookup fault was not reached")
+                    self.assertEqual(snapshot(self.state), before, "failed lookup changed authority or views")
+                    self.assertEqual(r.returncode, 3, r.stderr + r.stdout)
+                    self.assertRegex(r.stderr, r"(?i)authority.*lookup")
+                finally:
+                    (self.bin / "grep").unlink()
+                    # Keep each injected replay independent even against the broken CLI.
+                    for rel, value in before.items():
+                        if value[0] == "file":
+                            (self.state / rel).write_bytes(value[1])
+        self.ok("send", "o", "a", "new-id", env={"MSG_HUB_ID": ULID2})
+        self.assertEqual(len(self.events()), 2)  # real grep no-match remains a valid append
+
+    def test_C3_I1_completion_repair_preserves_control_byte_root(self):
+        outside = self.root / "foreign-canary"
+        outside.write_bytes(b"outside-store-must-not-change\n")
+        self.state = self.root / "foreign-canary\x1cstate"
+        self.env["JV_STATE_ROOT"] = str(self.state)
+        self.ok(*self.completion(), "--body", LITERAL, env={"MSG_HUB_ID": ULID})
+        canonical = self.events()[0]
+        for action in ("read", "replay", "append"):
+            with self.subTest(action=action):
+                missing = self.mail() / "from-o-to-o.jsonl"
+                original = missing.read_bytes()
+                missing.unlink()
+                retained = (self.mail() / "from-o-to-a.jsonl").read_bytes()
+                try:
+                    if action == "read":
+                        r = self.run_msg("read", "o")
+                    elif action == "replay":
+                        r = self.run_msg(*self.completion(), "--body", LITERAL, env={"MSG_HUB_ID": ULID})
+                    else:
+                        r = self.run_msg("send", "d", "a", "after-repair", env={"MSG_HUB_ID": ULID2})
+                    self.assertEqual(outside.read_bytes(), b"outside-store-must-not-change\n")
+                    self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+                    self.assertEqual(self.views("o", "o"), [{**canonical, "to": "o"}])
+                    self.assertEqual((self.mail() / "from-o-to-a.jsonl").read_bytes(), retained)
+                finally:
+                    missing.write_bytes(original)
+                    outside.write_bytes(b"outside-store-must-not-change\n")
+        self.assertEqual(len([e for e in self.events() if e["hub_id"] == ULID]), 1)
+
     def test_I2_authority_projection_and_trigger_failures(self):
         self.ok("send", "o", "a", "seed")
         authority = self.mail() / "events.jsonl"
