@@ -1,216 +1,147 @@
-# External Pacemaker — wake-loop supervisor
+# Project-scoped cadence and report-only liveness
 
-## BREAKING-CHANGE planned for W-C3
+`scripts/cadence.sh` publishes declared intent; `heartbeat-hook.sh` refreshes an
+existing declaration. `stall-watchdog.sh` performs one local observation sweep.
+`pacemaker.sh` is a compatibility entry to the same report-only observer. Neither
+entry recovers a session or installs a scheduler.
 
-W-C3's approved next update retires automatic prompt injection, respawn and
-notification commands in favor of one project-scoped, report-only observer.
-It requires explicit `JV_PROJECT_ID`, `JV_PROJECT_ROOT` and `JV_STATE_ROOT`.
-Legacy cadence/state-path and action/notification options will refuse with
-migration diagnostics. No lease/fencing or automatic-recovery replacement is
-implied. The release behavior described below remains present until that
-tests-first implementation lands; this notice does not activate a host change.
+## BREAKING-CHANGE: adoption and rollback
 
-Before adopting, commit project-owned changes, save `.copier-answers.yml` and
-its resolved template revision, and rehearse in a disposable clone containing
-the saved defaults and legacy cadence/dedup state. Keep existing state as data;
-do not run an old observer to test migration. To retain the released behavior,
-pin `jv-v0.2.3` rather than updating to HEAD (`copier copy --vcs-ref jv-v0.2.3 ...`
-for a new disposable copy). Roll back by `git revert <adoption commit>` (`-m 1`
-for a merge), which restores generated files and answers; pin the restored
-template revision for subsequent updates. Scheduler/service configuration is
-external to that Git revert and requires a separate operator review. No live
-project or host scheduler is migrated by the framework's acceptance test.
+W-C3 retires the released automatic prompt injection, respawn and external
+notification behavior. Every `PACEMAKER_*` setting, `CADENCE_DIR` and independent
+watchdog path/effect override now refuses with migration guidance, before opening
+those targets. Keep old cadence and dedup files as historical data; they are not
+automatically migrated into the new project-bound store. Human/external recovery
+is an operator decision. No lease/fencing-based recovery replacement is implied.
 
-The pacemaker (`scripts/pacemaker.sh`) is an **external, out-of-band supervisor**
-that keeps autonomous agent wake-loops alive. It is the framework's #1 load-bearing
-reliability fix.
+Before adopting, commit project-owned changes, save `.copier-answers.yml` and its
+resolved revision, and rehearse Copier update in a disposable clone containing
+the saved defaults and legacy state. The answer keys/values `external_pacemaker:
+tmux-supervisor|host-cron|none` remain compatible. A selected mode enables the
+cluster Stop heartbeat producer; neither selection promises injection or installs
+cron. Project-owned `AGENTS.md` is retained; incorporate contract changes yourself.
 
-## The problem it solves
+Projects retaining the released behavior can pin `jv-v0.2.3` instead of updating
+to HEAD (`copier copy --vcs-ref jv-v0.2.3 ...` for a new disposable copy). Roll back
+with `git revert <adoption commit>` (`-m 1` for a merge) to restore generated files
+and answers, then pin the restored template revision for later updates. Scheduler
+or service configuration is external to that Git revert and needs separate
+operator review. Framework tests update disposable consumers only; release bodies
+are data, never executed to test migration.
 
-Autonomous roles run a **self-perpetuating wake-loop**: every turn schedules its own
-successor (an in-session `ScheduleWakeup` / `/loop`). That makes the loop the *only*
-continuity mechanism — and therefore a single point of failure. If a transient
-model-API error cuts a turn **before** it re-arms the next wake, the OS process is
-still alive but the loop is dead:
+## Explicit identity and producer
 
-> **live process, dead loop.**
-
-Without an external pacemaker the role goes inert until a human pastes a prompt to
-revive it. The pacemaker eliminates that human-paste dependency. With it running,
-the in-turn `ScheduleWakeup` becomes a *fast-path optimization*, not the sole thread
-of continuity.
-
-## The liveness contract
-
-The pacemaker reads each role's cadence file and reasons over **two independent
-signals**:
-
-| Signal | Field | Meaning |
-|-|-|-|
-| **Heartbeat** (process-alive) | `heartbeat_at:` | Written every turn-end by the Stop hook. Fresh ⇒ the process is alive and taking turns. **Authoritative** — file mtime is not trusted (anything can touch the file). |
-| **Cadence** (intent / loop) | `next_wake_at:` | When the role itself said it would next wake. Fresh ⇒ the loop is armed. Stale / `none` / overdue-past-grace ⇒ the loop is dead. |
-
-These two signals define exactly two actionable states, each with one action:
-
-| State | Detection | Action |
-|-|-|-|
-| **ALIVE + LOOP-DEAD** | heartbeat fresh **and** `next_wake_at` stale/`NONE`/overdue past grace | **RESUME** — inject the resume prompt into the role's tmux pane via `tmux send-keys`. The auto-recover; no new process. |
-| **PROCESS DEAD** | heartbeat absent or older than `HEARTBEAT_DEAD` (default 90 min) | **ESCALATE** — notify via the adapter; optionally fire `$PACEMAKER_RESPAWN_HOOK`. |
-
-Three non-actionable states (the record's `state:` is read first — `docs/SEAT_PROTOCOL.md` §2
-defines the lifecycle; only `active` seats have a scheduled wake to supervise):
-
-- **Healthy** — heartbeat fresh **and** `next_wake_at` fresh/upcoming → no action.
-- **Standby** — `state: standby` (`next_wake_at: event`, `cadence_seconds: 0`, a declared
-  `doorbell:` such as `mailbox:<role>`) → event-driven; **this pacemaker takes no action**. No
-  scheduled wake exists, so "loop overdue" does not apply, and an idle standby seat takes no
-  turns by design, so resuming it on heartbeat age alone would manufacture the routine model
-  turns the state exists to eliminate. The standby stall predicate is `docs/SEAT_PROTOCOL.md`
-  §2's OR-pair (doorbell backlog past `mail_grace`, or heartbeat age past `2 × floor_seconds`
-  paired with the §4 canary wake); both halves need the seat's doorbell, so they belong to the
-  project's doorbell-aware watchdog, not to this generic supervisor. The pacemaker logs the
-  declared doorbell and flags a standby record that declares none. A rare intentional pause;
-  active autonomous work stays cadenced.
-- **Dormant** — `state: dormant` (legacy: `next_wake_at: none`) → concluded/retired, skipped.
-  A role that is genuinely done parks itself as dormant, not as waiting.
-
-**Grace window** per role = `max(GRACE_FLOOR, 2 × cadence_seconds)` (default floor
-45 min). Real API stalls persist for many minutes; the floor keeps a role that is
-mid-long-turn from being falsely resumed.
-
-## The cadence file format
-
-One file per role, `<role>.txt`, in the cadence directory. The role's Stop hook
-appends/updates it each turn-end:
-
-```
-state: awake
-role: a
-heartbeat_at: 2026-06-16T04:34:10Z      # process-alive (authoritative)
-wake_count: 113
-cadence_seconds: 1800                    # or cadence_min:
-context: one-line narrative of current intent
-next_wake_at: 2026-06-16T05:04:10Z       # loop-alive; `event` (standby) or `none` (dormant)
-doorbell: mailbox:a                      # standby only: the event source that reawakens the seat
-```
-
-The Stop hook preserves `state`, `next_wake_at`, `cadence_seconds`, `doorbell`, `wake_count` and
-`context` across turn-ends; only `heartbeat_at` is re-stamped. `scripts/test_pacemaker_standby.py`
-proves a standby record is never classified loop-dead or process-dead solely for having no next
-scheduled wake, and that the doorbell survives a turn-end.
-
-`heartbeat_at` and `next_wake_at` are ISO-8601 UTC. `next_wake_at` may be omitted
-(some roles run a heartbeat-only format) — the pacemaker then uses the heartbeat as
-both signals (it can still detect PROCESS-DEAD, just not loop-death independently).
-
-## tmux pane-naming assumption
-
-The auto-resume targets a tmux session/window via `send-keys`. The default target
-template is the **role name itself** (`PACEMAKER_TMUX_TARGET="{role}"`), i.e. each
-role runs in a tmux session named after the role:
+Use the same project binding as the portable mailbox and launcher:
 
 ```bash
-tmux new-session -d -s a   # role "a" lives in tmux session "a"
+export JV_PROJECT_ID=myproject
+export JV_PROJECT_ROOT=/absolute/project/root
+export JV_STATE_ROOT=/absolute/operator-owned/state
+export JV_ROLE=A
+scripts/cadence.sh a awake 900 'working on assigned slice'
+scripts/cadence.sh a sleeping 900 'next intended check'
+scripts/cadence.sh a standby --doorbell mailbox:a 'waiting for mail'
+scripts/cadence.sh a dormant --conclusion 'completed' --brief /absolute/brief.md
+scripts/stall-watchdog.sh --dry-run
+scripts/stall-watchdog.sh
 ```
 
-`{role}` is substituted at resume time. If your roles live in **windows** of one
-session, set e.g. `PACEMAKER_TMUX_TARGET="cluster:{role}"`; if in **panes**, use the
-`session:window.pane` form. The target must be a valid `tmux send-keys -t <target>`
-address. If the session is missing, the pacemaker escalates via the notify adapter
-instead of silently failing.
+There is no cwd, home, unqualified role or legacy directory fallback. Worktree
+commands keep `JV_PROJECT_ROOT` bound to the configured project root. Each project
+has `<JV_STATE_ROOT>/<JV_PROJECT_ID>/project.json`; cadence files are
+`cadence/<lower-letter>.txt`. The observer requires an existing valid binding.
+Nested state symlinks and mismatched project roots refuse before state access.
 
-> **This is the main wiring assumption to confirm for your environment.** See Open
-> questions below.
+Awake and sleeping publish canonical `active`. Awake increments `wake_count`;
+sleeping preserves it. Active cadence defaults to 900 seconds, is a positive
+bounded decimal integer, and computes `next_wake_at`. Standby/dormant use zero and
+`event`/`none`; an optional source-style numeric positional value is discarded.
+Standby requires its own `mailbox:<letter>` declaration. Dormancy requires a
+nonempty conclusion and an existing absolute brief. Publication does not arm any
+wake, doorbell or canary.
 
-## Notification adapter
+Records carry project/role identity, state, UTC `heartbeat_at`, `next_wake_at`,
+wake count, cadence seconds, context and applicable doorbell/conclusion/brief.
+Explicit publication and heartbeat refresh share the same per-seat OS lock
+(`cadence/.<letter>.lock`), read inside that lock, validate and atomically replace
+the record. Invalid input/prior state or failed publication preserves prior bytes.
+Heartbeat-only updates preserve every intent/ceremony field and require an existing
+record. The neutral hook bounds lock waiting and returns zero with diagnostics on
+refusal. The actual Claude Stop wrapper delegates for cluster + selected pacemaker;
+solo/none is explicitly inert. Codex hook installation remains a later adapter slice.
 
-The escalation channel is **pluggable** — the framework never hardcodes a vendor.
-Set `PACEMAKER_NOTIFY`:
+## What observation proves
 
-| Value | Behaviour |
-|-|-|
-| `none` (default) | log only |
-| `desktop` | `notify-send` (Linux) or `osascript` (macOS) |
-| `sms` | runs `$PACEMAKER_SMS_CMD "<message>"` — you supply the send command (Twilio, a gateway, etc.) |
+The roster is the union of local session records and cadence files. Cadence-only
+seats are marked unregistered; record-only seats report missing cadence. Malformed
+or unreadable evidence remains visible and later seats are still evaluated.
 
-## Configuration (env vars)
+| State/evidence | Local finding |
+| --- | --- |
+| Active schedule | `now - next_wake_at >= max(2700, 2 * cadence_seconds)` |
+| Active heartbeat | `now - heartbeat_at > 3600`, independently of the intended wake |
+| Standby mail | Oldest undrained inbound event age **strictly >1800 seconds** |
+| Dormant | Suppression requires conclusion plus existing absolute brief |
+| Booted/parked | Launcher-owned; no heartbeat-floor finding |
 
-| Var | Default | Purpose |
-|-|-|-|
-| `PACEMAKER_CADENCE_DIR` | `./context/cadence` | where the `<role>.txt` files live |
-| `PACEMAKER_STATE_DIR` | `<cadence>/.pacemaker-state` | dedup state (one action per stall window) |
-| `PACEMAKER_ROLES` | auto-discover `*.txt` | explicit space-separated role list |
-| `PACEMAKER_GRACE_FLOOR` | `2700` (45 min) | min overdue before loop counts dead |
-| `PACEMAKER_HEARTBEAT_DEAD` | `5400` (90 min) | heartbeat age ⇒ process-dead |
-| `PACEMAKER_NOTIFY` | `none` | `sms` / `desktop` / `none` |
-| `PACEMAKER_SMS_CMD` | — | send command when notify=sms |
-| `PACEMAKER_RESUME_PROMPT` | generic mechanism-framed prompt | text injected on resume |
-| `PACEMAKER_TMUX_TARGET` | `{role}` | tmux target template |
-| `PACEMAKER_RESPAWN_HOOK` | — | optional script `$1=role` on process-dead |
-| `PACEMAKER_DRY_RUN` | — | classify + log only; no send-keys, no notify |
+A fresh heartbeat cannot erase an overdue schedule. A future intended wake cannot
+erase the heartbeat floor. The schedule reference intentionally preserves the
+source's earlier `next_wake_at` behavior; it differs from the normative
+`max(heartbeat,next_wake)` table. File mtime never substitutes for event timestamps.
+Idle standby does not alert merely because its heartbeat is old.
 
-## Wiring the host cron
+Mail inspection is non-consuming, across directed and broadcast projections,
+excluding self-notes and this seat's outbound broadcasts. Each reader/stream has
+its own byte cursor. An absent virgin cursor means byte zero; corrupt/unreadable
+cursors, partial lines, bad timestamps and missing mail evidence are unknown.
+Fresh arrivals cannot reset the oldest undrained age. No processing or notification
+cursor is advanced, and no mailbox read command is invoked.
 
-The pacemaker is designed to run from a **host crontab** — out of band, so it can
-never itself stall (it is not part of any agent loop). Every 5 minutes is a good
-default:
+Optional process observation requires an explicit absolute
+`JV_WATCHDOG_PROC_ROOT`. Without it, observation is unavailable. The process view
+must be the operator-selected **host namespace**; an empty container view cannot
+prove host absence. Matching requires exact NUL-delimited project ID, canonical
+project root and uppercase role plus an interactive Claude/Codex argv. Shells and
+one-shot invocations do not certify presence. Unreadable evidence is unknown.
+No signal, provider, tmux, scheduler or external notification command is invoked.
 
-```cron
-*/5 * * * * PACEMAKER_CADENCE_DIR=/path/to/project/context/cadence \
-            PACEMAKER_NOTIFY=desktop \
-            /path/to/project/scripts/pacemaker.sh >> /tmp/pacemaker.log 2>&1
-```
+This is **limited observation**: process presence does not prove loop progress,
+intent does not prove a wake is armed, and a stale heartbeat does not prove death.
+The normative leased-canary/heartbeat detector, lease/CAS fencing and multi-backend
+control plane remain unimplemented. There is no protocol-complete health claim.
 
-It is **idempotent**: a per-role dedup file (keyed on the frozen reference epoch of
-the stall) ensures exactly one resume / one escalation per stall window. Re-running
-the cron does not re-spam. The dedup clears automatically once the role recovers
-(its `next_wake_at` advances), re-arming a future resume.
+## Reports, backoff and dry-run
 
-## Why this is safe (no ghost-cron / split-brain)
+Stdout is JSONL: a `kind: seat` decision per enumerated seat, followed by one
+`kind: complete` record with enumerated, evaluated, unknown and reported counts.
+Evaluated + unknown equals enumerated. Zero exit means completed observation,
+not healthy seats. Required evidence/output failures are nonzero and diagnostic.
 
-This is a **passive supervisor**. It does **not**:
+Local alerts append to `watchdog/alerts.jsonl`, identifying project, role, reasons
+and episode. Checkpoints are `watchdog/<letter>.json`. A project sweep lock
+serializes ordinary concurrent reports. An ongoing episode survives changing
+references/additional detectors: report immediately, then after grace, doubled
+intervals capped at 24 hours, measured from the last successful report. Recovery
+or earned dormancy clears the episode. Failed append never advances its delivery
+checkpoint. A crash/failed checkpoint after append can duplicate on retry: this
+is not an exactly-once transport.
 
-- create wake-crons, or
-- re-invoke any conversation headlessly, or
-- spawn a second session for a live role.
+`--dry-run` prints proposed decisions without any mutation: no identity/bootstrap,
+directory or lock creation, log append, checkpoint update or recovery cleanup.
+The historical `PACEMAKER_DRY_RUN` variable refuses; use the CLI option. Explicit
+invocation, scheduler selection and any external response are operator-owned.
 
-The only thing it does to a live role is `send-keys` a resume prompt into that
-role's **existing** pane — a session-bound nudge identical to a human paste. There
-is no second invocation, so there is no split-brain or shared-cursor race. (This is
-the lesson from systems where a `CronCreate` wake-backup survived a reboot and
-resurrected as a headless ghost racing the live session — the pacemaker structurally
-cannot do that.)
+## Origin and checks
 
-## Solo mode (N=1)
+The W-C3 extraction preserves source lessons dated 2026-07-26 (frozen-epoch silence
+and dry-run budget), 07-27 (state-first, earned dormancy), 07-28/29 (`b88a10f15`,
+revival disabled by default), 09-23 (`317dd77f3`, doorbell-only standby and one-shot
+exclusion), 09-24 (`e0128d1a6`, roster union) and 09-27 (`b73dfd1b4`, fixture
+containment). These historical references are provenance, not operating rules.
 
-The wake-loop SPOF is identical at N=1 and N>1, so the guard is identical. At N=1,
-list your single role's cadence file (or let auto-discovery find it) and the
-pacemaker guards that one session's loop. No coordination tier is required — the
-pacemaker is part of the liveness primitive, not the multi-agent machinery.
-
-## Dry-run / smoke test
-
-```bash
-PACEMAKER_DRY_RUN=1 \
-PACEMAKER_CADENCE_DIR=scripts/fixtures \
-PACEMAKER_STATE_DIR=/tmp/pm-state \
-scripts/pacemaker.sh
-```
-
-The `scripts/fixtures/` directory ships sample cadence files for every class
-(alive+loop-dead, healthy, dormant, process-dead, heartbeat-only). The dry-run logs
-"would resume pane X" / "would escalate role Y" and sends nothing — use it to
-validate the classification logic against your own cadence files before wiring the
-cron.
-
-## Open questions / environment-specific
-
-1. **tmux pane naming** is the load-bearing assumption. The default (`{role}` = a
-   session per role) matches the simplest setup; confirm how your roles are hosted
-   (session-per-role vs windows vs panes) and set `PACEMAKER_TMUX_TARGET`
-   accordingly. If roles are not in tmux at all (e.g. a different terminal
-   multiplexer or a headless launcher), the resume mechanism needs a different
-   injector — the classification logic is reusable, only `resume_pane()` changes.
-2. **Resume-prompt content** — the default is generic and mechanism-framed. A
-   project with a richer re-orient sequence (a boot-prompt re-read chain) should
-   override `PACEMAKER_RESUME_PROMPT` to point the role at it.
+`tests/test_liveness.py` uses real rendered consumers, a closed PATH, sanitized
+child environments and synthetic process roots. The bounded source gate runs
+before candidate/mutant execution; it is not a hostile-code sandbox. The framework
+runner exercises saved release defaults, update and adoption-commit rollback.
+Destructive source recovery tests are deliberately excluded. Accepted mailbox and
+launcher regressions remain required when their shared binding helper changes.

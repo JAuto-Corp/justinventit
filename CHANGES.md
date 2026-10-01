@@ -6,13 +6,13 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 
 ## Unreleased
 
-### BREAKING-CHANGE: W-C3 pacemaker recovery retirement (approved, implementation pending)
+### BREAKING-CHANGE: W-C3 pacemaker recovery retirement (W-C3)
 
-The W-C3 update will replace the generated pacemaker's automatic prompt injection,
+The W-C3 update replaces the generated pacemaker's automatic prompt injection,
 optional respawn and notification commands with project-scoped, report-only
 observation. It will require explicit `JV_PROJECT_ID`, `JV_PROJECT_ROOT` and
 `JV_STATE_ROOT`; legacy path/action knobs will refuse with migration guidance.
-Saved Copier answers will remain compatible, but selecting a pacemaker will no
+Saved Copier answers remain compatible, but selecting a pacemaker no
 longer promise recovery or install a scheduler. This notice records the approved
 change before its tests-first implementation; it is not a claim that it has shipped.
 
