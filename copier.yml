@@ -159,7 +159,7 @@ external_pacemaker:
   default: tmux-supervisor
   when: "{{ orchestration_tier == 'cluster' }}"
 
-# # Isolation tier (L3)
+# Isolation tier (L3)
 # ---------------------------------------------------------------------------
 # DB-isolation dial, independent of cluster size. Two dials gated on the
 # EXPENSIVE resource (branch-DB-mins / pooler / CI), never on agent count.
