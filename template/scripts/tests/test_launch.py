@@ -236,8 +236,9 @@ sys.exit(91)
                                *([str(schema)] if schema else [])], capture_output=True, text=True,
                               env=self.environment(peer), timeout=10)
 
-    @staticmethod
-    def after(args, flag):
+    def after(self, args, flag):
+        self.assertIn(flag, args, "runtime argument missing: " + flag)
+        self.assertLess(args.index(flag) + 1, len(args), "runtime argument has no value: " + flag)
         return args[args.index(flag) + 1]
 
     def wait_for(self, predicate, label):
@@ -290,9 +291,11 @@ os.execv(REAL_FLOCK,['flock',*args])
         with opened(canaries) as reads:
             for peer in (0, 1):
                 self.successful("--runtime", "claude", "--model", "fixture-model", "--fresh", peer=peer)
+                self.assertTrue(self.handle(peer=peer).is_file(), "project-qualified Claude handle missing")
                 self.configure(peer, rename_to=("alpha-o", "beta-o")[peer])
                 r = self.successful("--runtime", "codex", "--model", "fixture-model", "--fresh",
                                     peer=peer, letter="O", worktree=False)
+                self.assertTrue(self.handle("codex", peer, "O").is_file(), "project-qualified Codex handle missing")
                 self.assertRegex(r.stdout, r"/rename\s+" + ("alpha-o", "beta-o")[peer] + r"\b")
             # R1: both providers resume in interleaved project order. Give each
             # Claude UUID real synthetic history so accidental fresh fallback fails.
