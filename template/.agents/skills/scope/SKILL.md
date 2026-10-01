@@ -3,6 +3,9 @@ name: scope
 description: "Plan and design work before building. Invoke when starting an epic, scoping a sprint, or planning any Standard+ change: orient on what exists, equip the planning procedure + domain skills, then produce the SPEC/SCENARIOS/PROGRESS structure and converge it through an audit loop. Feeds /work:epic-plan and the ATDD entry gate."
 ---
 
+Runtime routes and project-specific tools: `docs/WORKFLOW_SKILLS.md`.
+
+
 # Scope — Plan and Design Work
 
 **Intent**: understand what needs building, then produce plan artifacts solid enough to hand to `/work`.
@@ -39,7 +42,7 @@ Then read, to know what exists and where this fits:
 |-|-|-|
 | `Skill(skill: "work:epic-plan")` | Epic (3+ sprints) | The full planning procedure — explorer waves, folder tree, state-chain updates |
 | `work` skill § scope + PROGRESS | Single sprint/phase | Sprint-level planning shape |
-| Matching skill(s) in `.claude/skills/domain/` | The work touches that domain | SPECs written without domain conventions drift — wrong names, missing constraints |
+| Matching project-installed domain skill(s) | The work touches that domain | SPECs written without domain conventions drift — wrong names, missing constraints |
 | `patterns` skill § Interview | Outcomes the code can't answer | Structured Q&A before writing the SPEC |
 | `team-lead` | Parallel explorer/audit waves | Spawn templates, file ownership |
 

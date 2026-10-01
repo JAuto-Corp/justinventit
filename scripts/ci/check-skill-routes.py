@@ -374,6 +374,16 @@ def main() -> int:
             assert_source(root, source, pinned)
             assert_projection(source, projection)
             assert_discovery(root, source, projection, pinned["name"])
+        for name in ("scope", "go", "check", "capture", "team-lead", "work"):
+            source = surface_root(root) / ".agents/skills" / name
+            projection = surface_root(root) / ".claude/skills" / name
+            if not any(p.exists() or p.is_symlink() for p in (source, projection)):
+                continue
+            fields = frontmatter(source / "SKILL.md")
+            if fields.get("name") != name or not fields.get("description"):
+                raise RouteError(f"workflow skill frontmatter mismatch: {name}")
+            assert_projection(source, projection)
+            assert_discovery(root, source, projection, name)
         print("skill route/source/projection check: PASS")
         return 0
     except RouteError as exc:

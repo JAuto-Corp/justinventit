@@ -25,7 +25,7 @@ Climb only when progress stalls (decision function in `chain/convergence.md`).
 ## Each round
 
 1. Read caps + tier from `context/CHAIN.json` (defaults in `chain` SKILL.md § Config). Set `chain.in_progress = true`.
-2. Run the tier's audit over the changed surface. Cross-reference any matching `.claude/skills/domain/` skills against the findings — explorers can't load skills, so you do it.
+2. Run the tier's audit over the changed surface. Cross-reference any matching project-installed domain skills against the findings — explorers can't load skills, so you do it.
 3. Collect findings in the shape from `chain/schema.md`. Set each finding's `category` to the domain best-practices skill name when one applies — that drives `/work`'s equip on the next round.
 4. Compute `weighted_severity_score`, `findings_hash`, `domains_with_findings`, `progress_delta` (`chain/convergence.md`).
 5. Apply the exit/escalate/continue decision. Write `context/CHAIN.json`: append to `levers.check.iterations[]`, set `current_findings`/`current_findings_hash`/`domains_with_findings`, set `chain.verdict` and `chain.ready_for` (`work` to remediate, `done` on pass, `human` on terminal), clear `in_progress`.

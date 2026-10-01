@@ -4,9 +4,14 @@ description: "Coordinate an Agent Team for parallelizable work — implementatio
 user-invocable: true
 ---
 
+Runtime routes and project-specific tools: `docs/WORKFLOW_SKILLS.md`.
+
+
 # Team Lead
 
-> Teammates are full Claude Code sessions. Coordinate them — don't inject content they already have.
+> Use the commissioned project roles and the delegation mechanism available in
+> your runtime. The TeamCreate/Task examples below describe Claude Code Agent
+> Teams; they do not establish availability or message timing in other runtimes.
 
 Use this skill when work is genuinely **parallelizable** — several independent units different agents can tackle at once. This is the multi-agent tier, relevant when the project runs a team (`orchestration_tier=cluster`). If the work is sequential or trivial, do it yourself.
 
@@ -31,11 +36,13 @@ A framework, not a rigid script — step 7 may loop many times or once. Adapt.
 
 ---
 
-## The WAIT Pattern (non-negotiable)
+## The WAIT Pattern (Claude Code Agent Teams)
 
 The single most important rule. Get it wrong and the team is useless.
 
-**Messages arrive only when the lead is idle** — not making tool calls. During an active turn they queue indefinitely.
+The source Agent Team workflow yields after assignment to receive messages.
+Use the active runtime's documented wait/message mechanism; do not assume the
+same delivery behavior in another runtime.
 
 ```
 After spawning + assigning:
@@ -59,21 +66,23 @@ For read-only work (audit, research), ownership doesn't apply — many agents ca
 
 ## Model Tiers
 
-Match the model to the cognitive load:
+Use the project's configured model and effort pins for each role. These role
+names are placeholders, not installed reviewer definitions. Match the role to
+the cognitive load:
 
 | Tier | Use for |
 |-|-|
-| **opus** | Writing code, reviewing/auditing, planning — anything needing judgment or correctness reasoning |
-| **sonnet** | Exploration and context-gathering — near-opus accuracy at lower latency |
-| **haiku** | Mechanical coverage only — rote navigation, trivial lookups where being wrong is cheap |
+| **Configured judgment role** | Writing code, reviewing/auditing, planning — anything needing judgment or correctness reasoning |
+| **Configured exploration role** | Exploration and context-gathering — read-only discovery with cited evidence |
+| **Configured mechanical role** | Mechanical coverage only — rote navigation, trivial lookups where being wrong is cheap |
 
-Catching one subtle bug pays for an opus reviewer many times over; don't cut the model on judgment work.
+Catching one subtle bug pays for a judgment reviewer many times over; don't cut the model on judgment work.
 
 ---
 
 ## Designing the Team
 
-- **Teammates have everything you have** — CLAUDE.md, skills, tools, git. Don't paste skill content into prompts; tell them which skill to invoke. Don't extract patterns; they can explore themselves.
+- **Give teammates the required entry and capabilities** — AGENTS.md, skill paths, tools and git access. Verify what their runtime actually inherits. Don't paste skill content into prompts; tell them which skill to invoke. Don't extract patterns; they can explore themselves.
 - **Name by role, not number** — `frontend-coder`, `schema-auditor`, `scenario-runner` — so tasks and messages stay legible.
 - **Task descriptions are the main lever** — specific files, acceptance criteria, and ownership boundaries produce good work; vague tasks produce vague work.
 - **Absolute paths everywhere** — a teammate's cwd is not the repo root.

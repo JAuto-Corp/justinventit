@@ -25,7 +25,7 @@ description: Resume work from the state chain.
 
 # /work:continue
 
-Invoke the `work` skill, then read `.claude/skills/orchestrators/work/continue.md` for the workflow.
+Invoke the `work` skill, then read `.agents/skills/work/continue.md` for the workflow.
 ```
 
 A few numbered steps are fine when they aid orientation (see `commands/workflow/edit-skill.md`), but the workflow itself stays in the skill — an agent that reads a self-contained command may skip the skill and miss context.

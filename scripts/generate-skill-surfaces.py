@@ -14,6 +14,7 @@ import sys
 
 
 EXPECTED_ENTRIES = ("LICENSE.txt", "PROVENANCE.json", "SKILL.md")
+WORKFLOW_SKILLS = ("scope", "go", "check", "capture", "team-lead", "work")
 
 
 class ProjectionError(RuntimeError):
@@ -244,6 +245,17 @@ def main() -> int:
         for fixture_path in fixture_paths(root):
             source, _fixture = validate_canonical(root, fixture_path)
             pairs.extend(paired_skills(root, source))
+        for name in WORKFLOW_SKILLS:
+            source = surface_root(root) / ".agents/skills" / name
+            target = surface_root(root) / ".claude/skills" / name
+            if not any(p.exists() or p.is_symlink() for p in (source, target)):
+                continue  # Older consumers and pinned-skill receipt fixtures.
+            fields = frontmatter(source / "SKILL.md")
+            if fields.get("name") != name or not fields.get("description"):
+                raise ProjectionError(f"workflow skill frontmatter mismatch: {name}")
+            for entry in source.iterdir():
+                regular_nonexecutable(entry, f"workflow {name}/{entry.name}")
+            pairs.append((source, target))
         if args.check:
             failures = [
                 failure

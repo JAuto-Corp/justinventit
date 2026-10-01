@@ -1,28 +1,29 @@
-# W-D1 review and evidence ledger
+# W-D1 check record
 
-Author: a. Director/audit commissioner: o. Integrator: i.
+The director's 2026-10-01 proportion reset supersedes the prior SPEC fold gates.
+Validation is the existing render/run smoke and X1–X6 self-check; no new tests,
+mutant suite, sealed packet or model review. The PR and its CI retain the result.
 
-| Gate | Subject / evidence | State |
-|---|---|---|
-| Commission | o `01M3WP17Q4ZVHS6GKC67P84WNG`, 2026-10-01; ordered W-D1 slice | Authorized SPEC/source inspection |
-| Source orientation | 30-file read-only snapshot, 218,943 bytes; HEAD `bd3e7821473401f93ce23af621849f93a49435ef`; modified team-lead body identified by snapshot hash | Inventory recorded; source not executed |
-| SPEC + finite test-list audit | Sol xhigh at `7010c0a12`; o `01M3WQGV8BVDFMD9F4CVY0TJTH`, 2026-10-01 | ACCEPT-WITH-FOLDS; F1–F3 admitted, revised SPEC awaits o's personal fold check |
-| Oracle migrations | Same o ruling: canonical work path; bare scope/check direct skill routes | Both ADMITTED; preserve all existing guarantees and cite ruling in RED commit |
-| Folded test list | Six invariants; original eleven witnesses unchanged; T3-retained-gate-authority, T5-unknown-projection-directory, T4-inline-synthetic-secret and M12–M14 added | No tests or implementation written |
-| Tests-only actual RED + RED review | Actual RED follows o fold check; same ruling skips separate RED review because audit bounded test list | Not run; waiver covers review only |
-| GREEN + finite sensitivity + generated matrix/update | Pending RED gate | Not run |
-| Full exact-head independent code review | o commissions after GREEN | Not run |
-| Publication/current-head CI/integration | Accepted JV slice may publish on its own lane; i integrates when JA lane idle | Not authorized by this ledger |
+Implementation: six canonical workflow routes, generated Claude copies,
+hand-written mode pointers, entry version 4 and the F1 completion text correction.
+Follow-ups: #74 (projection deletion/preflight), #75 (Markdown secret scanning),
+#76 (inherited workflow policy and separate gate-policy extraction).
 
-The old work-path and bare-command oracle migrations in `test-skill-multiskill.py`
-are explicitly admitted by o. No tests have been changed. F1 reconciles the
-reachable retained completion gate and supplies its neutral gate-integrity policy;
-F2 refuses unknown projection entries without deletion; F3 checks credential
-shapes in all shipped Markdown guidance. The proof
-boundary is instruction packaging for cooperating reviewed code, not live model
-obedience or hostile isolation. Existing three-skill runtime receipts do not
-establish runtime availability of W-D1's six workflows.
+Validation (2026-10-01): existing multi-skill suite 24/24 PASS; Copier 9.17.1
+matrix 4/4 PASS (solo/cluster, none/Supabase/Postgres). Final skill prose rendered
+again into a fresh solo consumer; generator --check and independent route check
+PASS on that consumer and source. git diff --check PASS.
 
-Private immutable evidence packets are referenced in o's corresponding handoff;
-they retain exact subject, source/destination pins, changed files, raw results,
-context card and limitations. A later packet does not overwrite an earlier one.
+X1: no source-project or host files edited; authorized seat mailbox only.
+X2: source identity/root grep finds no coupling in the six canonical/projection
+routes, affected mode commands or retained completion gate.
+X3: canonical bodies plus generated copies; hand-written mode pointers labelled.
+X4: retained lessons have why and dated source references in WORKFLOW_SKILLS.md.
+X5: real Copier renders, existing matrix hook execution, route/projection checks.
+X6: no private state copied; bounded private-key/token/JWT-shape grep is empty
+across shipped and final-rendered Markdown. This is a smoke, not a complete
+secret detector. No live-model invocation, runtime pin parity or adoption claim.
+
+The two existing assertion migrations are the only test changes, authorized by
+01M3WQGV8BVDFMD9F4CVY0TJTH and retained by the proportion reset. No new cells.
+No-doc-impact does not apply: workflow routing/adoption documentation ships here.

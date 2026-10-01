@@ -158,9 +158,9 @@ class EntryPointers(unittest.TestCase):
         self.assertIn("verify/complete.md", review, "the review stage must bind every runtime to the same complete gate")
         self.assertTrue((TEMPLATE / ".claude/skills/orchestrators/verify/complete.md").is_file())
         transitions = next(l for l in self.AGENTS.splitlines() if l.startswith("Session transitions"))
-        self.assertIn(".claude/skills/orchestrators/work/", transitions)
+        self.assertIn(".agents/skills/work/", transitions)
         for wf in ("start.md", "continue.md", "pause.md", "handoff.md", "done.md"):
-            self.assertTrue((TEMPLATE / ".claude/skills/orchestrators/work" / wf).is_file(), wf)
+            self.assertTrue((TEMPLATE / ".agents/skills/work" / wf).is_file(), wf)
         playbook = (TEMPLATE / "docs/PLAYBOOK.md.jinja").read_text(encoding="utf-8")
         self.assertNotIn("CLAUDE.md codebase map", playbook)
 
@@ -176,8 +176,9 @@ class EntryPointers(unittest.TestCase):
         self.assertIn("/verify:complete", self.CLAUDE)
         for token in ("/scope", "/check", "/verify:complete", "/work:handoff", "/work:pause", "/work:continue"):
             base, _, sub = token[1:].partition(":")
-            # A bare token needs a wrapper FILE; a namespace directory alone does not resolve it.
-            path = TEMPLATE / ".claude/commands" / (f"{base}/{sub}.md" if sub else f"{base}.md")
+            # W-D1 admitted migration: bare skills resolve directly; modes retain command pointers.
+            path = (TEMPLATE / ".claude/commands" / f"{base}/{sub}.md" if sub
+                    else TEMPLATE / ".claude/skills" / base / "SKILL.md")
             self.assertTrue(path.is_file(), token)
 
     @staticmethod

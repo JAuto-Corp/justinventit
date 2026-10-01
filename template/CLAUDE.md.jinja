@@ -3,7 +3,7 @@
 <!-- forge:start — DO NOT EDIT between forge markers (updated by copier update) -->
 
 @AGENTS.md
-<!-- jv-entry-contract-expected: 3 -->
+<!-- jv-entry-contract-expected: 4 -->
 
 > `AGENTS.md` (imported above) is the canonical entry contract for every runtime. This file adds only what is
 > specific to Claude Code and never restates the contract.
@@ -13,6 +13,7 @@
 | Contract step | Claude Code command |
 |-|-|
 | Design the work | `/scope` |
+| Execute the work | `/go` |
 | Verify the work / loop stage 5 (review gate) | `/check`, `/verify:complete` |
 | Session transitions (`work` skill) | `/work:handoff`, `/work:pause`, `/work:continue` |
 

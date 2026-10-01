@@ -1,6 +1,6 @@
 ---
 name: work/done
-description: Verify completion, close the issue, clear state, and open the PR.
+description: Verify completion, record readiness, and open the PR.
 ---
 
 # /work:done #N
@@ -33,18 +33,17 @@ git diff --name-only <base>...HEAD
 git add -A
 git commit -m "feat(#N): [description]
 
-Closes #N"
+Refs #N"
 ```
 
-### 4. Close the issue
+### 4. Link the issue for integration
 
-```bash
-gh issue close N --comment "Completed. See commits on branch feature/issue-N-*"
-```
+Put `Fixes #N` in the PR body. Keep the issue open until the assigned
+integrator merges; local verification is readiness, not integration.
 
 ### 5. Align docs with reality
 
-Confirm `git status` is clean; update `docs/CURRENT_WORK.md` / roadmap if this closed active work; verify issue labels match completion; file follow-up issues for any deferred work discovered.
+Confirm `git status` is clean; update `docs/CURRENT_WORK.md` / roadmap to record PR readiness; keep issue labels consistent with its unmerged status; file follow-up issues for any deferred work discovered.
 
 ### 6. Clear state
 
@@ -52,14 +51,14 @@ Remove the issue from `context/WORKING.md`'s immediate-next-task and reset the `
 
 ### 7. Push and open a PR
 
-Per the project's git workflow (see `CLAUDE.md` § Git Workflow — agents commit freely, humans gate the push/merge):
+Per the project's git workflow (see `AGENTS.md` § Git Workflow — agents commit freely, humans gate the push/merge):
 
 ```bash
 git push -u origin feature/issue-N-description
 gh pr create --base <integration-branch> --title "..." --body "..."
 ```
 
-Authoring sessions open PRs; they do not merge their own. Merge is gated by the reviewer/human.
+Authoring sessions open PRs; they do not merge their own. Only the assigned integrator merges.
 
 ### 8. Advance or stop
 

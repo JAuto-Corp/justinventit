@@ -1,6 +1,8 @@
 # Spawn Templates
 
-Starting-point skeletons for Agent Team teammates. Pick what fits, modify freely, or write your own. Every spawn prompt begins with the environment block so the teammate can orient itself.
+Claude Code Agent Team syntax examples; on another runtime, pass the same task
+content through its available delegation tools. Model names below are project
+configuration placeholders, not runnable pins. Starting-point skeletons for teammates. Pick what fits, modify freely, or write your own. Every spawn prompt begins with the environment block so the teammate can orient itself.
 
 ---
 
@@ -12,7 +14,7 @@ A teammate's cwd is not the repo root, so resolve the root and pass it in. Inclu
 ENVIRONMENT:
 - Repo root: {REPO_ROOT}          # from: git rev-parse --show-toplevel
 - Use ABSOLUTE paths for ALL file operations
-- Read CLAUDE.md for project conventions before starting
+- Read AGENTS.md for project conventions before starting
 - Invoke the skills named below yourself — they are not injected here
 ```
 
@@ -28,12 +30,12 @@ Add any project-specific values teammates need (ports, service refs, base URLs) 
 
 ## Coder (writes code)
 
-Use `opus`. One coder per ownership zone; zones must not overlap.
+Use the configured judgment role. One coder per ownership zone; zones must not overlap.
 
 ```
 Task(
   subagent_type: "general-purpose",
-  model: "opus",
+  model: "{JUDGMENT_MODEL}",
   name: "{zone}-coder",
   team_name: "{TEAM_NAME}",
   prompt: """
@@ -61,12 +63,12 @@ WORKFLOW:
 
 ## Explorer (read-only research)
 
-Use `sonnet` with an open-ended prompt — exploration benefits from freedom, and sonnet avoids the confidently-wrong failures of cheaper models.
+Use the configured exploration role with an open-ended prompt and require cited evidence.
 
 ```
 Task(
   subagent_type: "Explore",
-  model: "sonnet",
+  model: "{EXPLORATION_MODEL}",
   name: "{descriptive-name}",
   team_name: "{TEAM_NAME}",
   prompt: """
@@ -82,18 +84,18 @@ Keep the report under 2000 characters.
 )
 ```
 
-> `Explore` agents cannot SendMessage or TaskUpdate. If a researcher must report back through team messaging, spawn it as `general-purpose` (still `sonnet`, still "do NOT edit files") and tell it to SendMessage the lead and TaskUpdate → completed when done.
+> `Explore` agents cannot SendMessage or TaskUpdate. If a researcher must report back through team messaging, spawn it as `general-purpose` (with the configured exploration role, still "do NOT edit files") and tell it to SendMessage the lead and TaskUpdate → completed when done.
 
 ---
 
 ## Auditor (read-only review)
 
-Use `opus` — review is the highest-leverage judgment in the system. Deploy several with distinct perspectives; all read-only.
+Use the configured judgment role — review is the highest-leverage judgment in the system. Deploy several with distinct perspectives; all read-only.
 
 ```
 Task(
   subagent_type: "general-purpose",
-  model: "opus",
+  model: "{JUDGMENT_MODEL}",
   name: "{perspective}-auditor",
   team_name: "{TEAM_NAME}",
   prompt: """
@@ -118,12 +120,12 @@ Then TaskUpdate → completed. Keep it under 3000 characters.
 
 ## Scenario Runner (shared-data testing)
 
-Use `haiku` — mechanical flow execution, not reasoning. The lead prepares shared data ONCE before spawning; runners never seed their own.
+Use the configured mechanical role — mechanical flow execution, not reasoning. The lead prepares shared data ONCE before spawning; runners never seed their own.
 
 ```
 Task(
   subagent_type: "general-purpose",
-  model: "haiku",
+  model: "{MECHANICAL_MODEL}",
   name: "runner-{LABEL}",
   team_name: "{TEAM_NAME}",
   prompt: """
