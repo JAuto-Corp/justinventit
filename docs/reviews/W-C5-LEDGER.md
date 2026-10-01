@@ -1,8 +1,8 @@
 # W-C5 observability review and evidence ledger
 
-Status: code review blocked the initial GREEN. Six admitted regression cells
-have actual generated RED; corrected GREEN implementation is authored and
-awaits its committed generated/mutation/matrix proof and narrow review.
+Status: all five code-review findings and the TSV framing ruling are folded.
+Actual regression RED, corrected generated GREEN, every mutant and the matrix
+are complete. O-commissioned narrow fold review remains pending.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -186,3 +186,33 @@ Fixed complete-image policy entries and command inventory are updated through
 this explicit author-inspected diff, never registered by the test runners.
 The original 22 mutant mechanisms remain; six code-finding/ruling mutants are
 added. Prior independent review/acceptance is not inferred for the new images.
+
+## Corrected GREEN / narrow-review handoff
+
+Tested `b817e6228f16cd47d99c7f1366031f8c95a37900` with real Copier 9.17.1
+cluster/solo consumers: **28 methods pass in 24.384 s, zero errors**. The entire
+mutation set passes: **27 runtime assertion kills + one destructive-source
+refusal before child, zero errors or survivors**. All original 22 names, classes
+and witness selectors are unchanged and rerun; six additions trace only to the
+five findings and o's TSV ruling. The four-answer generation matrix passes 4/4.
+
+| Fold | New cell / distinguishing evidence |
+| --- | --- |
+| F1→I6 | Synthetic partial alert write leaves bytes but no checkpoint; retry seals the fragment, appends its own complete row and checkpoints once; repeat suppresses. The framing mutant concatenates and fails the byte-boundary assertion. |
+| F2→I2 | `10**400` in either provider preserves the other provider in CLI/hook and history; no traceback or false zero. The numeric-admission mutant fails the truthful status/series checks. |
+| F3→I3 | New short-only credits 80 override old weekly credits 100, within one file and across files; spend is 60/h from 110 over 30 minutes. Short-only credits survive weekly absence; unframed JSONL does not count. The weekly-coupled selector fails 80 vs 100. |
+| F4→I2/I3 | Quota history 999 is counted/skipped; 20→25 over 30 minutes remains 10/h, and old bytes remain intact. The range mutant admits 999 and fails the diagnostic/status check. |
+| F5→I2/I4 | An unterminated valid-looking history row is ignored; actual partial append is retryable. Reader mutation admits the unframed sample. The separate truncated-last-field cell requires permanent TAB `partial` invalidation before/after a later append; newline-only mutation fails it. |
+
+Author checks confirm all 22 pre-review test method ASTs and shared earlier-slice
+helpers remain unchanged. Template and both generated operating closures pass
+coupling/credential-pattern scans and fixed-image source gates. No provider,
+source cleanup, host installation or live notifier was accessed by proof.
+
+The final handoff commit updates only SPEC/ledger status; installed evidence-delta
+checks unchanged committed template/test/runner/CI inputs against the tested head.
+A new immutable packet retains the original code review/rulings, both actual RED
+runs, corrected GREEN, every mutation's changed bytes/gate/streams, matrix,
+source provenance, before/after code and fold diff. Prior sealed packets are
+untouched. Request only the o-authorized narrow fold re-review; publication and
+hosted CI remain held for the lane, with no author acceptance or integration.

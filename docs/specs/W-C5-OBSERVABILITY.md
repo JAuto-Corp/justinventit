@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **Code-review fold in progress: 28-method RED recorded (22 prior passes, six intended assertion failures, zero errors); corrected implementation authored, committed generated GREEN pending.**
+Status: **Code-review fold locally GREEN: 28 generated methods, 27 runtime assertion kills, one source refusal and four matrix cases pass. Narrow independent fold review pending.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb`; its hosted CI is green and
 integration awaits a hosted-lane gap;
