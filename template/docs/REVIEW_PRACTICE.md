@@ -114,6 +114,10 @@ loops. Origin: **JA, 2026-09-29**, owner-approved `REVIEW-TEST-FLOW-PILOT.md` an
 solution-shape pointer: **JA, 2026-09-30**, `PONYTAIL-BOOT-v1.md` Notch-up. These are historical sources,
 not runtime paths. No new mutation runner or enforcement hook ships with this policy.
 
+User-facing outcomes also follow [Interaction acceptance](INTERACTION_ACCEPTANCE.md):
+the plan-to-browser-result record is part of PR readiness. That document owns the
+requirement; this pointer does not install another review or runtime gate.
+
 ## 5. Scoreboard (learn which review is signal)
 
 When the director dispositions a finding, it records one tag:

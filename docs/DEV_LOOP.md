@@ -25,6 +25,10 @@ The generated project contract (`template/AGENTS.md.jinja` § Development Loop) 
 `scripts/ci/test-skill-multiskill.py` asserts the two tables agree in order and names.
 Stage 7 is NOT optional and NOT a tail: the doc gate fails the same way a test gate fails.
 
+For user-facing flows, scope and PR readiness also follow the canonical
+[Interaction acceptance guidance](../template/docs/INTERACTION_ACCEPTANCE.md).
+The generated review policy points to the same procedure; no new stage is added.
+
 ## 1a. Stage-0 protocol (draft red-team — USER RULING 2026-07-28)
 
 Every design artifact gets stage-0 attention BEFORE ratification/dispatch/build; the TIER of

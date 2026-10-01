@@ -76,6 +76,11 @@ stop rule. That policy owns the minimum cells and correction review rules. This 
 continues to own runner evidence, RED admissibility and harness-integrity requirements;
 reading the policy does not implement the missing ledger or sensitivity gate below.
 
+Browser evidence for planned user-facing outcomes follows
+[Interaction acceptance](../template/docs/INTERACTION_ACCEPTANCE.md). Keep that
+record with the existing scenario/PR evidence; it complements runner results and
+does not claim a new ledger event kind or an installed browser gate.
+
 ## 3. Evidence ledger
 
 Append-only JSONL events written by the RUNNERS (test runner reporter hook, build wrapper),
