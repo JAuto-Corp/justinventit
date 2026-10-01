@@ -104,7 +104,7 @@ class Launch(unittest.TestCase):
         # standard utilities are individually resolved before PATH is closed.
         allowed = ("bash", "sh", "python3", "node", "jq", "flock", "dirname", "basename", "realpath", "readlink",
                    "mkdir", "mktemp", "cat", "find", "tr", "head", "tail", "rm", "mv", "cp", "chmod", "date",
-                   "timeout", "git", "env", "grep", "sed", "sort", "cut", "wc", "touch", "sync", "stat", "uuidgen", "sleep")
+                   "timeout", "git", "env", "grep", "sed", "sort", "cut", "wc", "touch", "sync", "stat", "uuidgen", "sleep", "od", "awk")
         for name in allowed:
             native = shutil.which(name)
             if native:
@@ -207,6 +207,14 @@ sys.exit(91)
     def record_path(self, peer=0, letter="a"):
         return self.state / ("alpha", "beta")[peer] / "sessions" / (letter + ".json")
 
+    def bind(self, peer=0):
+        store = self.state / ("alpha", "beta")[peer]
+        store.mkdir(parents=True, exist_ok=True)
+        identity = store / "project.json"
+        if not identity.exists():
+            identity.write_text(json.dumps({"schema_version": 1, "project_id": ("alpha", "beta")[peer],
+                                            "project_root": str(self.projects[peer])}) + "\n")
+
     def record(self, peer=0, letter="a", runtime="claude", **values):
         rec = {"schema_version": 1, "project_id": ("alpha", "beta")[peer], "letter": letter,
                "runtime": runtime, "model": "fixture-model", "effort": "xhigh", "workdir": str(self.projects[peer]),
@@ -214,6 +222,7 @@ sys.exit(91)
                "lease": {"holder": None, "epoch": 0, "expires_at": None},
                "watcher": {"location": None, "generation": 0}}
         rec.update(values)
+        self.bind(peer)
         p = self.record_path(peer, letter)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(rec) + "\n")
@@ -526,6 +535,7 @@ require('node:module').syncBuiltinESMExports();
 
     def test_T2_bootstrap_candidate_write_validation_and_publish_failures(self):
         """I2: failed write/validation/publication leaves no invalid authority."""
+        self.bind()
         self.record_path().parent.mkdir(parents=True)
         lock = self.record_path().with_suffix(".json.lock"); lock.touch()
         self.record_path().parent.chmod(0o555)
