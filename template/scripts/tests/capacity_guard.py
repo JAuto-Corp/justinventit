@@ -15,7 +15,7 @@ DEPENDENCY = re.compile(r'(?:^|[;&|()]|\b(?:then|do|else))\s*(?:(?:env|command|e
 WRAPPED_EFFECT = re.compile(r'(?<![\w-])(?:kill|killall|pkill|pgrep|tmux|curl|wget|ssh|scp|sftp|nc|ncat|netcat|claude|codex|crontab|systemctl|notify-send|osascript)(?![\w-])')
 # R2: literal host-root fallbacks and HOME/cwd-derived paths are never admitted
 # to runtime. This is bounded source inspection, not an arbitrary-shell sandbox.
-HOST_PATH = re.compile(r'/(?:tmp|var|run|home|root|mnt|media|srv|etc|opt|dev/shm)(?:/|[\s"\']|$)|\$\{?(?:HOME|TMPDIR|PWD)\b')
+HOST_PATH = re.compile(r'''(?<=[\s="'<>:-])/(?!dev/null\b|proc/meminfo\b|proc/self/fd/)[A-Za-z0-9_.-]|(?<![*/])\.\./|(?<!\*)/\.\./|\$\{?(?:HOME|TMPDIR|PWD)\b''')
 
 
 def runtime_findings(root):

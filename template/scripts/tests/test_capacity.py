@@ -51,7 +51,9 @@ class Containment(unittest.TestCase):
             for seed in ('source "$SCRIPT_DIR/lib/extra.sh"', '. "$SCRIPT_DIR/lib/extra.sh"',
                          'bash "$SCRIPT_DIR/lib/extra.sh"', 'env /bin/kill -TERM 99999',
                          'env X=1 command /usr/bin/tmux list-sessions',
+                         'env kill -TERM 99999', 'env X=1 tmux list-sessions',
                          'exec {fd}>"/tmp/not-a-fixture.lock"',
+                         'exec {fd}>"/unlisted-root/capacity.lock"', 'exec {fd}>"../capacity.lock"',
                          'LOCK_DIR="${JV_HOST_ROOT:-/var/lock}"', 'LOCK_DIR="$HOME/locks"'):
                 with self.subTest(seed=seed):
                     entry.write_text(seed+'\n')
@@ -65,6 +67,8 @@ class Containment(unittest.TestCase):
         # Disposable sibling canary, never a real host lock.
         with tempfile.TemporaryDirectory() as tmp:
             target=Path(tmp)/'foreign.lock'
+            with self.assertRaisesRegex(AssertionError,'nonfixture configured path'):
+                f.environment(overrides={'JV_HOST_ROOT':tmp})
             r=subprocess.run([f.bin/'flock','-n',target,'true'],env=f.environment(),capture_output=True)
             self.assertEqual(r.returncode,92);self.assertFalse(target.exists())
             with target.open('w') as foreign:
@@ -185,6 +189,7 @@ class Capacity(unittest.TestCase):
             self.assertEqual(child.wait(timeout=5),1);self.assertFalse(marker.exists())
         f.info.unlink();r,p=self.mark(1);self.assertEqual(r.returncode,1);self.assertFalse(p.exists());self.held()
         release.touch();self.assertEqual(parent.wait(timeout=5),0);self.reacquire()
+        self.assertTrue(f.lock.is_file(),'cleanup deleted the canonical inode')
         self.assertEqual(f.lock.stat().st_ino,inode)
         f.receipt('five contenders refused; poisoned/absent info did not grant ownership',inode=inode)
 
