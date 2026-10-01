@@ -37,6 +37,20 @@ The coupling/secret scanner is bounded to the listed generated operating closure
 
 No behavioral mutant is run against absent production files. The SPEC's finite list is carried to GREEN; new tests require a surviving mutant or traced finding. The accepted W-C1 regression suite and existing generation matrix are GREEN-stage gates after shared-helper extraction. Ordinary CI on this tests-only commit still checks the existing framework; it is not W-C2 acceptance. CI wiring for the new acceptance command waits for implementation.
 
+## RED review disposition
+
+Sol reviewed `dd61731` and returned **BLOCK** on five P2 findings. O (`01M3V2KNHWH5HXJ47ZFN3SQZ8E`, 2026-10-01) requires all five folded into a new RED commit, then GREEN with **no further RED round**:
+
+| Finding | Trace | Test fold |
+| --- | --- | --- |
+| R1 | I1/I4 | Interleave alpha/beta resumes for Claude and Codex; assert saved handles and exact resume arguments. |
+| R2 | I1/I4 | Assert printed qualified `/rename` for each project; fake name selection uses independent configured human input instead of deriving it from the runtime environment. |
+| R3 | I3 | Valid TOML trusting only beta must not authorize alpha. |
+| R4 | I3 | A newer matching same-workdir thread cannot substitute for wrong/missing own-thread rollout or context. |
+| R5 | I5/I6 | Allowlisted PATH; recording refusal stubs for tmux/network tools; zero-call cleanup assertion. Scratch HOME/CODEX_HOME, temp files and records remain isolated. |
+
+The review's two notes preserve the feature-absence disclosure and scratch bindings. No behavioral pass is inferred from these folds; the final RED packet names the actual results. Each finding carries its finite sensitivity mutant into GREEN, reusing an existing mutant only where it exercises the same defect.
+
 ## Next permitted action
 
-One tests-only RED review through o, then the authorized GREEN implementation. W-A and W-C1 must land before changing their shared surfaces. No second SPEC audit, no independent acceptance by the author, and no author merge. The full independent code review remains due at GREEN; the pilot governs any traced fixes.
+After committing/running the five RED folds, proceed to the authorized GREEN implementation without another RED review. W-A and W-C1 must land before changing their shared surfaces. No second SPEC audit, no independent acceptance by the author, and no author merge. The full independent code review remains due at GREEN; the pilot governs any traced fixes.

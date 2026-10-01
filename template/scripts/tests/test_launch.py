@@ -97,14 +97,35 @@ class Launch(unittest.TestCase):
         self.fixtures.mkdir()
         (self.root / "tmp").mkdir()
         self.configs = [self.root / "alpha-fixture.json", self.root / "beta-fixture.json"]
-        for p in self.configs:
-            p.write_text(json.dumps({"model": "fixture-model", "effort": "xhigh"}))
+        for p, rename in zip(self.configs, ("alpha-a", "beta-a")):
+            p.write_text(json.dumps({"model": "fixture-model", "effort": "xhigh", "rename_to": rename}))
         self.epoch = 1800000000
+        # R5: no inherited command search path. Runtime binaries are fake and
+        # standard utilities are individually resolved before PATH is closed.
+        allowed = ("bash", "sh", "python3", "node", "jq", "flock", "dirname", "basename", "realpath", "readlink",
+                   "mkdir", "mktemp", "cat", "find", "tr", "head", "tail", "rm", "mv", "cp", "chmod", "date",
+                   "timeout", "git", "env", "grep", "sed", "sort", "cut", "wc", "touch", "sync", "stat", "uuidgen", "sleep")
+        for name in allowed:
+            native = shutil.which(name)
+            if native:
+                (self.bin / name).symlink_to(native)
+        for name in ("tmux", "curl", "wget", "ssh", "scp", "sftp", "nc", "ncat", "netcat", "xclip", "xdg-open"):
+            self.stub(name, '''#!/usr/bin/env python3
+import json,os,pathlib,sys
+p=pathlib.Path(os.environ['JV_LAUNCH_FIXTURE'])/'forbidden-calls.jsonl'
+with p.open('a') as out: out.write(json.dumps({'command':pathlib.Path(sys.argv[0]).name,'argv':sys.argv[1:]})+'\\n')
+print('fixture refuses external command '+pathlib.Path(sys.argv[0]).name,file=sys.stderr)
+sys.exit(91)
+''')
+        def no_external_calls():
+            p = self.fixtures / "forbidden-calls.jsonl"
+            self.assertFalse(p.exists(), "R5: prohibited command invoked: " + (p.read_text() if p.exists() else ""))
+        self.addCleanup(no_external_calls)
         for name in ("claude", "codex"):
             shutil.copyfile(Path(__file__).with_name("fake_seat_runtime.py"), self.bin / name)
             (self.bin / name).chmod(0o755)
         # Only the fixture Codex executable is reachable through the explicit pin.
-        self.env = {"PATH": str(self.bin) + ":" + os.environ["PATH"], "HOME": str(self.home),
+        self.env = {"PATH": str(self.bin), "HOME": str(self.home),
                     "CODEX_HOME": str(self.codex), "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
                     "TMPDIR": str(self.root / "tmp"),
                     "JV_STATE_ROOT": str(self.state), "JV_CODEX_BIN": str(self.bin / "codex"),
@@ -116,6 +137,8 @@ class Launch(unittest.TestCase):
 
     def stub(self, name, text):
         p = self.bin / name
+        # Replacing an allowlisted symlink must never write its host target.
+        p.unlink(missing_ok=True)
         p.write_text(text)
         p.chmod(0o755)
         return p
@@ -131,6 +154,8 @@ class Launch(unittest.TestCase):
             p.unlink(missing_ok=True)
         elif mode == "malformed":
             p.write_text("[broken\n")
+        elif mode == "beta-only":
+            p.write_text('[projects.' + json.dumps(str(self.projects[1])) + ']\ntrust_level = "trusted"\n')
         else:
             s = "".join('[projects.' + json.dumps(str(root)) + ']\ntrust_level = "' +
                         ("untrusted" if mode == "untrusted" else "trusted") + '"\n' for root in self.projects)
@@ -256,8 +281,26 @@ os.execv(REAL_FLOCK,['flock',*args])
         with opened(canaries) as reads:
             for peer in (0, 1):
                 self.successful("--runtime", "claude", "--model", "fixture-model", "--fresh", peer=peer)
-                self.successful("--runtime", "codex", "--model", "fixture-model", "--fresh",
-                                peer=peer, letter="O", worktree=False)
+                self.configure(peer, rename_to=("alpha-o", "beta-o")[peer])
+                r = self.successful("--runtime", "codex", "--model", "fixture-model", "--fresh",
+                                    peer=peer, letter="O", worktree=False)
+                self.assertRegex(r.stdout, r"/rename\s+" + ("alpha-o", "beta-o")[peer] + r"\b")
+            # R1: both providers resume in interleaved project order. Give each
+            # Claude UUID real synthetic history so accidental fresh fallback fails.
+            saved = [self.handle(peer=peer).read_text().strip() for peer in (0, 1)]
+            for peer in (0, 1):
+                history = self.home / ".claude/projects" / str(self.projects[peer]).replace("/", "-")
+                history.mkdir(parents=True)
+                (history / (saved[peer] + ".jsonl")).write_text("{}\n")
+            for peer in (1, 0, 1, 0):
+                self.successful(peer=peer)
+                call = self.calls("interactive")[-1]
+                self.assertEqual(self.after(call["args"], "--resume"), saved[peer])
+                self.assertEqual(self.handle(peer=peer).read_text().strip(), saved[peer])
+                self.successful("--at-machine", peer=peer, letter="O", worktree=False)
+                name = ("alpha-o", "beta-o")[peer]
+                self.assertEqual(self.calls("interactive")[-1]["args"][:2], ["resume", name])
+                self.assertEqual(self.handle("codex", peer, "O").read_text().strip(), name)
         self.assertFalse(reads, "legacy handles were opened/consumed")
         self.assertEqual(snapshot(legacy), before)
         self.assertNotEqual(self.handle(peer=0).read_text(), self.handle(peer=1).read_text())
@@ -525,7 +568,7 @@ sys.exit(r.returncode)
         probe = self.calls("probe")[0]
         self.assertEqual(self.after(probe["args"], "-p"), "alpha-thinking")
         self.assertEqual(self.after(probe["args"], "-s"), "read-only")
-        for mode in ("missing", "malformed", "comment", "untrusted"):
+        for mode in ("missing", "malformed", "comment", "untrusted", "beta-only"):
             with self.subTest(trust=mode):
                 self.trust(mode)
                 self.refuse("--fresh", diagnostic=r"(?i)(trust|parse|config)", dispatch="no-interactive")
@@ -540,6 +583,15 @@ sys.exit(r.returncode)
                 self.configure(**{key: value}, foreign_rollout=True)
                 self.refuse("--fresh", diagnostic=r"(?i)(mismatch|tier)", dispatch="no-interactive")
                 self.configure(**{key: None})
+        # R4: the wrong/missing OWN thread must not be replaced by a matching
+        # newer thread even when the other thread belongs to the SAME workdir.
+        self.configure(foreign_rollout=True, foreign_same_workdir=True)
+        for config in ({"probe_model": "wrong-model"}, {"no_rollout": True}, {"no_context": True}):
+            with self.subTest(same_workdir_foreign=config):
+                self.configure(**config)
+                self.refuse("--fresh", diagnostic=r"(?i)(mismatch|tier|rollout|context)", dispatch="no-interactive")
+                self.configure(probe_model=None, no_rollout=False, no_context=False)
+        self.configure(foreign_same_workdir=False)
         self.refuse("--fresh", env={"JV_CODEX_BIN": self.root / "not-executable"},
                     diagnostic=r"(?i)(binary|executable|codex)")
         self.refuse("--fresh", env={"JV_CODEX_BIN": None}, diagnostic=r"(?i)(binary|pin|codex)")
@@ -577,6 +629,7 @@ sys.exit(r.returncode)
         """I4/F2: duplicate qualified names fail; there is no fresh fallback."""
         self.record(runtime="codex")
         first = self.successful("--fresh")
+        self.assertRegex(first.stdout, r"/rename\s+alpha-a\b")
         self.assertRegex(first.stdout, r"(?i)intended")
         self.assertRegex(first.stdout, r"(?i)(not verified|unverified)")
         self.assertRegex(first.stdout, r"(?i)advisory")
@@ -608,7 +661,7 @@ sys.exit(r.returncode)
                     ({"exit": 130, "post_missing": True}, 0), ({"exit": 143, "post_missing": True}, 0)]
         for config, wanted in variants:
             with self.subTest(config=config):
-                self.configs[0].write_text(json.dumps({"model": "fixture-model", "effort": "xhigh", **config}))
+                self.configs[0].write_text(json.dumps({"model": "fixture-model", "effort": "xhigh", "rename_to": "alpha-a", **config}))
                 r = self.launch("--fresh")
                 self.assertEqual(r.returncode, wanted, r.stdout + r.stderr)
                 if wanted == 5:

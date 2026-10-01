@@ -89,7 +89,8 @@ if provider == "codex" and kind == "probe":
                     model=cfg.get("probe_model"), effort=cfg.get("probe_effort"),
                     context=not cfg.get("no_context"))
         if cfg.get("foreign_rollout"):
-            foreign = rollout(str(uuid.uuid4()), phase="probe", cwd=str(root / "foreign-workdir"))
+            foreign = rollout(str(uuid.uuid4()), phase="probe",
+                              cwd=workdir if cfg.get("foreign_same_workdir") else str(root / "foreign-workdir"))
             os.utime(foreign, (epoch + 50, epoch + 50))
     finally:
         os.close(fd)
@@ -98,7 +99,9 @@ if provider == "codex" and kind == "probe":
 
 barrier("interactive_barrier")
 if provider == "codex":
-    name = os.environ["JV_PROJECT_ID"] + "-" + os.environ["JV_ROLE"].lower()
+    # Simulated human /rename input is independently supplied by the test.
+    # Never derive it from the environment: that would hide a bad printed prompt.
+    name = cfg["rename_to"]
     index_path = Path(os.environ["CODEX_HOME"]) / "fixture-names.json"
     names = json.loads(index_path.read_text()) if index_path.exists() else {}
     if args and args[0] == "resume":

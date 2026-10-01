@@ -64,9 +64,17 @@ def main():
         home = calibration / "home"; home.mkdir()
         codex_home = home / ".codex"; codex_home.mkdir()
         capture = calibration / "capture"; capture.mkdir()
-        cfg = calibration / "config.json"; cfg.write_text(json.dumps({"model": "calibrated-model", "effort": "medium"}))
+        fixture_bin = calibration / "bin"; fixture_bin.mkdir()
+        (fixture_bin / "python3").symlink_to(sys.executable)
+        for name in ("tmux", "curl", "wget", "ssh", "scp", "sftp", "nc", "ncat", "netcat", "xclip", "xdg-open"):
+            stub = fixture_bin / name
+            stub.write_text('#!/usr/bin/env python3\nimport os,pathlib,sys\n'
+                            'p=pathlib.Path(os.environ["JV_LAUNCH_FIXTURE"])/"forbidden-calls"\n'
+                            'with p.open("a") as out: out.write(sys.argv[0]+"\\n")\nsys.exit(91)\n')
+            stub.chmod(0o755)
+        cfg = calibration / "config.json"; cfg.write_text(json.dumps({"model": "calibrated-model", "effort": "medium", "rename_to": "calibration-a"}))
         fake = calibration / "codex"; shutil.copyfile(fixture, fake); fake.chmod(0o755)
-        env = {"PATH": os.environ["PATH"], "HOME": str(home), "CODEX_HOME": str(codex_home),
+        env = {"PATH": str(fixture_bin), "HOME": str(home), "CODEX_HOME": str(codex_home),
                "JV_PROJECT_ID": "calibration", "JV_ROLE": "A", "JV_LAUNCH_FIXTURE": str(capture),
                "JV_LAUNCH_FIXTURE_CONFIG": str(cfg), "JV_LAUNCH_FIXTURE_EPOCH": "1800000000",
                "PYTHONDONTWRITEBYTECODE": "1"}
@@ -83,6 +91,7 @@ def main():
         ambiguous = run("fixture-ambiguous-resume", [fake, "resume", "calibration-a", "--profile", "calibration-doing"],
                         env=env, cwd=calibration, timeout=5)
         assert ambiguous.returncode == 23 and "ambiguous thread name" in ambiguous.stderr
+        assert not (capture / "forbidden-calls").exists(), "fixture invoked a prohibited external command"
         results[-1].update(status=0, observed_status=23, expected_status=23, scope="fixture only")
         run("generated-launch-tests", [sys.executable, projects[0] / "scripts/tests/test_launch.py"],
             env={**os.environ, "JV_LAUNCH_PROJECT": str(projects[0]), "JV_LAUNCH_PEER": str(projects[1]),
