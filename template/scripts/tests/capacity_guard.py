@@ -2,15 +2,20 @@
 
 The adjacent, committed allowlist pins COMPLETE program bytes, including each
 command's arguments, substitutions, control flow and helper edges. Its readable
-edge inventory explains those pins. Unknown bytes never gain admission from a
-command-name regex, a candidate-local policy, an environment flag, or a source
-scan that generates its own allowlist. Even harmless edits need an explicit pin
-update. Finite mutation images are declared separately and only touch fixture
-resources; this gate is an experiment boundary, not a hostile-code sandbox.
+edge inventory explains those pins. With the reviewed guard and policy fixed,
+unknown bytes refuse. Even harmless edits need an explicit reviewed pin update.
+Finite mutation images are declared separately and only touch fixture resources.
+This is an accident boundary for reviewed code, not an adversarial sandbox.
+
+Authority is the committed guard plus adjacent policy, maintained through diff
+review. Generated children load their own adjacent, candidate-supplied policy.
+File or in-memory self-registration is outside this boundary; the 2026-10-01
+narrow review's pidfd self-registration seed is an accepted limitation under
+o's ruling 01M3WEG3R9Y9W6YR6MBWXF50Q8. See SPEC I7; no runtime isolation here.
 
 No Python interpreter/helper edge is admitted. Thus Python signal/pidfd/exec/
-subprocess forms, like arbitrary shell prefixes or dynamic dispatch, cannot
-enter the operating closure. The pinned wrappers' caller-argv forwarding is the
+subprocess forms, like arbitrary shell prefixes or dynamic dispatch, refuse
+under the fixed reviewed policy. The wrappers' caller-argv forwarding is the
 one declared workload edge, supplied by the trusted fixture during these tests.
 A new bypass class means STOP and escalate to o, not another guard patch.
 """
@@ -21,7 +26,7 @@ from pathlib import Path
 from liveness_guard import render_findings
 
 CLOSURE = ('scripts/build-lock.sh', 'scripts/build-guarded.sh', 'scripts/lib/jv-project.sh')
-# Read beside the trusted guard, NEVER from the candidate root under inspection.
+# Adjacent policy is reviewed authority; a generated child loads its own copy.
 POLICY = json.loads(Path(__file__).with_name('capacity_allowlist.json').read_text())
 assert POLICY['schema'] == 1 and set(POLICY['programs']) == set(CLOSURE)
 

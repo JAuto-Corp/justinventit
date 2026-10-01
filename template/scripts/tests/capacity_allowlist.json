@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "contract": "Closed program-image allowlist. Inventories describe all reviewed edges; exact full-file SHA256 pins their arguments, ordering and control flow. Unknown images refuse.",
-  "authority": "W-C4 code F1 ruling 01M3WCKZWFPFCTMH0S71BGF95R; policy edits require source/edge review, never automatic candidate registration.",
+  "contract": "Accident boundary for reviewed code. Inventories describe reviewed edges; exact full-file SHA256 pins their arguments, ordering and control flow. Unknown images refuse while guard and policy remain fixed.",
+  "authority": "O ruling 01M3WEG3R9Y9W6YR6MBWXF50Q8: committed policy plus guard, changed only by reviewed diff. File/in-memory self-registration and adversarial candidates are out of scope; the 2026-10-01 review's pidfd self-registration seed is an accepted limitation (SPEC I7).",
   "python_helpers": [],
   "stop_condition": "New bypass class after this design: stop and escalate to o; no further guard patch.",
   "programs": {
@@ -26,6 +26,7 @@
       ],
       "utilities": [
         "dirname",
+        "stat (canonical lock and inherited FD device/inode)",
         "awk (fixed MemAvailable program, /proc/meminfo)",
         "flock (fixture FD only)",
         "head (bounded info data)",

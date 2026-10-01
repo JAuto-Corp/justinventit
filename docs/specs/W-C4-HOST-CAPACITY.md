@@ -2,7 +2,7 @@
 
 Heavy commands from different projects on one machine must compete for the same kernel lock; extract the two landed wrappers and require an explicit shared host root.
 
-Status: **Local GREEN after the admitted SPEC, RED and code-review folds; narrow independent fold review, exact-head hosted CI, o acceptance and i integration remain pending. No live adoption.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
+Status: **Local GREEN; narrow review triggered o's policy-authority ruling. Documentation/inventory addendum prepared for o's exact-head acceptance without another review round; hosted CI and i integration remain pending. No live adoption.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
 
 ## Intent
 
@@ -90,7 +90,26 @@ No live host lock is migrated or opened during adoption. An old PID/age consumer
 | I4 | Reentry requires the actual owning descriptor capability; spoofed markers/same-inode independent opens refuse, and nested exit preserves outer ownership. |
 | I5 | Memory and setup failures have truthful admission outcomes; accepted commands preserve exact execution semantics, and metadata failure cannot admit work. |
 | I6 | Status/verification are read-only, retired verbs do not release ownership, and runtime code performs no recovery, signalling, provider or service action. |
-| I7 | Real generated consumers prove the behavior in contained fixtures; test/environment/source containment is checked before execution, and source limitations remain explicit. |
+| I7 | Real generated consumers prove the behavior in contained fixtures under reviewed guard/policy authority; accident checks precede execution, and source and policy-authority limitations remain explicit. |
+
+### I7 threat model and policy authority
+
+The capacity guard is an **accident boundary for reviewed code**, not a sandbox
+against an adversarial candidate. Authority is the committed
+`capacity_allowlist.json` plus the guard; both change only through a reviewed
+diff. A candidate or test rewriting or self-registering policy, on disk or in
+memory, is outside this threat model. Review of the diff catches that class;
+the guard does not independently defend its own policy authority.
+
+**Named accepted limitation: pidfd self-registration.** The Sol narrow review
+of `ece283d2f..6a1a01bec` on 2026-10-01 reported that in-memory registration
+admitted a Python pidfd seed. Generated children load the policy adjacent to
+their own guard, which is candidate-supplied. The existing fake-policy witness
+only checks an already imported guard against a separate candidate root; it
+does not test or defend child loading or policy self-registration. O accepts
+this limitation in `01M3WEG3R9Y9W6YR6MBWXF50Q8`, after the stop condition fired.
+Hostile-code containment would require runtime isolation, such as namespaces,
+in a separate future slice; it is not implemented here.
 
 | Cell group | Positive witness | Refusal / discriminating witness |
 | --- | --- | --- |
@@ -142,8 +161,8 @@ stays held behind Books' hosted run.
 F1→I6/I7 replaces the effect deny-list with a closed allowlist. Every admitted
 subject program has a fixed command/helper-edge inventory and an exact complete
 program-image pin; the finite safe mutation images are separately enumerated.
-No candidate can manufacture its own admission entry. Unmatched images/edges
-refuse, including conditional/variable source, prefixes, dynamic command names,
+With the reviewed guard and policy fixed, unmatched images/edges refuse,
+including conditional/variable source, prefixes, dynamic command names,
 eval, interpreter snippets/helpers and Python signal/pidfd/subprocess/exec calls.
 The only caller-command edge is the exact wrapper workload forwarding already
 required by I5, supplied by trusted fixture code during proof. No Python helper
@@ -151,6 +170,8 @@ is in the operating closure. Refusal seeds stay data.
 
 **Stop condition:** a new bypass class after this closed-allowlist redesign
 means the allowlist design is wrong. Escalate to o; do not patch the guard again.
+This condition fired in the narrow review. O's I7 authority ruling above
+disposes of the self-registration bypass without another behavioral guard patch.
 
 F2→I6 requires inaccessible ancestors to yield refusal/unknown, never unheld;
 the witness holds the canonical flock through a non-searchable fixture ancestor
@@ -159,3 +180,8 @@ both absent and released slots. Add three traced mutants: unknown-image admissio
 missing ancestor-search check, and false held output for unheld slots. Re-run
 all 23 existing mutants plus these three; previous regex-specific harness
 mutations must target the equivalent closed-allowlist admission faults.
+
+The narrow review confirms F2/F3 fixed and no unrelated wrapper regressions.
+O's final addendum ruling requires the threat-model/claim corrections above and
+the missing `stat` entry in the readable baseline inventory. No image pin or
+runtime behavior changes; no RED or further review round is required.

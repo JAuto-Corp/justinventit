@@ -67,7 +67,7 @@ class Containment(unittest.TestCase):
             self.assertEqual(runtime_findings(root),[])
 
     def test_c1_closed_world_unknown_edges(self):
-        """Code F1→I6/I7: every undeclared executable form is DATA and refuses."""
+        """Code F1→I6/I7: named DATA seeds refuse under fixed reviewed policy."""
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);self.seed_closure(root)
             self.assertEqual(runtime_findings(root),[])
@@ -93,7 +93,9 @@ class Containment(unittest.TestCase):
                 path.write_bytes(original)
             self.assertEqual(runtime_findings(root),[])
 
-            # A candidate cannot register its own previously unknown image.
+            # This imported guard ignores policy in a separate candidate root.
+            # It does not cover generated-child policy loading or file/in-memory
+            # self-registration; those are outside SPEC I7's accident boundary.
             path=root/CLOSURE[0];path.write_bytes(path.read_bytes()+b'\neval "$payload"\n')
             fake=root/'scripts/tests/capacity_allowlist.json';fake.parent.mkdir(parents=True)
             policy=json.loads(Path(__file__).with_name('capacity_allowlist.json').read_text())

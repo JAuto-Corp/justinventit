@@ -3,8 +3,9 @@
 Local GREEN after code-review folds: both actual Copier consumers pass all
 **21 methods**. All **26 finite witnesses** finish with **19 runtime assertion
 kills, 6 harness assertion kills and 1 unsafe-source refusal**, zero errors or
-survivors. O's narrow review of the fold delta, exact-head hosted CI, acceptance
-and i integration remain pending.
+survivors. The narrow review triggered o's policy-authority ruling; this
+documentation/inventory addendum is prepared for exact-head acceptance without
+another review round. Hosted CI and i integration remain pending.
 
 The [SPEC](../specs/W-C4-HOST-CAPACITY.md) defines seven invariants and seven
 positive/refusal groups. Author a; director o; integrator i. O's
@@ -124,11 +125,14 @@ all mutants were rerun at final tested commit
   name would otherwise look safe. There is no operating Python helper edge.
   The exact caller-argv forwarding sites remain the declared workload interface,
   with trusted fixture builders supplying workloads during proof.
-- The guard reads its committed policy beside itself, never from the candidate
-  root or an environment override, and never derives admission from the code it
-  is checking. A valid candidate-local policy registering a new eval image is
-  refused. Source aliases and unreadable/missing files also refuse. Updating
-  even harmless source bytes requires an explicit reviewed pin update. The
+- The guard reads its policy beside itself. The fake-policy witness uses an
+  already imported guard to inspect a separate candidate root; it proves that
+  the separate root's policy does not affect that import. Generated children
+  load their own adjacent, candidate-supplied policy. Neither child-loading
+  authority nor file/in-memory self-registration is defended by this witness
+  or guard. Both guard and policy are reviewed authority under SPEC I7.
+  Source aliases and unreadable/missing files refuse under that fixed policy.
+  Even harmless source changes require an explicit reviewed pin update. The
   one-time authoring aid is outside the repo and never runs in tests or CI.
 - F2 adds one search-permission check along the host directory chain before
   absence can imply unheld. The unprivileged permission witness holds an actual
@@ -151,5 +155,33 @@ The fold changes no shared project/mailbox/launcher/liveness implementation or
 fixture ownership/cleanup mechanism. All four current generation-matrix
 configurations pass. Matrix evidence and final doc-only input carry are in a new
 immutable fold packet; the earlier 343-entry packet remains
-unchanged. Hosted proof and independent narrow review remain pending. This
+unchanged. Hosted proof remains pending. This
 correction does not authorize live adoption, recovery, or author integration.
+
+## Narrow-review authority disposition (2026-10-01)
+
+Sol's narrow review of `ece283d2f..6a1a01bec` verified all 386 packet hashes and
+confirmed F2/F3 fixed, intended C2/C3 mutant assertions, zero errors and no
+unrelated wrapper regressions. It blocked on policy self-registration and the
+missing `stat` inventory entry. The stop condition fired; o ruled the design in
+`01M3WEG3R9Y9W6YR6MBWXF50Q8`, with no further behavioral guard patch.
+
+The guard is an accident boundary for reviewed code. Authority is the committed
+guard plus `capacity_allowlist.json`, changed only through a reviewed diff.
+Policy rewrite/self-registration, on disk or in memory, is outside this threat
+model. The review's **pidfd self-registration seed** is the named accepted
+limitation: its admission is not prevented by the guard. The fake-policy witness
+does not cover generated-child policy loading. These limits now appear in SPEC
+I7 and witness/guard documentation. Hostile-code runtime isolation is a separate
+future slice, not work in this addendum.
+
+The readable baseline utility inventory now includes `stat` for both existing
+device/inode checks. All image pins, executable guard logic, witness assertions,
+wrappers and CI behavior stay unchanged. No RED or repeated full proof is
+claimed for this documentation/inventory-only addendum; the prior local 21-test,
+26-mutant and four-configuration results retain their exact tested-input labels.
+Static comparison verifies executable Python ASTs (excluding documentation),
+policy image lists and other executable inputs unchanged. O requires a small
+sealed addendum and head handoff, then accepts without another review round.
+Push waits for Books' hosted run to clear; exact-head hosted CI precedes i's
+integration.
