@@ -1,8 +1,8 @@
 # W-C5 observability review and evidence ledger
 
-Status: narrow review confirms the five earlier fixes, but one introduced
-candidate-read regression requires correction. Its actual RED is recorded;
-corrected implementation awaits generated GREEN, all mutants and o admission.
+Status: the introduced candidate-read regression is corrected with actual
+RED/GREEN, every mutant and the matrix passing. O personal exact-head acceptance
+remains pending; publication and hosted CI remain held.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -239,3 +239,33 @@ observations, count failed candidates, and retain truthful partial-collection
 status. Fixed policy adds the traced R6 image and repins the inspected closure;
 no runner dynamically registers images. Existing prior test expectations remain
 unchanged. Generated guidance explains the partial-result behavior.
+
+## Candidate-failure correction GREEN / o personal check
+
+Tested `3571231eeba6fc28154e58c0e2beb65f61b0cf11`: real task-disabled Copier
+9.17.1 cluster/solo renders and **29 methods pass in 25.023 s**, zero errors.
+All **29 mutation witnesses** pass: 28 runtime assertion kills plus one
+source refusal before child, zero errors/survivors. The original 28 mutant
+names/classes/selectors are unchanged and all rerun; only R6 candidate-failure
+containment is added. Four-answer generation matrix: **4/4 pass**.
+
+The complete correction adds per-file metadata/read exception containment,
+counts skipped candidates, and carries partial-collection status alongside
+selected observations. An older failure preserves weekly 40% and its history;
+restoring that older file adds credits 80 while weekly remains 40%, even though
+the older quota says 70%. CLI reports partial collection nonzero, hook remains
+zero. The R6 mutant propagates the read failure and loses the selected series,
+failing the intended presence assertion. No former test expectation changed:
+all 28 prior method ASTs, shared helpers and prior mutation selectors are
+verified unchanged. Template/both generated operating scans and source gates
+pass. No new execution edge, hostile-code guarantee or live effect is introduced.
+
+The final handoff commit changes only SPEC/ledger status, with installed
+committed-input evidence-delta against the tested head. A new immutable packet
+contains the narrow review/ruling, exact runtime-only and full fold diffs,
+tests-only RED and actual GREEN logs/renders, all mutant bytes/gates/streams,
+matrix and scope checks. Previous sealed evidence remains untouched. O checks
+this fold personally and accepts on the exact head under
+`01M3WNBK3AP54VXS4ZY2292HQF`; no further Sol round or author acceptance. Hosted
+publication remains a separate held gate, followed by current-head CI and i
+integration.

@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **Narrow-review candidate-failure correction: actual 29-method RED recorded; corrected implementation authored, committed generated GREEN pending.**
+Status: **Candidate-failure correction locally GREEN: 29 generated methods, 28 runtime assertion kills, one source refusal and four matrix cases pass. O personal exact-head acceptance pending.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb`; its hosted CI is green and
 integration awaits a hosted-lane gap;
