@@ -2,7 +2,7 @@
 
 Heavy commands from different projects on one machine must compete for the same kernel lock; extract the two landed wrappers and require an explicit shared host root.
 
-Status: **Local GREEN after the admitted SPEC and RED-review folds; independent code review, exact-head hosted CI, o acceptance and i integration remain pending. No live adoption.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
+Status: **Local GREEN after the admitted SPEC, RED and code-review folds; narrow independent fold review, exact-head hosted CI, o acceptance and i integration remain pending. No live adoption.** O accepted W-C3 at `e04c9a427612360f44559e491c864eed6a9c999e` and commissioned W-C4 in `01M3VDBBKHFZPY1AFAGP88RSE4` (2026-10-01). O explicitly limits this slice to landed build-lock/build-guarded; host-reap waits for its source to land. Author a, director o, integrator i. Extraction charter X1–X6 applies.
 
 ## Intent
 

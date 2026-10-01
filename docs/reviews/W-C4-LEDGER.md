@@ -1,9 +1,10 @@
 # W-C4 host capacity review and evidence ledger
 
-Local GREEN: both actual Copier consumers pass all **19 methods**. The finite
-**23 witnesses** finish with **17 runtime assertion kills, 5 harness assertion
-kills and 1 unsafe-source refusal**, zero errors and zero survivors. Independent
-code review, exact-head hosted CI, o acceptance and i integration remain pending.
+Local GREEN after code-review folds: both actual Copier consumers pass all
+**21 methods**. All **26 finite witnesses** finish with **19 runtime assertion
+kills, 6 harness assertion kills and 1 unsafe-source refusal**, zero errors or
+survivors. O's narrow review of the fold delta, exact-head hosted CI, acceptance
+and i integration remain pending.
 
 The [SPEC](../specs/W-C4-HOST-CAPACITY.md) defines seven invariants and seven
 positive/refusal groups. Author a; director o; integrator i. O's
@@ -92,12 +93,59 @@ only i integrates. Author: a/OpenAI Codex (Astra xhigh assigned by the extractio
 new runtime-resolution probe). Independent reviews are Sol one-shots
 commissioned and ruled on by o, not author self-review.
 
-## Code-review correction in progress
+## Code-review folds: F1–F3
 
-Sol xhigh BLOCK at `ece283d2`; packet hashes and three ownership mutants were
-verified. O `01M3WCKZWFPFCTMH0S71BGF95R` admits a closed-world guard redesign
-(F1), inaccessible-ancestor refusal (F2), and exact unheld assertions (F3). New
-cells precede implementation in a RED commit. The SPEC records o's escalation
-stop condition. No additional guard deny-list patch, self-review or push is
-authorized. Next proof: actual corrected RED, GREEN, all finite mutants, sealed
-fold packet, and narrow independent review commissioned by o.
+Sol xhigh BLOCK at `ece283d2`; the reviewer verified all 343 prior packet hashes
+and three ownership mutants. O `01M3WCKZWFPFCTMH0S71BGF95R` admitted a
+closed-world guard redesign (F1), inaccessible-ancestor refusal (F2), and exact
+unheld assertions (F3), with RED first, all mutants rerun, then one narrow
+independent review of this fold delta. Push remains held behind Books' hosted
+run. The SPEC records o's stop condition: a new bypass class means escalate to
+o, not another guard patch.
+
+RED commit `9fb5742bac587edf26e4d10b8b7bdd8daaebb1bd` changes tests/SPEC/ledger
+only. Real Copier renders run 21 methods: the 19 existing methods pass; new F1
+refusal cells produce **48 assertion failures**, and F2's two status verbs
+produce **2 assertion failures**, zero errors. Unsafe shell/Python seeds stay
+data. A separate false-held mutant passes the predecessor F3 witness and fails
+the strengthened exact-output witness by assertion, zero errors.
+
+GREEN tested commit `78b9216696a7d9a16989613f88a761e5cbc6eb7c`:
+
+- F1 removes runtime regex admission. `capacity_allowlist.json` declares the
+  complete command/helper inventories for three Bash programs and pins their
+  exact complete bytes: three baseline images plus 19 enumerated safe runtime
+  mutation images. Arguments, substitutions, ordering and control flow are
+  covered by the full image identity. Unknown bytes refuse even if a command
+  name would otherwise look safe. There is no operating Python helper edge.
+  The exact caller-argv forwarding sites remain the declared workload interface,
+  with trusted fixture builders supplying workloads during proof.
+- The guard reads its committed policy beside itself, never from the candidate
+  root or an environment override, and never derives admission from the code it
+  is checking. A valid candidate-local policy registering a new eval image is
+  refused. Source aliases and unreadable/missing files also refuse. Updating
+  even harmless source bytes requires an explicit reviewed pin update. The
+  one-time authoring aid is outside the repo and never runs in tests or CI.
+- F2 adds one search-permission check along the host directory chain before
+  absence can imply unheld. The unprivileged permission witness holds an actual
+  canonical flock, removes ancestor search permission and restores it in finally;
+  both status verbs refuse and later acquisition succeeds.
+- F3 now requires exact unheld output for both absent roots and released slots,
+  retaining held-state and read-only snapshots.
+
+All **21 generated methods pass**. All prior 23 mutant witnesses were rerun;
+three old regex-specific harness edits now inject the equivalent narrowly
+selected admission faults into the mutated guard, exercised on data only. The
+trusted outer guard remains unchanged. Three code-review mutants extend the
+set to 26: unknown-image admission, absent ancestor-search check, false-held
+output. Results: **19 runtime kills, 6 harness kills, 1 unsafe-source refusal;
+zero errors or survivors**. Every runtime mutant passes the trusted source gate
+and syntax check before its intended behavioral assertion fails. No unknown
+image refusal is counted as a runtime kill.
+
+The fold changes no shared project/mailbox/launcher/liveness implementation or
+fixture ownership/cleanup mechanism. All four current generation-matrix
+configurations pass. Matrix evidence and final doc-only input carry are in a new
+immutable fold packet; the earlier 343-entry packet remains
+unchanged. Hosted proof and independent narrow review remain pending. This
+correction does not authorize live adoption, recovery, or author integration.
