@@ -216,3 +216,18 @@ runs, corrected GREEN, every mutation's changed bytes/gate/streams, matrix,
 source provenance, before/after code and fold diff. Prior sealed packets are
 untouched. Request only the o-authorized narrow fold re-review; publication and
 hosted CI remain held for the lane, with no author acceptance or integration.
+
+## Narrow-review introduced regression / tests-only RED
+
+Sol high confirmed F1–F5 on `a5b26b8951dd1e792c8f545000b94bb98e665285`, including
+unchanged original test ASTs and no premature checkpoint. One introduced P2
+(I2/I3): searching older files for credits loses selected valid weekly evidence
+when an older candidate cannot be read. O `01M3WNBK3AP54VXS4ZY2292HQF` authorizes
+one RED cell, GREEN, every mutant rerun and a new packet. O checks the final diff
+personally, with no further Sol round; publication remains held.
+
+The new R6 cell supplies newest weekly 40% and unreadable older weekly 70% with
+credits 80. CLI/hook must retain 40%, append its history, count the skipped file
+and report partial collection truthfully (nonzero CLI, zero hook). Restoring
+readability may add credits 80 but never replace weekly 40%. All 28 preexisting
+methods remain AST-identical; no implementation changes in this RED commit.

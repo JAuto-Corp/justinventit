@@ -447,6 +447,33 @@ class Observability(unittest.TestCase):
             self.assertEqual(lines[0],fragment+b'\tpartial')
             self.assertEqual(len(lines[0].split(b'\t')),6,'fragment became a five-field observation')
 
+    def test_r6_unreadable_older_candidate(self):
+        """Narrow-review R6→I2/I3: older read failure cannot erase selected weekly data."""
+        f=self.f;newest=f.rollout(used=40)
+        older=f.rollout(name='older.jsonl',age=1,rate_limits={
+            'secondary':{'used_percent':70,'window_minutes':10080,'resets_at':f.now+302400},
+            'credits':{'has_credits':True,'unlimited':False,'balance':'80'}})
+        before=[newest.read_bytes(),older.read_bytes()]
+        older.chmod(0)
+        try:
+            for entry in ('pace.sh','usage-hook.sh'):
+                f.ledger.unlink(missing_ok=True)
+                r=f.run(entry,env={'JV_USAGE_ANTHROPIC_FILE':None})
+                report=f.report(r);rows=self.by_series(report)
+                self.assertIn('openai-wk',rows,'older candidate failure erased the selected weekly observation')
+                self.assertEqual(rows['openai-wk']['used'],40)
+                self.assertEqual(r.returncode==0,entry=='usage-hook.sh')
+                self.assertIn('openai-files-skipped:1',report['warnings'])
+                self.assertIn('openai-candidates-unavailable',report['errors'])
+                self.assertIn('\topenai-wk\t40.0\t',f.ledger.read_text())
+                self.assertNotIn('openai-credits',rows)
+        finally:older.chmod(0o600)
+        for entry in ('pace.sh','usage-hook.sh'):
+            rows=self.by_series(self.report(f.run(entry,env={'JV_USAGE_ANTHROPIC_FILE':None})))
+            self.assertEqual(rows['openai-wk']['used'],40)
+            self.assertEqual(rows['openai-credits']['balance'],80)
+        self.assertEqual([newest.read_bytes(),older.read_bytes()],before)
+
     def test_t7_both_entries_generated_and_missing_helper(self):
         """I7: both generated consumers execute and missing closure refuses."""
         f=self.f;self.sample()
