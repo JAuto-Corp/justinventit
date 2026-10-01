@@ -1,5 +1,5 @@
 # {{ project_name }} — Agent Entry Contract
-<!-- jv-entry-contract: 2 -->
+<!-- jv-entry-contract: 3 -->
 
 This file is the canonical entry contract for every runtime (Codex reads it natively; Claude Code imports it
 from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below depends on a particular runtime.
@@ -22,6 +22,11 @@ changes arrive as `entry-contract` rows in the framework's CHANGES.md for the pr
 
 ## Before Working
 
+Ordinary boot: read `docs/SKILL_MODES.md` and `.agents/skills/ponytail/SKILL.md`, then
+`docs/DELIVERY.md`, `docs/REVIEW_PRACTICE.md` and the project's `docs/FOCUS.md`.
+Commissioned seats follow DELIVERY's drain/reconcile-before-act rule; ad-hoc sessions
+consume no seat mail. These entry projections are hand-written; policy generation is not built.
+
 1. Read `docs/PLAYBOOK.md` — session entry point, identifies active lifecycle phase
 2. If in execution phase: Read `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase SPEC.md
 3. Sync: `git fetch origin && git log --oneline HEAD..origin/$(git branch --show-current) | head -5`
@@ -43,6 +48,7 @@ stages as the framework's `DEV_LOOP.md` §1, in this order:
 | 7 | document | doc delta, or an explicit `no-doc-impact: <reason>` line in the PR body; fails like a test gate |
 | 8 | capture | every discovery has a durable record (issue, hub or `context/DISCOVERIES.md`); nothing lives only in a session |
 
+Review/test traceability, correction caps and provider availability follow `docs/REVIEW_PRACTICE.md`.
 The gate definitions are the same files for every runtime; Claude Code runs them as commands (map in `CLAUDE.md`),
 other runtimes read the files and perform each section.
 

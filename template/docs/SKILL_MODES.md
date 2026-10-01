@@ -7,7 +7,7 @@ license live beside each skill (`PROVENANCE.json`, `LICENSE.txt`).
 
 | Skill | Upstream pin | Default mode by responsibility |
 |-|-|-|
-| `ponytail` (lazy, smallest working solution) | DietrichGebert/ponytail 4.9.0 @ 356918e, MIT | `full` for implementation, refactor and frontend authoring; `lite` for orchestrator, integrator, designer, reviewer, auditor and relay work; `ultra` only when a deletion or radical-simplification pass is explicitly commissioned |
+| `ponytail` (lazy, smallest working solution) | DietrichGebert/ponytail 4.9.0 @ 356918e, MIT | `full` for implementation, refactor and frontend authoring; `full` on solution shape for design roles (SPEC authors, plan-writing orchestrators and spec auditors), without reducing check depth; `lite` for other orchestration, integration, review, audit and relay work; `ultra` only when a deletion or radical-simplification pass is explicitly commissioned |
 | `caveman` (terse output) | JuliusBrussee/caveman @ 15581d1 `skills/caveman`, MIT (the upstream LICENSE also scopes unrelated engine directories to BSL-1.1; none are vendored) | `lite` for routine status updates and acknowledgements; off by default elsewhere |
 
 Ponytail narrows the implementation needed to satisfy accepted requirements. It never narrows the requirements,
@@ -17,6 +17,19 @@ admitted blocking finding because its repair is inconvenient.
 
 Caveman compresses wording only. Never compress into ambiguity: exact facts, code, error text, numbers, ordering,
 detail the reader asked for, safety or effect warnings, handoffs, verdicts, and durable records are written in full.
+
+Ordinary boot reads this file and the pinned `.agents/skills/ponytail/SKILL.md`; no
+separate boot ceremony or acknowledgement. This is instruction-only mode selection,
+not an installed mode-switch hook. Then follow `docs/DELIVERY.md`,
+`docs/REVIEW_PRACTICE.md` and the project's active `docs/FOCUS.md`.
+
+Every plan starts with the one-line truth and smallest correct change. An added phase,
+component, table or flag needs an owner-visible reason or is cut. Prefer already exercised
+behavior and real project evidence over speculative cases. Priority and exposure follow
+`DELIVERY.md` — Active milestone and standing authorities.
+Why: over-engineering and context-free security concerns displaced milestone delivery.
+Origin: **JA, 2026-09-30**, `PONYTAIL-BOOT-v1.md` Notch-up; the pinned upstream payload
+remains untouched. The review round caps and blocker rules live in `REVIEW_PRACTICE.md`.
 
 Both runtimes reach this file through ordinary entry: Codex via the generated `AGENTS.md` contract (project-owned after
 seeding), Claude Code via `CLAUDE.md`, which imports it. Upstream Caveman defaults to `full`; the portable default above is `lite`, so a runtime that loads the

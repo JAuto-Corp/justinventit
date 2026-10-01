@@ -103,12 +103,15 @@ where any other document's phrasing differs, this table wins:
 | Profile | Tiers | Spec-audit cardinality | Second opinion | Author/reviewer separation |
 |-|-|-|-|-|
 | solo | L1 | 1 fresh-context audit | independent fresh-context pass; **cross-runtime only if a second runtime is configured** | satisfied by fresh context (subagent on Claude; fresh `exec` thread on Codex) — the solo exception |
-| fleet | L1+L2 | 2 fresh-context audits | cross-runtime pass **required if a second runtime is configured, recommended otherwise** | reviewers are never the authoring session |
+| fleet | L1+L2 | 2 fresh-context audits | cross-runtime pass **required if a second runtime is configured, recommended otherwise**, subject to REVIEW_PRACTICE §6 availability | reviewers are never the authoring session |
 | isolated-fleet | L1+L2+L3 | as fleet | as fleet | as fleet, plus isolation-adapter conformance |
 
-**Corrections.** Cardinality binds the INITIAL audit of a subject; every subsequent correction owes exactly one focused confirmation at the corrected exact head, by a fresh context that is not the author, covering the change and its regression risk — the correction is the distinct required question. A further full-cardinality round is owed whenever the correction adds, changes or REMOVES a guarantee, or changes scope (scope disposition). After two failures at the same gate the existing rule applies first — challenge the diagnosis and harness before buying another round of any size; no round is automatically owed. A confirmation on a predecessor head never covers the merged head. (`template/docs/DELIVERY.md` carries this sentence to projects.)
-
-**Provider bookend.** Where two runtimes are configured, a change at an R2/R3 boundary (the exposure tiers in DELIVERY.md — that table is the canonical classification) is touched once by each runtime's thinking-tier model across authoring, challenge (spec-audit or review) or acceptance — distinct roles and questions count, but only a substantive touch on the exact subject and head counts (a relay read, a summary, or work on a predecessor head does not); a duplicate full review does not. For other judgment-bearing changes, an author and an independent reviewer from different runtimes satisfy it at any tier; trivial, mechanical, reversible work with deterministic checks owes none. A runtime's unavailability never stalls independent work: proceed at the authorized equivalent tier and record `bookend: <runtime> missing` in the acceptance record — that record is provenance, never a waiver: every audit or second opinion the profile requires must still exist before acceptance. No further round is owed unless the head or the contract changed or a named blocker remains (**Corrections**); stricter gates win.
+**Corrections and provider bookend.** The single active rules live in
+[REVIEW_PRACTICE §4 and §6](../template/docs/REVIEW_PRACTICE.md). Initial audit cardinality
+in the table above is unchanged. The provider-availability exception applies to every
+cross-runtime requirement here, including solo; the small code-fix rule supersedes the
+older blanket “every correction owes a model confirmation” rule. Neither is a missing
+opinion, role-independence or effect-gate waiver. Source and why accompany those rules.
 
 "Fresh context" is runtime-neutral: a Claude subagent, or a fresh Codex `exec` thread — a
 Codex-only solo project is fully conformant. Authoring-tier work maps to the best available

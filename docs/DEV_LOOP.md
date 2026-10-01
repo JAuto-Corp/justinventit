@@ -9,7 +9,7 @@
 |-|-|-|-|-|
 | 0 | draft red-team | Full pass: the `cross_review` seat class (schema-resolvable today) under the stage-0 charter; a dedicated `review_families.draft_red_team` matrix entry lands with the Phase-3 matrix regeneration. Checklist tier: the artifact's author, confirmed by its ratifier | red-team verdict + dispositions riding the draft | Protocol, scope tiers, and the total exit rule in §1a below |
 | 1 | scope | design_authoring (fleet: O routes; solo: the session) | SPEC.md + SCENARIOS.md + grounding citations + stage-0 dispositions | SPEC self-check: every named API/number/consumer claim cited or refused; stage-0 exit per §1a satisfied |
-| 2 | spec-audit | cross_review — cardinality, second-opinion, and separation rules per THE normative profile table (`ARCHITECTURE.md` §2) | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted. Corrections: one focused exact-head confirmation each (`ARCHITECTURE.md` §2 **Corrections**) |
+| 2 | spec-audit | cross_review — cardinality, second-opinion, and separation rules per THE normative profile table (`ARCHITECTURE.md` §2) | verdicts, dispositions | all blockers dispositioned; PLAUSIBLE-only findings noted. Corrections and two-round SPEC cap: `REVIEW_PRACTICE.md` §4 |
 | 3 | RED | implement (or test-execution specialist) | executable failing tests + ledger event `kind: red` (canonical schema: `TDD_GATE.md` §3) | Standard+: runner exit non-zero recorded with provenance. Quick scope: may be satisfied as same-change (`TDD_GATE.md` §4 — the one declared exemption) |
 | 4 | GREEN | implement | code + ledger event `kind: green` | runner exit zero, same provenance chain |
 | 5 | review | cross_review | review findings, fixes | no unresolved actionable findings |
@@ -17,7 +17,8 @@
 | 7 | document | author of change (baseline: docs_baseline) | doc delta OR explicit `no-doc-impact: <reason>` in PR body | doc gate: delta present or declaration present; generated indexes fresh |
 | 8 | capture | any seat | hub `capture` verb (alias over `finding`/`journal`/`doc` with external-tracker refs — `HUB_DATA_MODEL.md` §3) | nothing left only-in-context: every discovery has a hub record |
 
-Stages 3-5 iterate via the chain (`go ⇄ check` relay, convergence math in the chain skill).
+Stages 3-5 iterate through the bounded correction flow in `REVIEW_PRACTICE.md` §4;
+chain mechanics do not authorize another round after its stop rule.
 Review stages 0, 2 and 5 follow `REVIEW_PRACTICE.md`: a context card, consequence/reach fields,
 blocking only on PROD or CI_SAFETY reach, discovery first and deltas after, and director disposition of pre-existing finds.
 The generated project contract (`template/AGENTS.md.jinja` § Development Loop) carries this same stage sequence;
@@ -118,12 +119,18 @@ mid-artifact (ownership = dispatch row).
 
 ## 3. Escalation pathways
 
+Technical/process choices stay with the director or within recorded standing authorities;
+only business choices go to the owner. The canonical delivery/authority pattern is
+[DELIVERY.md](../template/docs/DELIVERY.md); active priority is the project's FOCUS page.
+Why: routine process questions displaced the owner's milestone. Origin: JA FOCUS and
+PONYTAIL Notch-up, 2026-09-30.
+
 1. Gate failure → owner fixes (normal loop).
 2. Same gate fails twice for the same cause → **zoom-out**: question the gate/design, don't
    force through (gate-integrity rule); zoom-outs are authoring-tier work.
 3. Judgment call outside a seat's charter (assertion weakening at review, scope change,
    policy touch) → packet to O; work continues elsewhere meanwhile.
-4. Needs the user → `attention` verb with severity; blocking severity = broadcast + push
+4. Needs a business decision from the user → `attention` verb with severity; blocking severity = broadcast + push
    notification; decisions pre-locked before known absences.
 5. Memory/guidance revision → proposed by any seat as a diff, ratified by O (or the
    designated highest-reasoning seat); never self-applied ad-hoc.
