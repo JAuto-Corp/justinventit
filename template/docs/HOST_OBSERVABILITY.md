@@ -26,8 +26,9 @@ Both `pace.sh` and the uninstalled `usage-hook.sh` use weekly pacing: a Codex
 primary or secondary window must be exactly 10,080 minutes. Short windows below
 1,440 minutes are separately reported without pacing math. Without valid weekly
 evidence, fallback tries the next candidate; short-only evidence remains weekly
-unavailable. A record's credit balance is a separate balance/spend series, with
-explicit `has_credits=true`, `unlimited=false` and finite nonnegative balance.
+unavailable. The newest valid credit balance is selected independently across the same
+bounded records/files, even from a short-only record while weekly evidence falls
+back to an older record. It is a separate balance/spend series, with explicit `has_credits=true`, `unlimited=false` and finite nonnegative balance.
 
 Weekly target is elapsed percentage of the window; within ±10 points inclusive
 is `on-pace`. Burn uses same-series/reset/window samples from the last three
@@ -36,7 +37,12 @@ Credits use balance decline per hour. Expired windows get no sustainable rate
 and no history append. Age above 1,800 seconds is stale; future/unknown age cannot
 be fresh. Snapshot and history reads are limited to 1 MiB each; oversized
 snapshots refuse, complete history tail rows remain usable with a truncation
-warning. History is one five-field `usage.tsv`, not summed consumption.
+warning. History is one five-field `usage.tsv`, not summed consumption. Samples
+must satisfy the same numeric ranges as live data: quota 0–100, finite credit
+balance 0–10^20, bounded epochs/positive quota windows, and zero reset/window for
+credits. Skipped invalid/incomplete history rows are counted in diagnostics and
+cannot influence burn. Very large provider numbers are rejected before float
+conversion; a validation failure remains isolated to that provider.
 Before changing provider accounts, stop collectors and archive the old history.
 
 For disk, set `JV_DISK_ROOT` and optionally `JV_DISK_SECONDARY_ROOT` to explicit
@@ -50,7 +56,16 @@ Default alerts append JSON to `disk-alerts.jsonl`. An optional absolute executab
 `JV_OBSERVABILITY_NOTIFY_BIN` receives one JSON record on stdin, no arguments,
 with a ten-second timeout. Select one director to own routing for a shared host.
 Adapter exit 0 means accepted by that adapter, not verified human receipt.
-Only accepted delivery is checkpointed in `disk-state.json`. Failed delivery or
+Readers use only complete newline-terminated records. Malformed/incomplete rows
+in the inspected tails are skipped and counted in diagnostics (including Codex
+JSONL). Under the shared lock, appenders preserve every existing byte: an
+unfinished alert is sealed with a newline before the new complete JSON record;
+an unfinished history row is sealed with TAB `partial` NEWLINE before appending.
+The marker keeps a truncated numeric last field permanently invalid as TSV.
+A complete JSON object that lacked only its newline can become readable after
+sealing. Alert inspection is capped at 1 MiB, with a truncation warning.
+Only successful writing/flushing of the new complete delivery row permits a
+suppression checkpoint. Only accepted delivery is checkpointed in `disk-state.json`. Failed delivery or
 checkpoint remains retryable; a crash between them can duplicate a notification.
 Suppression retains prior daily keys; operators may archive state while all
 collectors are stopped. The lock wait is bounded at one second.

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "authority": "Committed guard+policy, changed through reviewed diff; accident boundary only. Candidate self-registration and hostile filesystem races excluded. See SPEC threat model.",
-  "phase": "GREEN operating closure; author-inspected fixed image pins, independent acceptance pending",
+  "phase": "Code-review fold; author-inspected fixed images; narrow independent review pending",
   "programs": {
     "scripts/pace.sh": {
       "images": [
@@ -71,86 +71,110 @@
         },
         {
           "name": "green-baseline",
-          "sha256": "85e5eb546ba791c2ccc1b1763be2af6a7432727a7b5ed1ebdc16b4e81269e02b"
+          "sha256": "c52c4770e4b42a909328f025171120a57535715236563d6bce95635079422719"
         },
         {
           "name": "home-fallback",
-          "sha256": "484c02b1076b506d14a1914bde21e6ac8534850e537e75a22b6479c56b7089b1"
+          "sha256": "74eb95054b74a89941ff03fb330236cefd0b06970f04b9428009e13a102539af"
         },
         {
           "name": "malformed-zero",
-          "sha256": "48a777a3e769fe74870678e2e0e28647459449a23d3364bef16ccc5557b92f8c"
+          "sha256": "01f6ae1548422b910a99d0f6fe361201142e443a54f4a903a7559eaa20900bfc"
         },
         {
           "name": "prompt-data",
-          "sha256": "0c7c9f409b2f6c1f0b995c615810635a2a7f6e0a67bf2ae87b4854544a3713ca"
+          "sha256": "0376014bbcfa3546bd9aca548b3bdfd94e3b08005441cf70770cc2cbc0423862"
         },
         {
           "name": "ignore-age",
-          "sha256": "65598483d2e0cbf60ae0649a7a87e05b3109e3d1c3f88a5d3273eda00fa8a1e5"
+          "sha256": "155fe58a3a0aec0e63c140113fecad4bd33b202d0f8a8a390820c36b18af7df2"
         },
         {
           "name": "pace-equality",
-          "sha256": "9f1bc3e82a4ce5db421f24cf77120b70ebf5b25b9d19e2ebe469210df23ac2aa"
+          "sha256": "ea66d792da7fe96e42e938c8c5ab8cacb5865e12099ecbc1e11dc3e1fe7c85f1"
         },
         {
           "name": "reset-filter",
-          "sha256": "aecd88cd35e638cb139fc65f53565a69955d6dfe35d2f3f2b5a1ca349d68b616"
+          "sha256": "57f661ae528f348e5b91ede560d057fab34c61de86de969a3d12e002ffb01284"
         },
         {
           "name": "credit-quota",
-          "sha256": "abd766c16ea3a0f7b35ee221d01c56636e744db8f3b18216560a05a99d75475c"
+          "sha256": "6e4c8d528b3ed978de4c47febcdc8e0e06f94ed468b6ddc42e21af210e33a9bc"
         },
         {
           "name": "old-over-fresh",
-          "sha256": "e7c1919ab72eb1b4b9d1d394d01ac5d44f083444e0bad9860c5966c02a2f7553"
+          "sha256": "01b5ca4b8d7a89187e47b07e4c660b108acc3f3ff1d978dc7d88ca982e676345"
         },
         {
           "name": "ignore-lock",
-          "sha256": "98ca65ef88d7dc549151776f33aa3fd8325d76a94412e94e8dac901e099618b4"
+          "sha256": "9365b1d230618f74633191a0218da885e99defa5c91744298fa320cb640f1b58"
         },
         {
           "name": "project-suppression",
-          "sha256": "535e3b2e1bce25c52e2b24f9175b987d18f3c9cf41141191f4a5d9c7c0596dab"
+          "sha256": "404342a087d91c3955ac836694868d349df40be1a5519e6a01fc1fa792a5e72e"
         },
         {
           "name": "disk-equality",
-          "sha256": "dad8f065f584676ad3f15be6e918937a4d4216fdc9686c35510de1ce7a1a942b"
+          "sha256": "d0479e460ea091510da759c130e8a22156afacec71ca543b1002547521e78da4"
         },
         {
           "name": "premature-checkpoint",
-          "sha256": "f204b84c28d37720b3b40c6b6a48f3c4b45b71676766ef9275796c2758244715"
+          "sha256": "775dba266b0ef20b3fda850cee8b36c8d3f3109f2d0668475fa2d1e4f535fa03"
         },
         {
           "name": "F3-primary-weekly",
-          "sha256": "fb41aa0dcf2923ae7c7653e868a505b3a4f9dc3831a3d181029d8e1ba1a78ec1"
+          "sha256": "7a8be7bbb8e27d3b86febf099d25becdeb34dc9fa51dc04e15b74be546061b79"
         },
         {
           "name": "F4-display-name",
-          "sha256": "dbfa6e90350d77b6403a1a20757689b2682800873fb8eef61afc5b7f9ca29628"
+          "sha256": "1492e3915dca0e3a5fd1d0d34291da2f0fc2a542dded4b589c86c05b4244aca1"
         },
         {
           "name": "F5-abort-providers",
-          "sha256": "1d29b03e6cbe50c2ee441f31139c2070f614383bb573c86188503c59f1ce523e"
+          "sha256": "294cf3ab0f27f0f7d453b4df2f40b6a7fb98077c982bd58397dcca69a90885bd"
         },
         {
           "name": "F5-secondary-first",
-          "sha256": "bf251b5095f96ca70e10820677775b64bff8a4b0816f603e895d96dceef4a4d3"
+          "sha256": "7c467af80d509f5013bfd7ab6e979bd7de42665e7b9d145e7941a27adc7adcc0"
         },
         {
           "name": "F6-no-min-span",
-          "sha256": "3c6f237db6a30d74341ff67d4de5d6d2bd9f67702b31dda4439dc791c3f21942"
+          "sha256": "1f9b1c13deb75e034187fe7c07e765942d3df2b3110178b3e5411e108e67784e"
         },
         {
           "name": "F6-no-cutoff",
-          "sha256": "c2f5cd947726b2dfed82c4fa1ae2886eeefdcc5b37a5eaeb3bde78767dd6d242"
+          "sha256": "21fe121a3b316368951978a699e5898685eb427e3020f52dbe7848dff9934616"
         },
         {
           "name": "F7-read-all",
-          "sha256": "d53b4d0dbb3011213d831d05087e13c49344e33175e85ce6b5898e31b0e8080f"
+          "sha256": "852de8139c4edbe8594ea22f208ef3ef7dc924b065bd4f3af931e5be53e5ce22"
+        },
+        {
+          "name": "R1-alert-framing",
+          "sha256": "1ab5c0b13be639c8ce32d3f33b5b9622f56f567ba50952bf06e6309c2dcf9d03"
+        },
+        {
+          "name": "R2-huge-zero",
+          "sha256": "a1d31379ff584530034ce0af23a527d201c8bbee56d0b56f495d5b7dc6a284e6"
+        },
+        {
+          "name": "R3-weekly-credits",
+          "sha256": "b434b3024c364d0e73d3e18a6ebaeec6c24e487eee9ff9e45f39b64e2d03bcee"
+        },
+        {
+          "name": "R4-history-range",
+          "sha256": "39a0b671e3c2dd7b22252535af449381dec55afa275ae97b52128a15092ce9ea"
+        },
+        {
+          "name": "R5-unframed-history",
+          "sha256": "540b5d5b6b4b2ff87fd5371912e9918e04246bd36201f5a5ef39c2c2f665a425"
+        },
+        {
+          "name": "R5-tsv-marker",
+          "sha256": "430ea1d95877caf84156f392832c7e2292edbff88856b8a4fe23adf783758714"
         }
       ],
-      "edges": "stdlib contextlib, datetime, fcntl, hashlib, json, math, os, pathlib, re, stat, subprocess, sys, tempfile, time. Bounded selected data reads; private host-state writes; flock; df argv (fixture stub); explicit notifier argv+JSON stdin (fixture executable). Checkpoint replaces/unlinks only its own mkstemp. No provider/network/mail/process-discovery/native cleanup edges."
+      "edges": "stdlib contextlib, datetime, fcntl, hashlib, json, math, os, pathlib, re, stat, subprocess, sys, tempfile, time. Bounded selected data reads; private host-state writes; flock; df argv (fixture stub); explicit notifier argv+JSON stdin (fixture executable). Checkpoint replaces/unlinks only its own mkstemp. No provider/network/mail/process-discovery/native cleanup edges. Code fold: same stdlib/command closure; append-only framing repairs own alert/history files, no truncation/deletion or sidecar; bounded alert/history data inspection."
     },
     "scripts/lib/jv-project.sh": {
       "images": [

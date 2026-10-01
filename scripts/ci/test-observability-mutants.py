@@ -30,16 +30,23 @@ MUTANTS=[
  ('ignore-lock',CORE,"                time.sleep(.02)\n        yield", "                time.sleep(.02)\n            except OSError:break\n        yield",'t4_persistence_faults','runtime'),
  ('project-suppression',CORE,"[day,str(target),row['metric'],bucket]", "[day,str(target),row['metric'],bucket,os.environ['JV_PROJECT_ID']]",'t4_shared_suppression_and_concurrency','runtime'),
  ('disk-equality',CORE,'due=value>=85','due=value>85','t5_thresholds_and_no_cleanup','runtime'),
- ('premature-checkpoint',CORE,'                notify(directory,row)\n                checkpoint(state,keys+[key]);keys.append(key)', '                checkpoint(state,keys+[key]);keys.append(key)\n                notify(directory,row)','t6_adapter_failure_and_retry','runtime'),
+ ('premature-checkpoint',CORE,'                notify(directory,row,warnings)\n                checkpoint(state,keys+[key]);keys.append(key)', '                checkpoint(state,keys+[key]);keys.append(key)\n                notify(directory,row,warnings)','t6_adapter_failure_and_retry','runtime'),
  ('other-seat-hook','scripts/usage-hook.sh','[[ "${JV_ROLE:-}" == [oO] ]] || exit 0',': # no role filter','t6_bound_other_seat_no_access','runtime'),
  ('source-purge','scripts/disk-watch.sh','set -euo pipefail','set -euo pipefail\nrm -f -- "$JV_DISK_SECONDARY_ROOT"/wsl-crash-*.dmp',None,'source-refusal'),
  ('F3-primary-weekly',CORE,'if minutes==10080:',"if key=='primary':",'f3_two_windows','runtime'),
  ('F4-display-name',CORE,"series='anthropic-model-'+hashlib.sha256(name.encode()).hexdigest()","series='anthropic-model-'+name",'f4_label_canary','runtime'),
- ('F5-abort-providers',CORE,"except (OSError,ValueError,TypeError,KeyError,AttributeError,Unavailable):errors.append(label+'-unavailable')", "except (OSError,ValueError,TypeError,KeyError,AttributeError,Unavailable):raise Unavailable('provider-failed')",'f5_mixed_providers','runtime'),
+ ('F5-abort-providers',CORE,"except (OSError,OverflowError,ValueError,TypeError,KeyError,AttributeError,Unavailable):errors.append(label+'-unavailable')", "except (OSError,OverflowError,ValueError,TypeError,KeyError,AttributeError,Unavailable):raise Unavailable('provider-failed')",'f5_mixed_providers','runtime'),
  ('F5-secondary-first',CORE,"    observations=[]\n    for label,envkey", "    checked(os.environ.get('JV_DISK_SECONDARY_ROOT'),'dir')\n    observations=[]\n    for label,envkey",'f5_bad_secondary','runtime'),
  ('F6-no-min-span',CORE,'pts[-1][0]-pts[0][0]>=1800','pts[-1][0]-pts[0][0]>0','f6_burn_limits','runtime'),
  ('F6-no-cutoff',CORE,'now-10800<=p[0]<=now','p[0]<=now','f6_burn_limits','runtime'),
  ('F7-read-all',CORE,'        source.seek(offset)\n        data=source.read(min(size,cap))','        source.seek(0)\n        data=source.read()[-cap:] if tail else source.read(min(size,cap))','f7_read_budget','runtime'),
+ # Code-review F1-F5 plus o's permanent-TSV-invalidation ruling.
+ ('R1-alert-framing',CORE,"separator=b'\\tpartial\\n' if history_row else b'\\n'","separator=b'\\tpartial\\n' if history_row else b''",'r1_partial_alert_append','runtime'),
+ ('R2-huge-zero',CORE,'def number(value,maximum=100):','def number(value,maximum=100):\n    if type(value) is int and value>10**100:return 0.0','r2_huge_provider_number','runtime'),
+ ('R3-weekly-credits',CORE,'            if credit_row is None:',"            if credit_row is None and any(isinstance(limits.get(k),dict) and limits[k].get('window_minutes')==10080 for k in ('primary','secondary')):",'r3_independent_latest_credits','runtime'),
+ ('R4-history-range',CORE,'value=number(json.loads(value),10**20 if credit else 100)','value=number(json.loads(value),10**20)','r4_history_ranges','runtime'),
+ ('R5-unframed-history',CORE,"            if not line.endswith(b'\\n'):raise ValueError('incomplete history row')",'            pass # accept unfinished history','r5_unterminated_history','runtime'),
+ ('R5-tsv-marker',CORE,"separator=b'\\tpartial\\n' if history_row else b'\\n'","separator=b'\\n'",'r5_truncated_last_field','runtime'),
 ]
 
 

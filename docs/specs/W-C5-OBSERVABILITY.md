@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **Local GREEN: 22 generated methods, 21 runtime assertion kills, one source refusal and four matrix cases pass. O-commissioned code review pending.**
+Status: **Code-review fold in progress: 28-method RED recorded (22 prior passes, six intended assertion failures, zero errors); corrected implementation authored, committed generated GREEN pending.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb`; its hosted CI is green and
 integration awaits a hosted-lane gap;
@@ -357,3 +357,33 @@ Sol code review. Refer to o neutrally throughout.
 Publication remains local while the single hosted lane serves the critical
 path. No SPEC-only artifact is runtime proof and no local proof authorizes live
 hook installation, host cleanup or provider access.
+
+## Admitted code-review fold (2026-10-01)
+
+Sol xhigh on `7a02335037daba959e729ca6f22a33522a578970`: five P2 findings.
+O `01M3WKZWR6WM0DZ02KQZRKKEVN` admits one fold, with framing clarified by
+`01M3WM6DM4G89F8H5HRXPPJ4PE`. These dispositions govern the affected contract:
+
+- Code F1/F5 → I2/I4/I6: readers accept only complete newline-terminated rows;
+  skip/count malformed or unterminated rows. JSONL remains JSON; history remains
+  five-field TSV. Writers hold the shared lock, preserve all bytes, then seal
+  unfinished JSONL with a newline or unfinished TSV with TAB `partial` NEWLINE.
+  This permanently invalidates a truncated TSV last field. No truncation,
+  sidecar or migration. A complete unframed JSON object may become valid after
+  sealing. Checkpoint only after its own complete alert row is written/flushed.
+- Code F2 → I2: numeric bounds precede float conversion. OverflowError,
+  ValueError and TypeError cannot escape the provider boundary and discard the
+  other provider. Discriminating value: `10**400`.
+- Code F3 → I3: newest valid credits are selected independently of quota windows
+  across the same bounded Codex candidates. A newer short-only record's balance
+  wins while weekly quota can fall back to older evidence.
+- Code F4 → I2/I3: validate history series/numeric/epoch/window ranges before
+  admitting a sample. Quota value `999` is skipped/countable, never burn evidence.
+
+One new cell per finding plus the explicitly requested truncated-last-field
+cell gives 28 methods, with all original 22 methods unchanged. Six traced fault
+mutations exercise alert framing, huge false-zero admission, weekly-coupled
+credits, history range, unframed history admission and dropped TSV invalidation.
+Rerun the entire 28-witness list (27 runtime and one source refusal), not only
+new mutants. Narrow independent review covers the fold delta. No publication
+or live adoption is authorized by local evidence.

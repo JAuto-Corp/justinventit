@@ -1,7 +1,8 @@
 # W-C5 observability review and evidence ledger
 
-Status: local generated GREEN and all finite mutation/matrix gates pass.
-O-commissioned independent code review, publication and hosted CI remain pending.
+Status: code review blocked the initial GREEN. Six admitted regression cells
+have actual generated RED; corrected GREEN implementation is authored and
+awaits its committed generated/mutation/matrix proof and narrow review.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -171,3 +172,17 @@ RED expectations to the ruling. The original 22 methods remain unchanged.
 First actual generated RED at `ddec3a4`: 22 existing passes, five intended
 assertion failures and zero errors. The additional cell gets a committed RED
 before GREEN as well; total 28 methods.
+
+Actual additional RED at `757e26d5ba43c3da90418ad2205d57b1a78f9e06`: 28 methods,
+22 prior passes and six intended assertion failures, zero errors. Both RED runs
+are retained independently. The first working-template corrected run passed
+28 methods in 25.205 s; it is preliminary, not committed generated proof.
+
+The shared append helper repairs framing without rereading ledger content after
+its bounded history read, preserving the actual-read budget. It checks write
+length and flush before success. Numeric ranges precede conversion; history
+validates each series/range; credits have their own latest-record selector.
+Fixed complete-image policy entries and command inventory are updated through
+this explicit author-inspected diff, never registered by the test runners.
+The original 22 mutant mechanisms remain; six code-finding/ruling mutants are
+added. Prior independent review/acceptance is not inferred for the new images.

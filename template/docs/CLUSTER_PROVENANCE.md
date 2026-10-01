@@ -72,3 +72,11 @@ Account usage remains shared, never attributed as project quota. Static source
 image checks cover reviewed cooperating code, not candidate self-registration
 or hostile races. Extraction proof uses only synthetic provider/disk/sink data;
 no installed source execution or live provider compatibility is claimed.
+
+W-C5 code-review fold (2026-10-01): partial writes must not join a retry's row or
+checkpoint an incomplete alert; shared append-only framing repair preserves old
+bytes. TSV receives an invalidating marker because a truncated numeric last
+field can still parse. Bounds before float conversion prevent huge inputs from
+escaping provider isolation; history uses live-equivalent ranges, and newest
+credits select independently of weekly quota fallback. These are explicit
+portability corrections to the pinned source behavior, not source guarantees.
