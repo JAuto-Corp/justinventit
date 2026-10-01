@@ -113,3 +113,18 @@ issue bodies/labels were read back. JA source remains unchanged.
 R8/R10 remain the previously accepted residuals. The earlier GREEN packet and
 hosted pass describe `c6e823651`; they do not establish these folds or supersede
 the BLOCK verdict. A fresh packet and the director's narrow review are required.
+
+The narrow re-review confirmed C2/C3 fixed with no new findings, but C1 still
+discarded a failed `wc -c` inside `_log_valid`. Director disposition
+`01M3TZ3QKQWDZW289GJ07JRAFR` requires the last C1 fold and a director diff review,
+with no further model review. RED `8f4dcca` extends the existing C1 cell to four
+inspection faults across read/append/replay: only the three byte-count variants
+fail on the preceding implementation. Frame validation now returns a distinct
+inspection-failure status, and recovery truncates only on a successfully inspected
+invalid frame. The extended cell passes; a byte-count-status mutant accompanies it.
+
+The same byte-count path was reproduced on the unmodified JA pin for all three
+entry points and added to issue #3820, with body/label readback verified. It
+destroyed the 137-byte seeded record in each case (read exit 2; append/replay
+exit 3); these nonzero exits did not preserve authority. Prior evidence packets
+remain immutable and do not imply that the incomplete C1 revision was accepted.

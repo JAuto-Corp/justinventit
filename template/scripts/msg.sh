@@ -125,11 +125,12 @@ mint_ulid() {
 _log_bytes()   { printf '%s' "$1" | wc -c | tr -d ' '; }
 _log_frame()   { printf '%s\t%s\n' "$(_log_bytes "$1")" "$1"; }
 _log_payload() { printf '%s' "${1#*$'\t'}"; }
-_log_valid()   { local len="${1%%$'\t'*}" pay
+_log_valid()   { local len="${1%%$'\t'*}" pay bytes
                  [[ "$1" == *$'\t'* ]] || return 1
                  pay="$(_log_payload "$1")"
                  [[ "$len" =~ ^[0-9]+$ ]] || return 1
-                 [[ "$(_log_bytes "$pay")" -eq "$len" ]]; }
+                 bytes="$(_log_bytes "$pay")" || { echo "ERROR (hub): authority byte count failed" >&2; return 3; }
+                 [[ "$bytes" -eq "$len" ]]; }
 
 _authority_barrier() {
   local f="$1" d
@@ -154,15 +155,19 @@ _authority_barrier() {
 _log_truncate_torn_tail() {
   local f="$1"
   [[ -s "$f" ]] || return 0
-  local complete keep last_byte last_line
+  local complete keep last_byte last_line valid_rc=0
   complete="$(wc -l < "$f")" || { echo "ERROR (hub): authority line count failed" >&2; return 3; }
   last_byte="$(tail -c 1 "$f")" || { echo "ERROR (hub): authority tail read failed" >&2; return 3; }
   if [[ -n "$last_byte" ]]; then
     keep="$complete"
   else
     last_line="$(tail -n 1 "$f")" || { echo "ERROR (hub): authority record read failed" >&2; return 3; }
-    if _log_valid "$last_line"; then return 0; fi
-    keep=$((complete - 1))
+    _log_valid "$last_line" || valid_rc=$?
+    case "$valid_rc" in
+      0) return 0 ;;
+      1) keep=$((complete - 1)) ;; # Successful inspection proved corruption.
+      *) return 3 ;; # Inspection failed; authority must remain untouched.
+    esac
   fi
   echo "WARN (hub): torn trailing record in '$f' — truncating to last valid record (§5 recovery)" >&2
   if [[ "$keep" -le 0 ]]; then : > "$f"
