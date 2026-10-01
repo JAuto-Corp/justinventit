@@ -1,5 +1,26 @@
 # External Pacemaker — wake-loop supervisor
 
+## BREAKING-CHANGE planned for W-C3
+
+W-C3's approved next update retires automatic prompt injection, respawn and
+notification commands in favor of one project-scoped, report-only observer.
+It requires explicit `JV_PROJECT_ID`, `JV_PROJECT_ROOT` and `JV_STATE_ROOT`.
+Legacy cadence/state-path and action/notification options will refuse with
+migration diagnostics. No lease/fencing or automatic-recovery replacement is
+implied. The release behavior described below remains present until that
+tests-first implementation lands; this notice does not activate a host change.
+
+Before adopting, commit project-owned changes, save `.copier-answers.yml` and
+its resolved template revision, and rehearse in a disposable clone containing
+the saved defaults and legacy cadence/dedup state. Keep existing state as data;
+do not run an old observer to test migration. To retain the released behavior,
+pin `jv-v0.2.3` rather than updating to HEAD (`copier copy --vcs-ref jv-v0.2.3 ...`
+for a new disposable copy). Roll back by `git revert <adoption commit>` (`-m 1`
+for a merge), which restores generated files and answers; pin the restored
+template revision for subsequent updates. Scheduler/service configuration is
+external to that Git revert and requires a separate operator review. No live
+project or host scheduler is migrated by the framework's acceptance test.
+
 The pacemaker (`scripts/pacemaker.sh`) is an **external, out-of-band supervisor**
 that keeps autonomous agent wake-loops alive. It is the framework's #1 load-bearing
 reliability fix.

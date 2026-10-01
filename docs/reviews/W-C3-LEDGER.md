@@ -53,3 +53,26 @@ Next: o commissions the SPEC audit under the current provider-availability
 disposition. No author-spawned review and no runtime implementation before the
 SPEC disposition. Follow the pilot's bounded rounds; no extra provider-diversity
 debt or unrequested design expansion. A authors, o decides, i integrates.
+
+## SPEC disposition and five folds
+
+Sol audit at `0b381ae` is ACCEPT-WITH-FOLDS. O's
+`01M3V8BF6K011E15CT91X3NP49` expressly admits retiring generated recovery
+as a safety narrowing, with a breaking-change notice, pin/rollback guidance and
+a real disposable release-to-candidate Copier update witness. O reports no live
+v0.2.3 pacemaker adopters; the author did not inspect host consumers. Decisions
+(2) and (3) are approved. No new leases or additional SPEC round are authorized.
+
+F1 adds the saved-default/legacy-state update and rollback witness. F2 fixes
+backlog timing to strict age >1800 independently of process availability. F3
+keeps absent cursor=byte zero while corrupt/unreadable means unknown. F4 isolates
+schedule detection with a fresh heartbeat, exact thresholds and its own mutant.
+F5 requires the effect/coupling gate before every executable render/mutant
+closure, synthetic process roots and the closed-PATH/sanitized-environment
+harness; source-gate refusals are not runtime behavioral kills. The finite plan
+is now 26 mutants (21 initial + one traced fold per finding).
+
+W-C2 integrated-main CI36833759217 passed atcdeb36e; i's exact receipt
+`01M3V882A2ZNRVEN73D70BGXHQ` confirms its landing is complete. Next authorized
+action: bounded tests-first RED, then o commissions one RED review, then GREEN
+and one code review. No runtime implementation before the RED disposition.

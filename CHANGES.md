@@ -6,6 +6,26 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 
 ## Unreleased
 
+### BREAKING-CHANGE: W-C3 pacemaker recovery retirement (approved, implementation pending)
+
+The W-C3 update will replace the generated pacemaker's automatic prompt injection,
+optional respawn and notification commands with project-scoped, report-only
+observation. It will require explicit `JV_PROJECT_ID`, `JV_PROJECT_ROOT` and
+`JV_STATE_ROOT`; legacy path/action knobs will refuse with migration guidance.
+Saved Copier answers will remain compatible, but selecting a pacemaker will no
+longer promise recovery or install a scheduler. This notice records the approved
+change before its tests-first implementation; it is not a claim that it has shipped.
+
+Before adoption, commit project-owned edits and save the resolved template pin in
+`.copier-answers.yml`. Rehearse the update in a disposable clone, preserving legacy
+cadence/dedup files as data. Projects needing the released behavior can remain on
+`jv-v0.2.3` (`copier copy --vcs-ref jv-v0.2.3 ...`); do not update implicitly to HEAD.
+Rollback is `git revert <adoption commit>` (with `-m 1` for a merge), restoring the
+prior generated files and answers. Pin that restored template revision for future
+updates and review external scheduler configuration separately; reverting files
+does not reconfigure a running host. W-C3 will exercise this workflow only in a
+disposable consumer, never on a live adopter.
+
 Bump rule: any change to the generated entry contract's stages, gates or routing bumps `jv-entry-contract` in
 `template/AGENTS.md.jinja` and `jv-entry-contract-expected` in `template/CLAUDE.md.jinja` together and adds an
 `entry-contract` row here; the generated session-start hook warns (never blocks) when a project's AGENTS.md lags.
