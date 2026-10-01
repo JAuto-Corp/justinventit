@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "authority": "Committed guard+policy, changed through reviewed diff; accident boundary only. Candidate self-registration and hostile filesystem races excluded. See SPEC threat model.",
+  "phase": "tests-only RED",
+  "programs": {
+    "scripts/pace.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        }
+      ],
+      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+    },
+    "scripts/usage-hook.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        }
+      ],
+      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+    },
+    "scripts/disk-watch.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        }
+      ],
+      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+    },
+    "scripts/lib/jv-observability.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        }
+      ],
+      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+    },
+    "scripts/lib/jv-observability.py": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "9f56e761d79bfdb34304a012586cb04d16b435ef6130091a97702e559260a2f2"
+        }
+      ],
+      "edges": "Inert calibration DATA only: Python pass or Bash exit 0. No feature implementation admitted at RED."
+    },
+    "scripts/lib/jv-project.sh": {
+      "images": [
+        {
+          "name": "accepted-project-helper",
+          "sha256": "80ec586deab5d4e9623bc15068e191708b5b4b68d8b29cdcdae05d4496a0daa8"
+        }
+      ],
+      "edges": "Accepted shared binding helper"
+    }
+  }
+}

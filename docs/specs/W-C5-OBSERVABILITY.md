@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **SPEC audit ACCEPT-WITH-FOLDS; all admitted findings folded in one revision, awaiting o's diff check before RED or implementation.**
+Status: **SPEC folds admitted by o; tests-only RED authored. Actual generated RED must precede GREEN; no separate RED review is required.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb` and awaits the hosted lane;
 o explicitly authorizes this next local slice in parallel with that wait.
@@ -346,8 +346,12 @@ pins/read scope, each actual outcome and mutated bytes in immutable packets.
 
 Audit disposition `01M3WGD0ZB1X64PKHJCTCZB822` (2026-10-01): Sol xhigh
 ACCEPT-WITH-FOLDS, threat model/scope/adaptations and initial 15 seeds confirmed.
-All F2–F7 changes above are one SPEC revision. Send o the fold diff for his
-finding-by-finding check; no second Sol round. **RED waits for that check.**
+All F2–F7 changes above are one SPEC revision. Send o the fold diff for a
+finding-by-finding check; no second Sol round. O completed that check and
+admitted all 22 witnesses in `01M3WGYTB630GAQV10RAMRGSRB` (2026-10-01): commit
+tests-only RED with intended missing-feature failures and zero errors, then
+GREEN directly. The RED review is explicitly skipped; mail o at GREEN for the
+Sol code review. Refer to o neutrally throughout.
 
 Publication remains local while the single hosted lane serves the critical
 path. No SPEC-only artifact is runtime proof and no local proof authorizes live

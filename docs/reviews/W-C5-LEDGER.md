@@ -1,8 +1,7 @@
 # W-C5 observability review and evidence ledger
 
-Status: SPEC audit ACCEPT-WITH-FOLDS; one revision applies all admitted findings,
-awaiting o's fold-diff check before RED. No runtime implementation,
-generated-consumer proof or hosted CI is claimed.
+Status: o admitted the folded SPEC; tests-only RED authored. No runtime
+implementation, generated RED outcome or hosted CI is claimed yet.
 
 O commissioned the next local W-C slice in `01M3WF143WT7SP86CTFW917JKS` on
 2026-10-01 after accepting W-C4. Branch `extract/w-c5-observability`, worktree
@@ -37,7 +36,7 @@ queued; no work on either is included here.
 Sol xhigh audited `e949128e190dfac12bea18d45069b59fe2509b60`:
 ACCEPT-WITH-FOLDS. O `01M3WGD0ZB1X64PKHJCTCZB822` confirms the threat model,
 scope, adaptation decisions and original 15 seeds, admits all F2–F7 changes in
-one SPEC revision, and will check the diff himself before RED. No second Sol
+one SPEC revision, and will check the diff before RED. No second Sol
 audit or author acceptance is authorized.
 
 | Finding | Fold and planned discriminating evidence |
@@ -56,3 +55,21 @@ provider-data collectors are executed at this SPEC stage. The original SPEC
 packet remains immutable; a new fold packet preserves the exact review/ruling,
 before/after docs, fold diff and the line-addressed trace sources. Publication
 remains held by the shared lane; W-C4's accepted head is unchanged.
+
+## RED authorization and test closure
+
+O `01M3WGYTB630GAQV10RAMRGSRB` checked F2–F7 at `5bde487` and admitted all
+22 planned witnesses. The RED review is explicitly skipped: commit tests-only
+RED with missing-feature failures and zero errors, then proceed directly to
+GREEN; mail o at GREEN for the Sol code review. The neutral-reference wording
+nit is folded into this tests-only commit.
+
+The bounded suite contains 20 methods: two harness calibrations and 18 runtime
+methods covering T1–T7 plus the six named audit cells. The two harness methods
+pass against inert data controls; read instrumentation distinguishes 400,000
+actual bytes from an 800,000-byte read-all-then-slice control with identical
+retained output. This calibration is not a generated-consumer or runtime proof.
+The operating scripts/helpers remain absent. Each runtime method asserts the
+missing closure before creating a candidate child. The committed Copier runner
+will render real cluster/solo consumers with tasks disabled and retain the
+actual RED result before any implementation is added.
