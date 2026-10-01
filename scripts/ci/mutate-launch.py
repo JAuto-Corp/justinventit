@@ -32,9 +32,9 @@ def newest_probe(text):
 
 
 def textual_trust(text):
-    start = text.index('codex_seat__trust_level() {')
+    start = text.index('codex_seat__compare_trust() {')
     end = text.index('\n}\n', start) + 3
-    return text[:start] + '''codex_seat__trust_level() {
+    return text[:start] + '''codex_seat__compare_trust() {
   grep -F -- "$2" "$1" >/dev/null && printf 'trusted\\n'
 }
 ''' + text[end:]
@@ -71,6 +71,10 @@ def main():
     t2 = 'test_T2_refusal_bootstrap_and_tuple_variants'
     t3 = 'test_T3_positive_attributed_probe_and_refusal_variants'
     t4 = 'test_T4_codex_resume_guard_and_ambiguous_name_F2'
+    c1 = 'test_C1_I3_literal_unique_probe_thread'
+    c2 = 'test_C2_I3_I4_exact_typed_trust_and_tier'
+    uuid_guard = 'if not isinstance(thread, str) or re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", thread) is None:'
+    tier_compare = 'matches = isinstance(model, str) and isinstance(effort, str) and (model, effort) == tuple(sys.argv[2:4])'
     mutations = [
         ('I1-root-binding', identity, lambda s: once(s, '.project_root == $root', 'true'), 'test_T1_refusal_identity_binding_and_aliases'),
         ('I1-unqualified-resume-path', launch, lambda s: once(s, 'STATE_FILE="$SESSIONS_DIR/$LETTER.id"', 'mkdir -p "$JV_STATE_ROOT/sessions"\nSTATE_FILE="$JV_STATE_ROOT/sessions/$LETTER.id"'), t1),
@@ -85,7 +89,7 @@ def main():
         ('I3-textual-trust', codex, textual_trust, t3),
         ('I3-newest-probe-R4', codex, newest_probe, t3),
         ('I3-probe-lock-status', codex, lambda s: once(s, '    flock 200 || exit 9', '    flock 200 || true'), 'test_T1_shared_probe_lock_and_T3_lock_failure'),
-        ('I3-tuple-mismatch', codex, lambda s: once(s, 'if [[ "$got_model" != "$want_model" || "$got_effort" != "$want_effort" ]]; then', 'if false; then'), t3),
+        ('I3-tuple-mismatch', codex, lambda s: once(s, tier_compare, 'matches = True'), t3),
         ('I4-resume-modal', codex, lambda s: once(s, 'codex_seat_resume_guard() {', 'codex_seat_resume_guard() {\n  return 0 # mutant'), t4),
         ('I4-missing-evidence-success', launch, lambda s: once(s, '        exit 5', '        exit 0'), 'test_T4_codex_post_exit_evidence_and_statuses'),
         ('I5-permission-bypass', launch, lambda s: once(s, 'claude \\\n', 'claude --dangerously-skip-permissions \\\n'), 'test_T5_print_only_boot_and_neutral_runtime_policy'),
@@ -93,8 +97,14 @@ def main():
         ('F2-ambiguous-resume-fallback', launch, lambda s: once(s, '"$CODEX_BIN" resume "$CODEX_THREAD" --profile "$CODEX_PROFILE" || EXIT_CODE=$?', '"$CODEX_BIN" resume "$CODEX_THREAD" --profile "$CODEX_PROFILE" || "$CODEX_BIN" --profile "$CODEX_PROFILE" || EXIT_CODE=$?'), t4),
         ('R1-cross-project-resume', launch, cross_project_resume, t1),
         ('R2-unqualified-rename', launch, lambda s: once(s, '/rename $SEAT_NAME', '/rename $LETTER_LC'), t1),
-        ('R3-any-trusted-project', codex, lambda s: once(s, 'entry = (cfg.get("projects") or {}).get(sys.argv[2]) or {}', 'entry = next(iter((cfg.get("projects") or {}).values()), {})'), t3),
+        ('R3-any-trusted-project', codex, lambda s: once(s, 'entry = projects.get(sys.argv[2]) if isinstance(projects, dict) else None', 'entry = next(iter(projects.values()), None) if isinstance(projects, dict) else None'), t3),
         ('R5-external-command', launch, lambda s: once(s, 'FRESH=0; AT_MACHINE=0; BOOTSTRAP=0', 'tmux list-sessions || true\nFRESH=0; AT_MACHINE=0; BOOTSTRAP=0'), 'test_T2_positive_bootstrap_and_exact_record_tuple'),
+        ('C1-UUID-validation', codex, lambda s: once(s, uuid_guard, 'if not isinstance(thread, str):'), c1),
+        ('C1-rollout-uniqueness', codex, lambda s: once(s, 'if len(hits) != 1:', 'if not hits:'), c1),
+        ('C1-event-uniqueness', codex, lambda s: once(s, 'if len(threads) != 1:', 'if not threads:'), c1),
+        ('C2-trust-newline', codex, lambda s: once(s, 'level == "trusted"', 'level.rstrip("\\n") == "trusted"'), c2),
+        ('C2-effort-newline', codex, lambda s: once(s, tier_compare, tier_compare.replace('(model, effort)', '(model, effort.rstrip("\\n"))')), c2),
+        ('C2-model-coercion', codex, lambda s: once(s, tier_compare, 'matches = isinstance(effort, str) and (str(model), effort) == tuple(sys.argv[2:4])'), c2),
     ]
     if args.only:
         unknown = set(args.only) - {m[0] for m in mutations}

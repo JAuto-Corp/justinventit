@@ -62,17 +62,18 @@ codex_seat_verify_trust() {
     return 1
   fi
 
-  local level
+  local level trust_rc=0
   # A missing/broken parser is a HARD failure, never a skip: "cannot check" and "checked
   # and fine" must never share an exit status.
-  if ! level="$(codex_seat__trust_level "$base_config" "$workdir")"; then
+  level="$(codex_seat__compare_trust "$base_config" "$workdir")" || trust_rc=$?
+  if (( trust_rc == 2 )); then
     echo "ERROR: could not parse $base_config to verify workdir trust." >&2
     echo "  A TOML parser (python3 >= 3.11, or tomli) is REQUIRED — an unverifiable trust" >&2
     echo "  state is treated as untrusted, not as a pass." >&2
     return 1
   fi
 
-  if [[ "$level" != "trusted" ]]; then
+  if (( trust_rc != 0 )); then
     echo "ERROR: workdir NOT TRUSTED in $base_config:" >&2
     echo "    $workdir" >&2
     echo "    trust_level = ${level:-<no entry>}" >&2
@@ -86,9 +87,9 @@ codex_seat_verify_trust() {
   return 0
 }
 
-# Print the parsed trust_level for a workdir ("" if no entry). Non-zero exit = could not
-# parse, which callers must treat as failure rather than as an empty answer.
-codex_seat__trust_level() {
+# Compare in Python: shell substitution strips trailing newlines (W-C2 C2).
+# Status 0 = exact trusted string, 1 = untrusted, 2 = parse failure. Output is diagnostic only.
+codex_seat__compare_trust() {
   python3 - "$1" "$2" <<'PY'
 import sys
 try:
@@ -103,8 +104,11 @@ try:
         cfg = tomllib.load(fh)
 except Exception:
     sys.exit(2)
-entry = (cfg.get("projects") or {}).get(sys.argv[2]) or {}
-print(entry.get("trust_level", ""))
+projects = cfg.get("projects")
+entry = projects.get(sys.argv[2]) if isinstance(projects, dict) else None
+level = entry.get("trust_level") if isinstance(entry, dict) else None
+print(repr(level))
+sys.exit(0 if isinstance(level, str) and level == "trusted" else 1)
 PY
 }
 
@@ -171,33 +175,32 @@ codex_seat_verify_tier() {
   # happened to run at the expected tier. The thread id is the only identifier that ties
   # the assertion to the run we actually made.
   local thread_id after
-  thread_id="$(codex_seat__thread_id "$probe_out")"
-  if [[ -z "$thread_id" ]]; then
-    echo "ERROR: tier probe emitted no thread.started event — no identifiable evidence." >&2
+  if ! thread_id="$(codex_seat__thread_id "$probe_out")"; then
+    echo "ERROR: tier probe must emit exactly one thread.started event with a literal thread UUID." >&2
     echo "  Absence of evidence is not a pass. Refusing to launch." >&2
     rm -f "$probe_out"; return 1
   fi
   rm -f "$probe_out"
 
-  after="$(codex_seat__rollout_for_thread "$thread_id")"
-  if [[ -z "$after" ]]; then
-    echo "ERROR: no rollout found for probe thread $thread_id — cannot read the resolved tier." >&2
+  if ! after="$(codex_seat__rollout_for_thread "$thread_id")"; then
+    echo "ERROR: missing or ambiguous rollout for probe thread $thread_id — cannot read the resolved tier." >&2
     echo "  Absence of evidence is not a pass. Refusing to launch." >&2
     return 1
   fi
 
-  if ! out="$(codex_seat__read_tier "$after")"; then
+  local tier_rc=0
+  out="$(codex_seat__compare_tier "$after" "$want_model" "$want_effort")" || tier_rc=$?
+  if (( tier_rc == 2 )); then
     echo "ERROR: tier probe rollout has no turn_context record: $after" >&2
     return 1
   fi
-  local got_model="${out%|*}" got_effort="${out##*|}"
 
   # An unset effort is the DEFAULT tier leaking through — the exact signature of the
   # nonexistent-profile trap. Treat it as a mismatch, never as "probably fine".
-  if [[ "$got_model" != "$want_model" || "$got_effort" != "$want_effort" ]]; then
+  if (( tier_rc != 0 )); then
     echo "ERROR: TIER MISMATCH — the profile did not resolve to the intended tier." >&2
     echo "    expected: $want_model / $want_effort" >&2
-    echo "    resolved: ${got_model:-<none>} / ${got_effort:-<unset — default tier>}" >&2
+    echo "    resolved: $out" >&2
     echo "    profile:  $profile  (${CODEX_HOME:-$HOME/.codex}/$profile.config.toml)" >&2
     echo "    evidence: $after" >&2
     echo "  A nonexistent or unreadable profile boots the DEFAULT tier at exit 0 with no" >&2
@@ -205,24 +208,32 @@ codex_seat_verify_tier() {
     return 1
   fi
 
-  echo "tier         OK — $got_model / $got_effort (tier OK: $got_model/$got_effort; evidence: $(basename "$after"))"
+  echo "tier         OK — $want_model / $want_effort (tier OK: $want_model/$want_effort; evidence: $(basename "$after"))"
   return 0
 }
 
-# Thread id from a `codex exec --json` event stream.
+# One literal UUID from a `codex exec --json` event stream (W-C2 C1).
+# Validate before shell output or glob use; multiple events are ambiguous evidence.
 codex_seat__thread_id() {
   python3 - "$1" <<'PY'
-import json, sys
+import json, re, sys
+threads = []
 try:
     for line in open(sys.argv[1]):
         try:
             rec = json.loads(line)
         except ValueError:
             continue
-        if rec.get("type") == "thread.started":
-            print(rec.get("thread_id") or ""); break
+        if isinstance(rec, dict) and rec.get("type") == "thread.started":
+            threads.append(rec.get("thread_id"))
 except OSError:
-    pass
+    sys.exit(1)
+if len(threads) != 1:
+    sys.exit(1)
+thread = threads[0]
+if not isinstance(thread, str) or re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", thread) is None:
+    sys.exit(1)
+print(thread)
 PY
 }
 
@@ -230,26 +241,38 @@ PY
 # rollout-<timestamp>-<thread-id>.jsonl, so the id is a filename match — no mtime racing.
 codex_seat__rollout_for_thread() {
   local root="${CODEX_HOME:-$HOME/.codex}/sessions"
-  [[ -d "$root" && -n "$1" ]] || return 0
-  find "$root" -name "rollout-*$1.jsonl" -type f 2>/dev/null | head -1
+  python3 - "$root" "$1" <<'PY'
+from pathlib import Path
+import sys
+# The caller supplies the validated UUID; require exactly one matching rollout.
+hits = [p for p in Path(sys.argv[1]).rglob("rollout-*-" + sys.argv[2] + ".jsonl") if p.is_file()]
+if len(hits) != 1:
+    sys.exit(1)
+print(hits[0])
+PY
 }
 
-# Extract "model|effort" from a rollout's first turn_context record.
-codex_seat__read_tier() {
-  python3 - "$1" <<'PY'
+# Shared preflight/post-exit comparison (W-C2 C2): retain exact JSON types/bytes.
+# Status 0 = match, 1 = mismatch, 2 = missing evidence; repr output is diagnostic only.
+codex_seat__compare_tier() {
+  python3 - "$1" "$2" "$3" <<'PY'
 import json, sys
-path = sys.argv[1]
-with open(path) as fh:
-    for line in fh:
-        try:
-            rec = json.loads(line)
-        except ValueError:
-            continue
-        if rec.get("type") == "turn_context":
-            p = rec.get("payload", {})
-            print("%s|%s" % (p.get("model") or "", p.get("effort") or ""))
-            sys.exit(0)
-sys.exit(1)
+try:
+    with open(sys.argv[1]) as fh:
+        for line in fh:
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(rec, dict) and rec.get("type") == "turn_context":
+                p = rec.get("payload")
+                model, effort = (p.get("model"), p.get("effort")) if isinstance(p, dict) else (None, None)
+                print(repr(model) + " / " + repr(effort))
+                matches = isinstance(model, str) and isinstance(effort, str) and (model, effort) == tuple(sys.argv[2:4])
+                sys.exit(0 if matches else 1)
+except OSError:
+    pass
+sys.exit(2)
 PY
 }
 
@@ -341,7 +364,7 @@ PY
 
 codex_seat_reconcile_tier() {
   local session_file="$1" want_model="$2" want_effort="$3"
-  local out
+  local out tier_rc=0
 
   # THIS CHECK IS ADVISORY IN THE PASSING DIRECTION AND ACTIONABLE IN THE FAILING ONE, and
   # the asymmetry is deliberate. The rollout it reads is selected by workdir + time window,
@@ -357,19 +380,19 @@ codex_seat_reconcile_tier() {
     echo "tier recheck  NO EVIDENCE — no session rollout for this seat (session took no turns?)"
     return 2
   fi
-  if ! out="$(codex_seat__read_tier "$session_file")"; then
+  out="$(codex_seat__compare_tier "$session_file" "$want_model" "$want_effort")" || tier_rc=$?
+  if (( tier_rc == 2 )); then
     echo "tier recheck  NO EVIDENCE — session rollout has no turn_context (no turns taken)"
     return 2
   fi
-  local got_model="${out%|*}" got_effort="${out##*|}"
-  if [[ "$got_model" == "$want_model" && "$got_effort" == "$want_effort" ]]; then
-    echo "tier recheck  CONSISTENT (advisory) — a session in this workdir ran at $got_model / $got_effort"
+  if (( tier_rc == 0 )); then
+    echo "tier recheck  CONSISTENT (advisory) — a session in this workdir ran at $want_model / $want_effort"
     echo "              NOT verification: this rollout cannot be proven to belong to this launch."
     return 0
   fi
   echo "ERROR: a candidate session in this workdir ran at a DIFFERENT tier than the launch probe asserted." >&2
   echo "    expected: $want_model / $want_effort" >&2
-  echo "    actual:   ${got_model:-<none>} / ${got_effort:-<unset>}" >&2
+  echo "    actual:   $out" >&2
   echo "    evidence: $session_file" >&2
   echo "  Report this — it means profile resolution differs between exec and the TUI, which" >&2
   echo "  would invalidate the pre-boot gate for every Codex seat." >&2

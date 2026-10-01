@@ -141,3 +141,17 @@ rollouts and multiple thread events. C2 uses valid TOML with invalid exact value
 trailing-newline effort, numeric-vs-string model, and the post-exit sibling call.
 Ordinary UUID/trust/tuple launches remain positive controls. Runtime implementation
 is unchanged in this RED commit; outcomes follow in the correction evidence.
+
+RED at `6f50206` runs all 20 methods with 10 assertion failures and zero errors;
+the numeric-model failure initially prevents the post-exit assertion from running.
+`e3a1a19` isolates that existing assertion as a subtest; the complete RED has 11
+assertion failures and zero errors, including post-exit `xhigh\n` incorrectly
+returning success. Both RED attempts retain their real Copier output.
+
+The correction returns comparison status from Python, with escaped values only
+for diagnostics, and shares one exact typed tier comparator across preflight and
+post-exit. Thread extraction requires exactly one event containing a literal
+UUID; rollout lookup requires exactly one file. The finite mutant set adds six
+traced regressions: UUID validation, rollout/event uniqueness, trust/effort newline
+normalization and model type coercion. Existing trust/tier mutants follow the
+changed helper interfaces; their behavioral assertions remain unchanged.

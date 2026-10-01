@@ -48,6 +48,7 @@ Pinned source revision remains `57d273154cf029158b7cc118143808e524baf28c`:
 | 2026-09-23, `317dd77f3` | Retain UUID/history resume, Codex modal guard, provider exit distinctions and honestly advisory post-exit attribution. |
 | 2026-09-30, duplicate-name and gitdir operational record | Qualified names still permit duplicates; UUID recovery had to follow seat shutdown because the launcher rewrites names on exit. Exact cwd gitdir writable-root configuration is separate from read-only tier proof. Both limitations are documented, not claimed implemented. |
 | 2026-10-01, W-C2 / charter X2,X3,X5 | Share W-C1 identity checks, qualify names/state, require explicit bootstrap model, validate private candidates, preserve empty unprobed capabilities, remove implicit permission bypass and source fleet policy from prompts. |
+| 2026-10-01, W-C2 code C1/C2 | Validate one literal probe UUID and require one rollout; wildcard or ambiguous identities cannot authorize dispatch. Compare parsed trust/model/effort inside Python so shell newline trimming and string coercion cannot convert invalid evidence into a pass, including the shared post-exit tier check. |
 
 The schema retains the full source shape; reserved lifecycle fields do not grant
 an implementation of leases, watchers, capabilities, recovery or registry ownership.
