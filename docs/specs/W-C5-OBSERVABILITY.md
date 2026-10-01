@@ -1,6 +1,6 @@
 # W-C5: explicit host usage and disk observations
 
-Status: **SPEC and finite test list only; awaiting o's audit before RED or implementation.**
+Status: **SPEC audit ACCEPT-WITH-FOLDS; all admitted findings folded in one revision, awaiting o's diff check before RED or implementation.**
 Commission: o `01M3WF143WT7SP86CTFW917JKS`, 2026-10-01. W-C4 is accepted
 at `be4952b835bc17da51a60304fba2271acb6fcacb` and awaits the hosted lane;
 o explicitly authorizes this next local slice in parallel with that wait.
@@ -123,6 +123,12 @@ line (label truncation explicitly) and exits 0 on errors; it performs no unbound
 lock wait or subprocess call. This is not a deadline on a stalled filesystem.
 The CLI shows unavailable/stale states explicitly and returns nonzero for invalid
 configuration or collection/storage failure. Neither entry calls a provider CLI.
+Common project/host-state configuration failure stops collection. After that
+common boundary passes, each provider is independent: a missing, malformed or
+unreadable provider input does not discard another provider's valid observations
+or prevent their valid history append. The CLI reports the failed provider with
+a fixed unavailable label and nonzero status while retaining the valid output;
+the hook retains valid output and still exits 0 (F5→I2).
 
 Retain the source quota inputs, not arbitrary transcript text: Anthropic's
 `seven_day`, `five_hour` and `model_scoped` records under `rate_limits`, and
@@ -130,25 +136,54 @@ Codex JSONL `rate_limits` records at the top level or under the event `payload`.
 For Codex inspect at most the six newest regular candidates in the selected
 sessions layout, deterministically ordered by mtime then path, and read at most
 the last 400,000 bytes of each. Discard a partial initial JSONL record; skip
-malformed/truncated records. Select the newest usable observation, falling back
-to an older file only if no supported observation is present. Text resembling
+malformed/truncated records. Select weekly evidence and fallback files using
+the window mapping below. Text resembling
 rate limits inside a prompt/string is not a provider observation. Output/state
-contain only recognized metrics, fixed labels and bounded model identifiers;
+contain only recognized metrics, fixed labels and opaque model identifiers;
 no raw record, prompt, session identifier, token or transcript text is copied.
 
 Accept finite numeric usage percentages 0–100, positive bounded window minutes,
 bounded reset epochs and valid timestamps; reject booleans, NaN/infinity and
 coercion from arbitrary prose. Missing values are unavailable, not zero used.
 Anthropic `used_percentage`/`utilization` and Codex `used_percent` map to the
-same internal metric. Normalize bounded model labels to safe printable series
-identifiers within an Anthropic-model namespace, never another provider's series.
+same internal metric. **Never emit a provider `display_name`**, even after
+printable-character normalization (F4→I2/X6). Model-scoped series use
+`anthropic-model-<sha256>`: the full lowercase SHA-256 of the UTF-8 display-name
+value is an opaque, stable identity, not a displayed model name. Missing/non-string
+names make that model observation unavailable. Raw names enter neither stream,
+history, notification state nor diagnostics. The same name retains its identifier
+when the provider reorders its model list; namespaces cannot impersonate another
+provider. This is data minimization, not secrecy against dictionary guessing.
 Credits require explicit finite nonnegative balance with
 `has_credits=true` and `unlimited=false`; they are units, never quota percent.
 Unknown fields are ignored, and incompatible provider formats are unavailable.
 This is compatibility with the pinned source shapes, not a promise about future
 provider releases. Synthetic fixtures supply these shapes; no live probe is used.
 
-Target = elapsed fraction of the observation's window, clamped to 0–100%.
+**Window/series mapping (F3→I3, o ruling 2026-10-01): pacing is WEEKLY.**
+The live hook selects its long window at `usage/usage-hook.py:37`; the CLI's
+primary-only selection at `usage/pace.sh:6` is a source inconsistency corrected
+here. Recognize the weekly duration explicitly instead of assuming that a field
+named `primary` is weekly. The source hook's `>=1440` heuristic is narrowed to
+the supported seven-day shape; an unfamiliar long duration is unavailable,
+not relabelled as a week.
+
+| Input | Series and treatment |
+| --- | --- |
+| Anthropic `seven_day` | `anthropic-wk`, window 604,800 seconds; weekly pacing, sustainable rate and same-reset burn. |
+| Anthropic `model_scoped` | The opaque per-model ID above, window 604,800 seconds as in the pinned source; weekly pacing only. |
+| Codex `primary` or `secondary` with `window_minutes == 10080` | `openai-wk`; select by duration, independent of field position. Exactly one valid weekly window is required; conflicting/ambiguous weekly candidates are unavailable rather than chosen by object order. |
+| Anthropic `five_hour`, Codex window with `0 < window_minutes < 1440` | Separately labelled short-window observation with its duration, used percent and reset only; **no target, pacing verdict, sustainable-rate or quota-burn math**, and no weekly-history row. It cannot stand in for missing weekly evidence. |
+| Codex credits | `openai-credits`, balance/spend units only, independent of quota windows. |
+
+Within one file, select the latest complete valid weekly observation; a later
+short-only record does not replace it. Without a weekly observation, try the
+next of the six candidate files; if none is usable, weekly pacing is unavailable
+even if a short observation is present. Never combine short usage with a weekly
+reset/window or a different record's quota fields. Both CLI and hook use this
+mapping.
+
+Target = elapsed fraction of the weekly observation's window, clamped to 0–100%.
 Within **±10 percentage points inclusive** is on pace; above/below is ahead/behind.
 Those labels are descriptive, not permission to spend more. Remaining time is
 clamped at zero; expired windows are labelled expired with no sustainable-rate
@@ -165,7 +200,11 @@ whole-window history calculation. A credit series uses balance decline per hour,
 never quota-window math (the source's zero-window ledger row must not divide by
 zero). Keep history and observation parsing bounded: snapshot/ledger reads at
 most 1 MiB each; reject oversized snapshots, use only complete ledger tail rows,
-and report truncated-history limits. A generated helper may use stdlib only.
+and report truncated-history limits. These are **bytes actually read**, not
+merely retained after slicing: inspect size and seek before a bounded tail read;
+never read the whole file first (F7→I2). The per-collection ceiling is 400,000
+bytes per selected Codex file (at most six), 1 MiB for the snapshot and 1 MiB for
+history. A generated helper may use stdlib only.
 
 ### Disk observations and notification
 
@@ -175,7 +214,13 @@ Both are explicit absolute, existing non-alias directories. No implicit `/`,
 Windows mount, username, size cap or crash-dump path. Observe the selected
 filesystems only (standard `df` via argv, no shell-evaluated command text).
 Unknown/malformed measurements report unknown/nonzero, not healthy/free; a bad
-second target does not discard a valid first observation. No cleanup occurs.
+second target does not discard a valid first observation. Common binding/state
+failure still aborts the sweep; validate/observe each configured disk target
+independently thereafter. Even a malformed/unreadable secondary target must leave
+a valid primary result and due primary alert eligible for normal sink acceptance
+and checkpointing, while the sweep reports the secondary as unknown and exits
+nonzero (F5→I5). Never access an invalid target to preserve partial output.
+No cleanup occurs.
 
 Retain primary ≥85% in five-point buckets (`floor(percent/5)*5`) and optional
 secondary availability below 10 whole GiB as reported by GNU `df -BG`, in
@@ -215,6 +260,25 @@ usage hook, the same timeout is silently skipped; disk/CLI report it.
 | I6 | Local/optional adapter notification uses explicit routing and literal data; suppression follows acceptance, failures permit retry, and hook failure cannot block other seats. |
 | I7 | Real generated consumers and finite mutants run only in reviewed synthetic fixtures under the stated accident threat model; no live provider/host/service action or automatic wiring. |
 
+### Invariant-to-source trace (F2→I1–I7/X4)
+
+Source line numbers refer to the exact four snapshots pinned above. `project`
+means accepted JV `template/scripts/lib/jv-project.sh` at base `b5722bab`;
+`charter` means `JV-EXTRACTION-PASS.md` (2026-09-30). **Retained** identifies
+source behavior; **portability correction** identifies an intentional difference,
+not a claim that the source already enforced it; **charter obligation** identifies
+required extraction/proof work absent from the source utility.
+
+| I# | File:line trace and classification |
+| --- | --- |
+| I1 | **Retained:** `project:53–68` configures and verifies existing binding. **Portability correction:** explicit host/provider/disk paths replace `usage/usage-hook.py:13–14,20,32`, `usage/pace.sh:4–5,17` and `scripts/disk-watch.sh:9–12,21,25`; static-alias checks extend `project:6–14`. **Charter obligation:** `charter:12,45` requires project roots/IDs and no source defaults. |
+| I2 | **Retained:** `usage/usage-hook.py:19–46` isolates the two providers and reads at most six Codex tails; `:78` qualifies staleness; `usage/statusline.sh:6–8` defines the data envelope. **Portability correction:** strict data-only parsing/unknown values replace permissive `usage/usage-hook.py:24,27,37,41`; opaque IDs replace display-name propagation at `:27` and `usage/pace.sh:27`; bounded snapshot/history reads replace unbounded reads at `usage/usage-hook.py:20,52,86`. **Charter obligation:** `charter:19` forbids carrying secrets. |
+| I3 | **Retained:** `usage/usage-hook.py:23–27,37–40` selects weekly data; `:48–58` defines three-hour/same-reset burn with a 1,800-second minimum; `:70–90` defines target, inclusive ±10 verdict, stale indication and separate credits. **Portability correction:** weekly-only CLI pacing replaces primary-only selection at `usage/pace.sh:6,11–16`; source `usage/usage-hook.py:37` long-window heuristic becomes the explicit weekly mapping; retain fresh precedence at `usage/pace.sh:32–35`, replace its unbounded-window burn at `:44–54` and prevent its credit zero-window division at `:31,37`. |
+| I4 | **Retained:** shared host history at `usage/usage-hook.py:13–14,65–67,84–85`, `usage/pace.sh:4,41–43,56–57` and disk suppression at `scripts/disk-watch.sh:9,14–16,34–35`. **Portability correction:** add checked shared locking/private state and honest persistence errors in place of unchecked/unlocked writes; include target identity and prevent project-partitioned budgets. **Charter obligation:** `charter:12,45` requires explicit ownership/isolation while host account/storage facts stay shared. |
+| I5 | **Retained:** primary threshold/bucket `scripts/disk-watch.sh:12–19`, secondary measurement/threshold/bucket `:21–24,32–36`; primary is already processed before the secondary's early exit. **Portability correction:** explicit paths/unknown results, independent invalid-secondary handling and no purge (`:25–31` excluded). **Charter obligation:** `charter:11–12` forbids touching source resources or retaining product paths. |
+| I6 | **Retained:** director-only/exit-zero hook `usage/usage-hook.py:2–11,28–29,45–46,95–96`; notify/suppress mechanism `scripts/disk-watch.sh:10,14–17,34–36`. **Portability correction:** explicit adapter/local sink replaces the hard-coded route; checkpoint only after successful sink replaces `:16–17,35–36`; bounded lock/adapter waits and visible CLI errors qualify source silent catches. **Charter obligation:** `charter:12–16` requires neutral routing and provider projections. |
+| I7 | **Retained scope:** `usage/usage-hook.py:19–46` observes files rather than calling providers; `usage/statusline.sh:6–8` is producer contract only. **Portability correction:** exclude notification destination and destructive effect at `scripts/disk-watch.sh:10,25–31`; keep provider wiring deferred under `charter:46`. **Charter obligation:** `charter:11,17–19,52–54` requires source read-only, provenance, real generated proof, no secrets and reviewed small slices; the explicit accident threat model follows o's W-C4 ruling, not a sandbox delivered by these source utilities. |
+
 Each row is one positive/refusal group; variants below witness its stated
 invariants. Commit RED before implementation; distinguish absent-feature failures
 from later runtime behavior. Add cells only for a traced finding or surviving
@@ -230,6 +294,20 @@ invariant mutant. Setup/syntax errors do not count as mutant kills.
 | T6 → I6 | Default local sink and explicit fake executable adapter receive exact bounded JSON; repeat suppresses, new bucket/day alerts. | Adapter exit/timeout, append/checkpoint failure and shell metacharacters in paths/data; no premature checkpoint or shell execution. Non-director hook is silent/no-access; director errors exit 0, explicit CLI errors nonzero. |
 | T7 → I7/X1–X6 | Actual task-disabled Copier cluster/solo consumers with closed environments, scratch HOME/provider/host roots, allowlisted commands and fixture-owned children; current four-answer matrix. | Before every candidate/mutant child, fixed reviewed source closure gates seeded unlisted images as DATA; recording provider/network/mail/tmux/deletion stubs stay unused. Missing helper refuses without partial collection. Scan generated operating files for coupling/secrets; provenance is labelled separately. |
 
+### Named SPEC-audit cells (F3–F7)
+
+These extend the existing groups, not the implementation scope. All expected
+values and canaries are fixture-owned; no provider data is used.
+
+| Cell / finding | Required discrimination |
+| --- | --- |
+| **T3-two-windows / F3→I3** | One record contains a five-hour primary at 90% and a seven-day secondary at 40%, with weekly elapsed target 50% (on pace) and short elapsed target 10% (which would falsely say ahead). Assert weekly usage/window/reset and exact weekly math in both entries, and a separate short observation with no pacing fields. Swap the primary/secondary positions and retain the same weekly result. Short-only input must not become weekly pacing. |
+| **T2-label-canary / F4→I2/X6** | Put a unique, entirely printable secret-shaped canary in every provider `display_name`, including two valid model-scoped entries. Assert model observations still exist with the expected opaque IDs, and raw/printably normalized canaries are absent from both output streams and every written state file. Reorder models and assert IDs remain stable. |
+| **T2-mixed-providers / F5→I2** | In one invocation, valid Anthropic weekly data plus malformed/unreadable Codex input must retain the valid result and its history row; reverse providers and repeat. Explicit CLI is nonzero with a fixed unavailable label for the bad provider; director hook remains zero with the good result. Neither may erase the good observation or append a bad-provider zero. |
+| **T5-bad-secondary / F5→I5** | In one sweep, a valid primary at 90% plus (a) invalid/unreadable secondary path or (b) malformed secondary measurement must still produce the exact primary observation and accepted due alert/checkpoint. Secondary is unknown and exit nonzero; no invalid-path access. Compare the good result with the same primary alone. |
+| **T3-burn-limits / F6→I3** | Same-series/reset fixtures with exactly 1,799-second span show no burn; with 1,800 seconds, usage 20→25 yields exactly 10%/h. Add a 100% outlier at `now-10801` seconds to the latter fixture and require the same 10%/h result; it is older than the three-hour limit. In a separate variant, a 10% sample at `now-10800` and latest 25% must yield 5%/h, witnessing the inclusive cutoff. Credits use the same history span/cutoff while retaining balance-decline units. |
+| **T2-read-budget / F7→I2** | Use synthetic Codex and ledger files larger than their byte caps with useful complete records at the tail, plus snapshot files at/above 1 MiB. Instrument actual file reads below the parser for these fixture files, recording seeks/offsets and aggregate bytes returned across all opens. Assert ≤400,000 bytes per Codex file, no seventh-file read, ≤1 MiB each for snapshot/history; oversized snapshot refuses before content read. Calibrate this witness with bounded-tail and read-all-then-slice controls, and assert the latter fails the I/O budget even when reported observations are identical. Output-only checks are insufficient. |
+
 Finite initial mutations (15): omit binding verification (T1); restore HOME
 provider fallback (T1/T2); turn malformed usage into zero (T2); admit quota-shaped
 prompt text (T2); ignore source age (T2/T3); change inclusive pace threshold (T3);
@@ -239,6 +317,16 @@ suppression by project ID (T4); change disk threshold equality (T5); checkpoint
 before failed sink (T6); remove non-director early exit (T6); add source crash-dump
 deletion edge (T5/T7, refusal before execution, never a runtime kill). Runtime
 mutants get reviewed safe image entries; source-refusal seeds remain data.
+
+Add **seven traced runtime mutants only**: select primary instead of weekly
+(F3, T3-two-windows); propagate printable display names (F4, T2-label-canary);
+abort all providers when one fails (F5, T2-mixed-providers); validate/fail the
+secondary before preserving primary output/alert (F5, T5-bad-secondary); remove
+the 1,800-second minimum (F6, T3-burn-limits); remove the three-hour cutoff
+(F6, T3-burn-limits); read the whole file then slice to the budget (F7,
+T2-read-budget). Total **22 planned witnesses: 21 runtime mutants and one
+destructive-source refusal**. F2's source trace is a documentation correction,
+not a new runtime mutant.
 
 ## Delivery and review gates
 
@@ -255,6 +343,11 @@ and matrix → o-commissioned OpenAI code review/verdict → exact-head hosted C
 and i integration. The published provider-availability ruling supersedes the
 charter's old Opus wording; no author reviewer or self-acceptance. Keep source
 pins/read scope, each actual outcome and mutated bytes in immutable packets.
+
+Audit disposition `01M3WGD0ZB1X64PKHJCTCZB822` (2026-10-01): Sol xhigh
+ACCEPT-WITH-FOLDS, threat model/scope/adaptations and initial 15 seeds confirmed.
+All F2–F7 changes above are one SPEC revision. Send o the fold diff for his
+finding-by-finding check; no second Sol round. **RED waits for that check.**
 
 Publication remains local while the single hosted lane serves the critical
 path. No SPEC-only artifact is runtime proof and no local proof authorizes live
