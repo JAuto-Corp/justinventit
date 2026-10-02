@@ -48,7 +48,9 @@ Check off every item in the phase `PROGRESS.md` (backed by real commits — `che
 
 ### 7. Docs ↔ issues
 
-Verify code state first, then close completed issues (`gh issue close N --comment ...`), update the roadmap, and file issues for any deferred work.
+Verify code state first, update the roadmap with readiness, and file issues for
+deferred work. Put `Fixes #N` in the PR body; keep issues open until the assigned
+integrator merges. Local phase validation does not claim integration.
 
 ## Output + signal
 
@@ -62,12 +64,15 @@ Verify code state first, then close completed issues (`gh issue close N --commen
 | 4. Best-practices | PASS | skills checked / N/A |
 | 5. Type-check + build | PASS | 0 errors |
 | 6. State files | PASS | PROGRESS/WORKING/CURRENT_WORK updated |
-| 7. Docs ↔ issues | PASS | #X, #Y closed |
+| 7. Docs ↔ issues | PASS | #X, #Y linked; integration pending |
 
 ### Phase Status: COMPLETE   (or: BLOCKED — <blocking items>)
 ```
 
-Only when every row is PASS/met and `PROGRESS.md` is fully checked do you signal `[PHASE_COMPLETE]`. If any step is BLOCKED, do NOT signal — fix or escalate first. For a legitimate exception (manual-only testing, a code-free phase), the stop checks accept an `[EVIDENCE_OVERRIDE:<reason>]` signal instead — use it honestly, not to bypass real gaps.
+Only when every row is PASS/met and `PROGRESS.md` is fully checked do you signal `[PHASE_COMPLETE]`. If any step is BLOCKED, do NOT signal — fix or escalate first. An `[EVIDENCE_OVERRIDE:<reason>]` marker never authorizes its own bypass.
+An exception requires explicit per-instance director authorization, recorded
+with the alternative verification and reason. Hook recognition of the marker
+is not proof of that authorization.
 
 ## Related
 

@@ -3,6 +3,9 @@ name: work
 description: "Work lifecycle orchestration: start, continue, pause, handoff, done, plus epic/sprint planning. Context gathering + goal-focused state-chain transitions."
 ---
 
+Runtime routes and project-specific tools: `docs/WORKFLOW_SKILLS.md`.
+
+
 # Work Lifecycle
 
 Orchestrates the full lifecycle of an issue: START → (WORK) → PAUSE/HANDOFF → CONTINUE → DONE, with EPIC-PLAN / SPRINT for multi-phase planning. Every transition updates the state chain and preserves goal-focused context for the next session.
@@ -17,7 +20,7 @@ Orchestrates the full lifecycle of an issue: START → (WORK) → PAUSE/HANDOFF 
 | `/work:continue` | Resume from state files | `continue.md` |
 | `/work:pause` | Checkpoint + commit WIP | `pause.md` |
 | `/work:handoff` | Full context handoff to another session | `handoff.md` |
-| `/work:done` | Verify, close issue, clear state | `done.md` |
+| `/work:done` | Verify, record readiness, prepare integration | `done.md` |
 | `/work:epic-plan #N` | Plan ALL sprints/phases for epic #N | `epic-plan.md` |
 | `/work:sprint` | Transition to the next sprint | `sprint.md` |
 
@@ -83,7 +86,7 @@ Comprehensive handoff to another session. Bring the state chain fully current, s
 
 ## /work:done
 
-Close out verified work. Confirm the exit gate passed (`/verify:complete`, stop-hook evidence), run a code review on changed files for Standard+, make the final commit, close the issue with a summary, align docs/labels and file any deferred-work issues, clear the active pointer, then push and open a PR per the project's git workflow. Full workflow: `done.md`.
+Close out verified work. Confirm the exit gate passed (`/verify:complete`, stop-hook evidence), run a code review on changed files for Standard+, make the final commit, link the issue with `Fixes #N` in the PR body (closure waits for the assigned integrator to merge), align docs/labels and file any deferred-work issues, clear the active pointer, then push and open a PR per the project's git workflow. Full workflow: `done.md`.
 
 ## /work:epic-plan
 

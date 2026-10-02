@@ -3,6 +3,9 @@ name: capture
 description: "Turn signals surfaced during work into tracked issues. Park discoveries and keep moving; convert audit/session findings to issues; block, triage, and roll up into epics — the human side of the self-improvement loop."
 ---
 
+Runtime routes and project-specific tools: `docs/WORKFLOW_SKILLS.md`.
+
+
 # Capture
 
 Signals in, issues out. During work you surface things outside the current task — a blocker, a defect, an adjacent idea, or system friction. Emit a signal and keep moving; the stop actions log it; `capture` is the deliberate pass that turns those logs into tracked issues (and framework fixes). This closes the feedback loop `docs/SELF_IMPROVEMENT.md` describes.
@@ -44,10 +47,10 @@ The signal vocabulary lives in the `patterns` skill (§ Discovery Signals, § Fr
 `FRICTION_LOG.md` entries land tagged `Classification: TODO`. Resolve each per `docs/SELF_IMPROVEMENT.md` § Classification Guide:
 
 - **PROJECT** — a local skill/hook/rule was wrong for this codebase. Fix the artifact in-repo (see the `workflow` skill), then set `Resolution:` on the log entry.
-- **FRAMEWORK** — an orchestration/hook/state-format problem shared by every project. File it upstream, then let `copier update` pull the fix back:
+- **FRAMEWORK** — an orchestration/hook/state-format problem shared by every project. Use the upstream repository configured by the project (`FRAMEWORK_REPOSITORY` below), then let `copier update` pull the fix back:
 
 ```bash
-gh issue create --repo JAuto-Corp/justinventit \
+gh issue create --repo "${FRAMEWORK_REPOSITORY:?set the upstream owner/repository}" \
   --title "FRICTION: <one line>" --body "<log entry + why it's framework-level>"
 ```
 

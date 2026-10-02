@@ -1,14 +1,6 @@
 ---
-description: Roll related captured issues up into an epic.
+description: Run the capture epic workflow.
 ---
 
-# /capture:epic
-
-Read the `capture` skill and execute the `/capture:epic` workflow.
-
-**Steps**:
-1. Select the related captured issues to group
-2. Create an epic issue linking them as its scope
-3. Note the epic in the state chain for a later `/work:epic-plan`
-
-See **SKILL.md § /capture:epic** for full details.
+Hand-written command projection. Read `.agents/skills/capture/SKILL.md`,
+then follow `.agents/skills/capture/epic.md` with the supplied arguments.

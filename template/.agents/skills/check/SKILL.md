@@ -3,6 +3,9 @@ name: check
 description: "Orchestrate verification ACROSS a chain of work — the multi-round, multi-tier audit loop that drives findings to zero. Distinct from /verify:complete (one phase's exit gate): /check escalates verify:* tiers and relays remediation to /work until a sprint/epic/change converges clean. Invoke to converge-verify a body of work, not to gate a single phase."
 ---
 
+Runtime routes and project-specific tools: `docs/WORKFLOW_SKILLS.md`.
+
+
 # Check — Converge Verification Across a Chain
 
 **Intent**: take a body of work that spans phases (a sprint, an epic, a remediation chain) and drive it to a clean verdict through escalating audit rounds.
@@ -57,7 +60,7 @@ After orienting you know: the surface, the domains touched, and whether this is 
 
 | Load | When |
 |-|-|
-| Matching skill(s) in `.claude/skills/domain/` | The changed surface touches that domain — explorers can't load skills; you cross-reference their findings |
+| Matching project-installed domain skill(s) | The changed surface touches that domain — explorers can't load skills; you cross-reference their findings |
 | `Skill(skill: "e2e")` | Runtime behavior needs proving, not just reading code |
 | `team-lead` | The tier calls for parallel adversarial review waves |
 

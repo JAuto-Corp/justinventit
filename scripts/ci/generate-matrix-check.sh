@@ -30,7 +30,7 @@
 #       that passes (a)-(d) but has its machinery quietly stripped.
 #   (f) SLASH-COMMAND RESOLUTION — every `/command` the generated skills and
 #       CLAUDE.md reference resolves to something real under .claude/commands/:
-#       a BARE token /x resolves to commands/x.md OR to the namespace dir
+#       a BARE token /x resolves to skills/x/SKILL.md, commands/x.md OR to the namespace dir
 #       commands/x/ (skills say "hand to /work" meaning the namespace); a
 #       NAMESPACED token /x:y must resolve to commands/x/y.md. Regression class:
 #       the skills documented /scope and /check as bare front doors for a full
@@ -146,8 +146,8 @@ scan_commands() {
       base="${tok%%:*}"; sub="${tok#*:}"
       [ -f "$dir/.claude/commands/$base/$sub.md" ] && continue
     else
-      # bare: a wrapper file OR a namespace directory both count as resolved
-      { [ -f "$dir/.claude/commands/$tok.md" ] || [ -d "$dir/.claude/commands/$tok" ]; } && continue
+      # bare: a direct skill, wrapper file or namespace directory resolves
+      { [ -f "$dir/.claude/skills/$tok/SKILL.md" ] || [ -f "$dir/.claude/commands/$tok.md" ] || [ -d "$dir/.claude/commands/$tok" ]; } && continue
     fi
     refs="$(grep -rn -- "\`/$tok\`" "${roots[@]}" 2>/dev/null \
              | sed "s#^$dir/##" | cut -d: -f1,2 | head -3 | tr '\n' ' ')"
