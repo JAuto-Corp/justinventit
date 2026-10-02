@@ -239,6 +239,13 @@ dispatch supply authority. Offline acceptance renders cluster and solo consumers
 uses allowlisted utilities and fake providers under scratch homes, and runs
 `scripts/tests/test_launch.py`; it is not live-provider compatibility evidence.
 
+## Shared host capacity (W-C4)
+
+After binding the project above, configure one explicit `JV_HOST_ROOT` shared
+by all cooperating projects and invoke `scripts/build-guarded.sh <command>`.
+[Host capacity](HOST_CAPACITY.md) describes admission outcomes, read-only status,
+inherited ownership, manual adoption and the supported child-lifetime limits.
+
 ## Optional shared host observations
 
 [Host observability](HOST_OBSERVABILITY.md) documents the explicit usage inputs,

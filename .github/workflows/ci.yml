@@ -131,6 +131,33 @@ jobs:
         # The R4 wrapper first retains: bash scripts/ci/test-skill-portability.sh
         run: bash scripts/ci/fixtures/copier-portability/run-r4-gate.sh
 
+      - name: Portable shared host capacity
+        run: python3 scripts/ci/test-capacity-portability.py --evidence "${{ runner.temp }}/wc4-green"
+
+      - name: Finite capacity and containment mutants
+        run: >-
+          python3 scripts/ci/test-capacity-mutants.py
+          --green-evidence "${{ runner.temp }}/wc4-green"
+          --evidence "${{ runner.temp }}/wc4-mutants"
+
+      - name: Upload capacity receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w-c4-capacity-evidence
+          path: |
+            ${{ runner.temp }}/wc4-green/*.json
+            ${{ runner.temp }}/wc4-green/*.jsonl
+            ${{ runner.temp }}/wc4-green/*.stdout
+            ${{ runner.temp }}/wc4-green/*.stderr
+            ${{ runner.temp }}/wc4-green/runner-error.txt
+            ${{ runner.temp }}/wc4-mutants/results.json
+            ${{ runner.temp }}/wc4-mutants/*/source-gate.json
+            ${{ runner.temp }}/wc4-mutants/*/lifetime.jsonl
+            ${{ runner.temp }}/wc4-mutants/*/stdout
+            ${{ runner.temp }}/wc4-mutants/*/stderr
+          if-no-files-found: warn
+
       - name: Runtime frontend-design availability receipt
         run: bash scripts/ci/runtime-skill-receipt.sh
 

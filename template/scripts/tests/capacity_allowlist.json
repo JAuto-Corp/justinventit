@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "contract": "Accident boundary for reviewed code. Inventories describe reviewed edges; exact full-file SHA256 pins their arguments, ordering and control flow. Unknown images refuse while guard and policy remain fixed.",
+  "authority": "O ruling 01M3WEG3R9Y9W6YR6MBWXF50Q8: committed policy plus guard, changed only by reviewed diff. File/in-memory self-registration and adversarial candidates are out of scope; the 2026-10-01 review's pidfd self-registration seed is an accepted limitation (SPEC I7).",
+  "python_helpers": [],
+  "stop_condition": "New bypass class after this design: stop and escalate to o; no further guard patch.",
+  "programs": {
+    "scripts/build-lock.sh": {
+      "language": "bash",
+      "builtins": [
+        "set",
+        "cd",
+        "pwd",
+        "readonly",
+        "printf",
+        "exit",
+        "local",
+        "return",
+        "exec (descriptor redirection only)",
+        "trap (lock_cleanup or clearing EXIT only)",
+        "umask",
+        "[[ ]]",
+        "(( ))",
+        "true (cleanup error handling)",
+        "shift (run verb dispatch)"
+      ],
+      "utilities": [
+        "dirname",
+        "stat (canonical lock and inherited FD device/inode)",
+        "awk (fixed MemAvailable program, /proc/meminfo)",
+        "flock (fixture FD only)",
+        "head (bounded info data)",
+        "sed (fixed info-field projection)",
+        "date",
+        "mktemp (LOCK_DIR/.info.*)",
+        "cat (metadata heredoc)",
+        "chmod (metadata temp)",
+        "mv (metadata publication)",
+        "rm (own temp/token info)",
+        "mkdir (configured host locks)"
+      ],
+      "functions": [
+        "fail",
+        "_jv_project_configure",
+        "_jv_verify_store",
+        "check_paths",
+        "get_available_mb",
+        "lock_held",
+        "read_info",
+        "holder_summary",
+        "write_info",
+        "lock_cleanup",
+        "refuse_inherited_fd",
+        "verify_inherited_fd",
+        "do_run",
+        "do_status"
+      ],
+      "helper_edges": [
+        {
+          "command": "source",
+          "literal": "source \"$SCRIPT_DIR/lib/jv-project.sh\"",
+          "target": "scripts/lib/jv-project.sh"
+        }
+      ],
+      "workload_edges": [
+        "\"$@\" || rc=$?",
+        "JV_BUILD_LOCK_FD=\"$LOCK_FD\" \"$@\" || rc=$?"
+      ],
+      "workload_boundary": "Only these exact forwarding sites; argv comes from trusted fixture builders. Unknown added dynamic invocation refuses.",
+      "mutation_only_edges": [
+        ": (no-op)",
+        "true (removed check)",
+        "flock -u (owned fixture descriptor)",
+        "rm LOCK_FILE (fixture inode)",
+        "mkdir LOCK_DIR (fixture status defect)"
+      ],
+      "images": [
+        {
+          "name": "baseline",
+          "sha256": "e2fbc5d12f56ceeae37d804673d39ad1d87726a0949f89c8b451768aac25059f"
+        },
+        {
+          "name": "binding",
+          "sha256": "db76017fdc391916ecc5fdf5de9b9c030653ef85a53bcf2be54cb3e3244f902b",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t1_binding_and_legacy_refusal"
+        },
+        {
+          "name": "project-lock",
+          "sha256": "2ab831ca6782f2a84b8c12fdc0be6ed330d1c72ccfbe3bf7f98da8e8d5a45683",
+          "purpose": "finite safe fixture mutant",
+          "witness": "r4_python_canonical_owner"
+        },
+        {
+          "name": "skip-flock",
+          "sha256": "e2cfbf98422d0d491762d1c1c7d8cbcf34787644ad383ee4e558689fe02bd6db",
+          "purpose": "finite safe fixture mutant",
+          "witness": "r4_python_canonical_owner"
+        },
+        {
+          "name": "metadata-authority",
+          "sha256": "281568a6dd06d1a4b3aa316581bce31eb8cbc55b91a67cfd4938e0094ddcd70d",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t2_contention_metadata_and_inode"
+        },
+        {
+          "name": "cleanup-unlocks",
+          "sha256": "57770ad1e2918bc2509f73eb8ca4f4379bcdf8365bbb24d0c32a74cf8a7deab5",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t3_crash_background_and_node_lifetime"
+        },
+        {
+          "name": "drop-fd",
+          "sha256": "8a37ba1d5beba240a619ca2246a418138de224dd0acd339a5bb3760f14658acb",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t3_crash_background_and_node_lifetime"
+        },
+        {
+          "name": "trust-marker",
+          "sha256": "fe137c137d7bd4ebeafcbbef1c27e374736ec00df3f678241894ec8f993792a5",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t4_spoofed_descriptors"
+        },
+        {
+          "name": "omit-owning-description",
+          "sha256": "26833248af4ea63df2c95d03cb09b86a0cf502aaf3ee8e4c7f575728f8d0915c",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t4_spoofed_descriptors"
+        },
+        {
+          "name": "nested-unlock",
+          "sha256": "863678a9fc99cbaea6918a1259638eff17752499eea15efbd1e40fcf4f3075f2",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t4_nested_same_and_cross_project"
+        },
+        {
+          "name": "memory-boundary",
+          "sha256": "20dfe53fbea3a8adf518cf0195156d69ea6fb048c741f9b5e0e5c76f5b8a058d",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t5_memory_boundaries_and_unknown"
+        },
+        {
+          "name": "swallow-command-status",
+          "sha256": "1b91e322cdc3ba9a52b62546da9f431fa4b70de8697de8664cad83d691c75fbc",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t5_f3_io_foreground_both_entries"
+        },
+        {
+          "name": "admit-metadata-failure",
+          "sha256": "2bf376e03a12690bc732ed4678ecf11ef4440116e97f14a7183465189e7b24a4",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t5_metadata_and_open_faults"
+        },
+        {
+          "name": "status-creates",
+          "sha256": "6c65e800af7ba9dbe537155fb742ab1c5457812f7ea0359d5e9c47e7b101d302",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t6_status_readonly_absent_and_held"
+        },
+        {
+          "name": "delete-inode",
+          "sha256": "d5f6cd06f85fedab073664510ebf6200ff9a73479e5589f8ad539cbcfd3e06a6",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t2_contention_metadata_and_inode"
+        },
+        {
+          "name": "F2-probe-error",
+          "sha256": "e14a5cc33f69fee3ccbe9a23756d463ffa9cdb5e64d17f6d93bb4cf2dd1c7d7b",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t4_f2_probe_error_is_not_conflict"
+        },
+        {
+          "name": "R3-inode-check",
+          "sha256": "da6175275e9c8ce8a08dd80c8d184fa0f861d68ea6b0458b1af088b0941e2651",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t4_spoofed_descriptors"
+        },
+        {
+          "name": "R4-other-common-inode",
+          "sha256": "caff4c2fb27198bf6ad91c7eb5cc935071baa9dafa97761685b1e91d741fb687",
+          "purpose": "finite safe fixture mutant",
+          "witness": "r4_python_canonical_owner"
+        },
+        {
+          "name": "C2-unsearchable-ancestor",
+          "sha256": "e4b5293a7e78e8628bee58ce56f147e6b3622950e82b46eb76d4fcafaaf069eb",
+          "purpose": "finite safe fixture mutant",
+          "witness": "c2_unsearchable_ancestor_is_unknown"
+        },
+        {
+          "name": "C3-false-held",
+          "sha256": "710b5d748dbb6347ca4fd5d2ec9d92a84c1df95b4c84ee7ab368865d4e5f4ffd",
+          "purpose": "finite safe fixture mutant",
+          "witness": "t6_status_readonly_absent_and_held"
+        }
+      ]
+    },
+    "scripts/build-guarded.sh": {
+      "language": "bash",
+      "builtins": [
+        "set",
+        "[[ ]]",
+        "printf",
+        "exit",
+        "cd",
+        "pwd",
+        "exec (literal bash edge only)"
+      ],
+      "utilities": [
+        "dirname"
+      ],
+      "functions": [],
+      "helper_edges": [
+        {
+          "command": "bash",
+          "literal": "exec bash \"$SCRIPT_DIR/build-lock.sh\" run \"$@\"",
+          "target": "scripts/build-lock.sh"
+        }
+      ],
+      "workload_edges": [],
+      "mutation_only_edges": [],
+      "images": [
+        {
+          "name": "baseline",
+          "sha256": "159f461822f3198b4d1b9e6c0727556d7f4721d3a7c29be3e910856c3a9a4aa7"
+        }
+      ]
+    },
+    "scripts/lib/jv-project.sh": {
+      "language": "bash",
+      "builtins": [
+        "printf",
+        "exit",
+        "local",
+        "[[ ]]",
+        "return",
+        "trap (literal own-temp rm only)",
+        "cd",
+        "pwd"
+      ],
+      "utilities": [
+        "find (configured project store)",
+        "flock (identity descriptors 205/206 in unused initializer)",
+        "mkdir (configured store in unused initializer)",
+        "jq (literal binding/projection programs)",
+        "mktemp (store identity temp)",
+        "rm (own identity temp)",
+        "mv (identity publication)",
+        "realpath (configured state root)"
+      ],
+      "functions": [
+        "_jv_fail",
+        "_jv_check_state_paths",
+        "_jv_init_store",
+        "_jv_project_configure",
+        "_jv_verify_store"
+      ],
+      "helper_edges": [],
+      "workload_edges": [],
+      "mutation_only_edges": [],
+      "reachability": "Capacity invokes configure/verify only; full shared helper image also pins the uncalled initializer.",
+      "images": [
+        {
+          "name": "baseline",
+          "sha256": "80ec586deab5d4e9623bc15068e191708b5b4b68d8b29cdcdae05d4496a0daa8"
+        }
+      ]
+    }
+  }
+}

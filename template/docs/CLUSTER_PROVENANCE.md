@@ -54,6 +54,22 @@ The schema retains the full source shape; reserved lifecycle fields do not grant
 an implementation of leases, watchers, capabilities, recovery or registry ownership.
 Provider profile installation and complete runtime integration remain W-D3 work.
 
+## Host capacity extraction
+
+Read-only source: JA `scripts/build-lock.sh`, `scripts/build-guarded.sh` and their
+three focused suites at `e6a51abb7a6ca47d885acd72e795ee7177bfe0d8` (landed
+2026-10-01). The unlanded #3814 reaper is excluded. See
+[the portable contract](HOST_CAPACITY.md).
+
+| Date / historical origin | Guard and why |
+| --- | --- |
+| JA 2026-09-26, `25b1f91b4` / #3695 | Kernel flock replaces PID/age stealing because Codex PID namespaces made host ownership inference unreliable. Retained descriptors protect surviving children. |
+| JA 2026-09-27, `ead1104f1` / #3713 | Same-inode plus separate-probe and owning-description checks permit real nested ownership without trusting a marker. |
+| JA 2026-09-30, portability audit §3 | One explicit host root separates shared capacity from project identity and avoids independent project-local slots. |
+| JV 2026-10-01, W-C4 SPEC F1 / JA #3814 F1/R4 | Retained detached descriptors can wedge capacity; closed descriptors can escape it. Document both boundaries without importing unlanded recovery. |
+| JV 2026-10-01, W-C4 SPEC F2/F3 | Explicit conflict 75 separates contention from probe errors; foreground execution preserves pipes, heredocs and a genuinely closed stdin. |
+| JV 2026-10-01, W-C4 RED R1–R4 | Declared dependency/effect checks and fixture-only paths precede execution; independently owned canonical and unrelated locks make ownership assertions discriminating. |
+
 ## Host usage and disk observation extraction (2026-10-01)
 
 Installed source snapshots, not a claimed Git revision:
