@@ -69,3 +69,30 @@ three focused suites at `e6a51abb7a6ca47d885acd72e795ee7177bfe0d8` (landed
 | JV 2026-10-01, W-C4 SPEC F1 / JA #3814 F1/R4 | Retained detached descriptors can wedge capacity; closed descriptors can escape it. Document both boundaries without importing unlanded recovery. |
 | JV 2026-10-01, W-C4 SPEC F2/F3 | Explicit conflict 75 separates contention from probe errors; foreground execution preserves pipes, heredocs and a genuinely closed stdin. |
 | JV 2026-10-01, W-C4 RED R1–R4 | Declared dependency/effect checks and fixture-only paths precede execution; independently owned canonical and unrelated locks make ownership assertions discriminating. |
+
+## Host usage and disk observation extraction (2026-10-01)
+
+Installed source snapshots, not a claimed Git revision:
+
+| Source | SHA-256 | Retained reason / extraction difference |
+| --- | --- | --- |
+| `usage/usage-hook.py` (96 lines) | `4488d7231cc6fa577ce80cfa0e5948c843f2c25d90ca20faa3e58332689d36e5` | 2026-09-28 usage pacing; director-only output, weekly elapsed target, inclusive ±10, stale indication, three-hour burn with 30-minute span. 2026-09-30 credits remain a separate balance series. |
+| `usage/pace.sh` (58 lines) | `4e7ef829a97764da7a944eb1f64b3fb390b985f0e4b7aa8cf686c9e268466b1e` | Fresh observations and sustainable rate; unify arithmetic with the hook and weekly window. Source comments describe unused manual arguments; no such interface is extracted. |
+| `usage/statusline.sh` (13 lines) | `6a9503bc739edbefb9d71f723b67a820c80bdf08c94c7134a54e22f89d7f10cc` | Read-only producer envelope reference. Installation/wiring is deferred. |
+| `scripts/disk-watch.sh` (36 lines) | `ebb6028975f527c81cf88b006b05e6775a0eb5800008a5eec474b979cd580f27` | Daily 85%/five-point and below-10-GiB/two-GiB buckets. Motivated by 2026-09-25 disk-full and 2026-09-08/29 secondary-disk outages. Exclude crash-dump purge and hard-coded recipient. |
+
+W-C5 intentionally adds explicit roots, pure project verification, checked shared
+locking/private state, bounded data reads, numeric validation, opaque model IDs,
+independent provider/target errors and checkpoint-after-delivery ordering.
+Account usage remains shared, never attributed as project quota. Static source
+image checks cover reviewed cooperating code, not candidate self-registration
+or hostile races. Extraction proof uses only synthetic provider/disk/sink data;
+no installed source execution or live provider compatibility is claimed.
+
+W-C5 code-review fold (2026-10-01): partial writes must not join a retry's row or
+checkpoint an incomplete alert; shared append-only framing repair preserves old
+bytes. TSV receives an invalidating marker because a truncated numeric last
+field can still parse. Bounds before float conversion prevent huge inputs from
+escaping provider isolation; history uses live-equivalent ranges, and newest
+credits select independently of weekly quota fallback. These are explicit
+portability corrections to the pinned source behavior, not source guarantees.

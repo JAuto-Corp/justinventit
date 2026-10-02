@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "authority": "Committed guard+policy, changed through reviewed diff; accident boundary only. Candidate self-registration and hostile filesystem races excluded. See SPEC threat model.",
+  "phase": "Candidate-failure correction; author-inspected fixed images; o exact-head admission pending",
+  "programs": {
+    "scripts/pace.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "e9206617e8d1632ff0a11df658798643fc940c9f83f672ee46a32d677794b501"
+        }
+      ],
+      "edges": "bash builtins, dirname, cd/pwd; exec bash scripts/lib/jv-observability.sh usage; no other edges."
+    },
+    "scripts/usage-hook.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "3d869dcd9eba3c841cf2a0ff7bf3c0f14f060e8eb49dc49edf8bec6b7acf2d3a"
+        },
+        {
+          "name": "other-seat-hook",
+          "sha256": "fe69f9613300912afb88e89c9ab9c449dcf26ba5e9457f66b7005d08fc4d7068"
+        }
+      ],
+      "edges": "role check before any data/helper access; dirname, cd/pwd; bash shared dispatcher hook, errors suppressed. No installed hook."
+    },
+    "scripts/disk-watch.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "a27d2eedf4f1c82c6cf2721f821d099d7270ed0c9cfe57afe9d84c5e4d49f956"
+        }
+      ],
+      "edges": "bash builtins, dirname, cd/pwd; exec bash shared dispatcher disk. No deletion edge."
+    },
+    "scripts/lib/jv-observability.sh": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "c87c7a722d59a266b300850637a1cb77b46cc67c5add8a66aa9e79e198955808"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "fe3a9f25e13d11cb05f0d3692e0fc8a095393f6a18858b76fddb81fa3d88c333"
+        },
+        {
+          "name": "binding",
+          "sha256": "ae9a00dd655058761bee0f94d7347723a5da163aab518d1f3b8b8e0f20ad6967"
+        }
+      ],
+      "edges": "bash builtins, dirname, cd/pwd; source fixed jv-project.sh, call configure and pure verify only; exec python3 fixed helper."
+    },
+    "scripts/lib/jv-observability.py": {
+      "images": [
+        {
+          "name": "inert-data-calibration",
+          "sha256": "9f56e761d79bfdb34304a012586cb04d16b435ef6130091a97702e559260a2f2"
+        },
+        {
+          "name": "green-baseline",
+          "sha256": "5c688be2a7d4b363d34f92c9be79d06a09e0e8a9718c37881eacf7484f3157c1"
+        },
+        {
+          "name": "home-fallback",
+          "sha256": "eae2f3c45756e64563e3fc1deb60f58642fd229cb5256470fe6e60d716291c5d"
+        },
+        {
+          "name": "malformed-zero",
+          "sha256": "554ce3a9bf613f4578852bd5922757b4fe0bc7d5355f8408c9b293f7c8633a09"
+        },
+        {
+          "name": "prompt-data",
+          "sha256": "c50b9cb93f5b7d6330c2c06c08182bba6611c5d0ac499e908f6dc18446ccce1b"
+        },
+        {
+          "name": "ignore-age",
+          "sha256": "4df8d5fcee88672fa8b739d977bccc32b627f41a2b85d439571c2fd85601543f"
+        },
+        {
+          "name": "pace-equality",
+          "sha256": "83556703b2ab55fa212eccc97f5bd4c6dc2419ce0384dfa2a9c286abd11a350c"
+        },
+        {
+          "name": "reset-filter",
+          "sha256": "617e83df48832cabb2d8e756b9b70fb8d60aacdedbe621f195ae15eb5665a51b"
+        },
+        {
+          "name": "credit-quota",
+          "sha256": "6698d58f65f0178160f3d1a11bfe46b025c89ded93c8a398439aeb9a9bc46b5c"
+        },
+        {
+          "name": "old-over-fresh",
+          "sha256": "b83e094d05ed148347b8106a5d15c000b5769d54aadcbac417148a3bb804aa23"
+        },
+        {
+          "name": "ignore-lock",
+          "sha256": "38ad39129f944a36276a05e20a83a1aec1a5a9923faea112a076044cc86482c4"
+        },
+        {
+          "name": "project-suppression",
+          "sha256": "2b7458263a12427856cdd1214924a18b97d6380d48b149cb625a5b794599a054"
+        },
+        {
+          "name": "disk-equality",
+          "sha256": "e919a49749e0fcd08a36bed9a6fe7394a694bc889a37976889088232f2fe6670"
+        },
+        {
+          "name": "premature-checkpoint",
+          "sha256": "c95bd4725a8d5d98fd2e2f8208a22c6afde627d93c3a9a11a79d0ff755924f42"
+        },
+        {
+          "name": "F3-primary-weekly",
+          "sha256": "d064fb429718e550dbcbe8e3a129769f9a9c36b1984c3dda275fb96cbe106c92"
+        },
+        {
+          "name": "F4-display-name",
+          "sha256": "af60ba5a514a2c17a5c5a6d645462dc6606316307d2c9a56c7a90240326ad8da"
+        },
+        {
+          "name": "F5-abort-providers",
+          "sha256": "10572dfa4023cd935a088bbb12c1ae80ed2288d5acb964f2e1822d7b7ff8d1cb"
+        },
+        {
+          "name": "F5-secondary-first",
+          "sha256": "f50a2c13d6626366caa72ff93d137ee2c7c051138d27ccb9019ca42799f87ca0"
+        },
+        {
+          "name": "F6-no-min-span",
+          "sha256": "ca928e2068d143493883ce01803506e38e246bb42db0aeb834940ca819cb5f48"
+        },
+        {
+          "name": "F6-no-cutoff",
+          "sha256": "8da76eaba10e8f24c41be61436859cf964836a0953daf94e1922e14fd4f5a84c"
+        },
+        {
+          "name": "F7-read-all",
+          "sha256": "cd4c8ac39063500381a6739c8e5d6669c95f1f6b56cda2480a3b6dca36bed0fd"
+        },
+        {
+          "name": "R1-alert-framing",
+          "sha256": "8780c0b430a5b3bbd7a6f85a4d0ffdae57b8c90718a4129e6c012a67c2e8c590"
+        },
+        {
+          "name": "R2-huge-zero",
+          "sha256": "f3a78de60e227ab84edbfcffc1f0c1b242c3e19698241a2e670ca1a763352714"
+        },
+        {
+          "name": "R3-weekly-credits",
+          "sha256": "31fe718a2a770436510380f33a85b04b5b228888e369011b909a43fe209c732b"
+        },
+        {
+          "name": "R4-history-range",
+          "sha256": "46b42f9dd47bd3a27c614e3a94686a914f2d0ff92d0e0bd7c7e8a7a1371ab6a7"
+        },
+        {
+          "name": "R5-unframed-history",
+          "sha256": "4e37818434a7991cb1aa572f4303e11f84c7eb6c53efadeead7f27458db0a3c8"
+        },
+        {
+          "name": "R5-tsv-marker",
+          "sha256": "8c7ee116e1f5a79468436f74951dd4a342e7a2e1bee3ece871d13e56cad01c21"
+        },
+        {
+          "name": "R6-candidate-failure",
+          "sha256": "0c49f37534495acf59a76edb7c11309897fc3415493abd8f372ee10ef3fee45b"
+        }
+      ],
+      "edges": "stdlib contextlib, datetime, fcntl, hashlib, json, math, os, pathlib, re, stat, subprocess, sys, tempfile, time. Bounded selected data reads; private host-state writes; flock; df argv (fixture stub); explicit notifier argv+JSON stdin (fixture executable). Checkpoint replaces/unlinks only its own mkstemp. No provider/network/mail/process-discovery/native cleanup edges. Code fold: same stdlib/command closure; append-only framing repairs own alert/history files, no truncation/deletion or sidecar; bounded alert/history data inspection."
+    },
+    "scripts/lib/jv-project.sh": {
+      "images": [
+        {
+          "name": "accepted-project-helper",
+          "sha256": "80ec586deab5d4e9623bc15068e191708b5b4b68d8b29cdcdae05d4496a0daa8"
+        }
+      ],
+      "edges": "Unchanged accepted helper: used configure/verify paths invoke bash builtins, realpath, find, jq. Uncalled initializer includes flock, mkdir, mktemp, mv, rm; no observability invocation initializes binding."
+    }
+  }
+}
