@@ -166,7 +166,6 @@ as a short packet or use an existing standing authority. Prioritize by actual ex
 a single-user pre-public deployment does not acquire an internet-facing threat model by
 analogy. Existing security, correctness and effect gates remain binding.
 Why: the owner-visible milestone was getting displaced by ceremony and speculative work.
-Origin: **JA, 2026-09-30**, `FOCUS.md` and `PONYTAIL-BOOT-v1.md` Notch-up.
 
 After ruling a recurring mechanical failure class, the director can grant a bounded
 standing authority: named holder, exact predicate/evidence, permitted action, invalidations
@@ -175,26 +174,6 @@ record; preserve raw failures and distinguish qualification from PASS. A grant i
 general retry budget, assertion waiver, merge permission or production-effect approval.
 A later hold must reach the holder before it can countermand the grant. Do not ask again
 when its conditions still hold; otherwise send the smallest decision packet to the director.
-
-The following are **historical JA examples, not grants to a generated project**. Adopt
-only a pattern the project's authorized director has actually ruled:
-
-| Origin example | Predicate and bounded response |
-|-|-|
-| SA1, 2026-09-29 | Metadata/review-only inventory drift: sanctioned regeneration, verify the gated diff, PR note. |
-| SA2, 2026-09-29 | Exact gateway-5xx setup signature with an earlier hosted pass and identical fixtures: classify once; recurrence is filed, not retried. |
-| SA3, 2026-09-29 | A later commit changes no runtime, tests, workflows, dependencies or SQL: qualify existing proof by the complete relevant delta; do not call it a new run. |
-| SA4, 2026-09-29 | Local failures match a merge-base control with unchanged tests/helpers: retain raw FAIL, require hosted PASS; new failure or changed blob escalates. |
-| SA5, 2026-09-29 | Generated-artifact freshness failure: documented regeneration from clean scratch, generated-only diff, one batched follow-up after terminal CI; other deltas escalate. |
-| SA6, 2026-09-30 | One default-timeout failure and every other check passes: one whole-file rerun at the same head; record qualification, expire on the systemic fix. |
-| SA7, 2026-09-30 | Exact post-seed restart/502 sequence: require exact migration-version set, timely service health and relevant live predicates; retain qualified raw failure, expire on the fix. |
-| SA8, 2026-09-30 | Read-only migration-validation race: lag is exactly the newly merged migrations and fresh readback proves catch-up; rerun that job once, second red escalates. |
-
-Why: mechanical snags caused repeated director round-trips and duplicate diagnosis.
-Origin: **JA, 2026-09-29–30**, `feedback-ceremony-tangle-standing-authorities.md`,
-`standing-authorities-canonical.json` (SA1–5), integrator handoff (SA6–8); primary SA1–3
-ruling `01M3PN19EJZM301TM52NBG31S4`. Project-specific paths, fixtures and live grants stay
-with the source project; these examples supply no runtime configuration.
 
 ## Seat communication
 
@@ -208,14 +187,10 @@ message is not a complete drain. Ad-hoc sessions follow direct user work and con
 commissioned seat's mail. Use the project's installed transport; this guidance alone does
 not install a mailbox or move its cursor semantics into this document.
 Why: stale wake intent raced a hold, and consumed-but-unread output hid delivered blockers.
-Origin: **JA, 2026-04-30** chain-handoff incident (PR #2035), **2026-05-18** stale dispatch
-(PRs #2353/#2354), **2026-05-31** parallel drain/action (Epic #2249), and
-**2026-07-10 / 2026-09-30** `persisted-drain-output-skip-trap.md`.
 
 Mail the director only at milestones: CI terminal, landed, blocker or a decision outside
 standing authority (plus a deliverable explicitly requested in the dispatch). No ACK,
 “recorded” or “adopted” messages. Lead with outcome and the one decision needed; evidence
 belongs in the linked PR/packet. Existing dispatch-specific START/END protocols still apply.
 Why: every mail wakes an expensive director context; repeated acknowledgements burned
-capacity without advancing the outcome. Origin: **JA, 2026-09-28**, milestone-mail ruling
-`01M3KM7X69GARREETG41VVZE7E`; **2026-09-30**, Ponytail reporting addendum.
+capacity without advancing the outcome.

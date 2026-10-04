@@ -7,7 +7,7 @@ description: "Meta-skill for editing the framework itself — skills, hooks, com
 
 This is how the framework safely edits ITSELF. Every artifact under `.claude/` (skills, hooks, commands, rules) and the `CLAUDE.md` router follows a shape the runtime depends on. Editing one blindly breaks discovery, enforcement, or `copier update`. Read the matching operation before you touch it.
 
-> Route, don't dump. Load on demand. Enforce, don't suggest. A system artifact earns its tokens — keep every layer lean and let the layer below hold the detail. (`docs/ARCHITECTURE.md` § Design Principles.)
+> Route, don't dump. Load on demand. Enforce, don't suggest. A system artifact earns its tokens — keep every layer lean and let the layer below hold the detail.
 
 ## Operations
 
@@ -26,7 +26,7 @@ Only `edit-skill` has a command wrapper; the rest are sub-operations you reach b
 
 | Layer | Location | Contract |
 |-|-|-|
-| Router | `CLAUDE.md` (< 200 lines) | Copier-managed content lives between `<!-- forge:start -->` / `<!-- forge:end -->`; edits OUTSIDE the markers survive `copier update`. Source: `CLAUDE.md.jinja`. |
+| Router | `AGENTS.md` (< 200 lines) | Canonical contract for every runtime; seeded once, project-owned, never rewritten by `copier update`. `CLAUDE.md` imports it and adds Claude extras inside forge markers. |
 | Skills | `.claude/skills/**/SKILL.md` | Lazy-loaded: only frontmatter (`name`, `description`) enters context at session start; the full body loads on invocation. Router SKILL.md + lean sub-files. |
 | Commands | `.claude/commands/<domain>/<name>.md` | Auto-discovered by path → slash command. Thin pointer into a skill. |
 | Rules | `.claude/rules/*.md` | Frontmatter `paths: [...]` globs; load only when Claude touches a matching file. Project-owned. |
@@ -59,10 +59,10 @@ A guard (PreToolUse), a stop check, or a stop action. Stop checks/actions are au
 
 Path-scoped guidance that loads only for files matching its `paths:` globs — cheaper than CLAUDE.md for anything not universal. Full patterns: `rule.md`.
 
-## Edit CLAUDE.md
+## Edit AGENTS.md / CLAUDE.md
 
-The router every session reads. Stay under 200 lines; framework content goes between the forge markers (in `CLAUDE.md.jinja`), project content outside them. Full guidance: `claude-md.md`.
+`AGENTS.md` is the router every runtime reads (under 200 lines); `CLAUDE.md` adds Claude-only extras and never restates it. Full guidance: `claude-md.md`.
 
 ## Validate a change
 
-Before committing any system edit: frontmatter intact, line budgets met, pointers resolve, hooks have passing harness tests, `CLAUDE.md` under budget. Full checklist: `validate.md`.
+Before committing any system edit: frontmatter intact, line budgets met, pointers resolve, hooks have passing harness tests, `AGENTS.md` under budget. Full checklist: `validate.md`.
