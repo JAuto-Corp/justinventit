@@ -28,8 +28,7 @@ component, table or flag needs an owner-visible reason or is cut. Prefer already
 behavior and real project evidence over speculative cases. Priority and exposure follow
 `DELIVERY.md` — Active milestone and standing authorities.
 Why: over-engineering and context-free security concerns displaced milestone delivery.
-Origin: **JA, 2026-09-30**, `PONYTAIL-BOOT-v1.md` Notch-up; the pinned upstream payload
-remains untouched. The review round caps and blocker rules live in `REVIEW_PRACTICE.md`.
+The pinned upstream payload remains untouched; review round caps and blocker rules live in `REVIEW_PRACTICE.md`.
 
 Both runtimes reach this file through ordinary entry: Codex via the generated `AGENTS.md` contract (project-owned after
 seeding), Claude Code via `CLAUDE.md`, which imports it. Upstream Caveman defaults to `full`; the portable default above is `lite`, so a runtime that loads the

@@ -40,7 +40,7 @@ Explorers can't load skills. Invoke each applicable project best-practices skill
 
 ### 5. Type-check + build
 
-Run the project's configured `type_check_command` then `build_command` (see `.copier-answers.yml` / `CLAUDE.md` § Essential Commands). Both must pass with zero errors.
+Run the project's configured `type_check_command` then `build_command` (see `.copier-answers.yml` / `AGENTS.md` § Essential Commands). Both must pass with zero errors.
 
 ### 6. State files
 

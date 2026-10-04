@@ -52,7 +52,7 @@ Remove the issue from `context/WORKING.md`'s immediate-next-task and reset the `
 
 ### 7. Push and open a PR
 
-Per the project's git workflow (see `CLAUDE.md` § Git Workflow — agents commit freely, humans gate the push/merge):
+Per the project's git workflow (see `AGENTS.md` § Git Workflow — agents commit freely, humans gate the push/merge):
 
 ```bash
 git push -u origin feature/issue-N-description

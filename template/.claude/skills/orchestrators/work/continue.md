@@ -11,7 +11,7 @@ Resume from state files. Handles phase/sprint transitions automatically.
 
 ### 0. Compaction recovery (if applicable)
 
-If this session just woke from a context-compaction archive, treat it as a **fresh session**, not a resume — compacted context is lossy. Re-read `CLAUDE.md` § Before Working, `git log --oneline -10` (what shipped while compacting), and any open-PR feedback, then continue to step 1 including the full plan re-read. Resuming mid-task on compacted context is the #1 source of drift.
+If this session just woke from a context-compaction archive, treat it as a **fresh session**, not a resume — compacted context is lossy. Re-read `AGENTS.md` § Before Working, `git log --oneline -10` (what shipped while compacting), and any open-PR feedback, then continue to step 1 including the full plan re-read. Resuming mid-task on compacted context is the #1 source of drift.
 
 ### 1. Read the state chain (in order)
 
