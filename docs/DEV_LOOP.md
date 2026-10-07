@@ -110,7 +110,7 @@ Named practices (ratified from independent convergent field use):
 | DIAGNOSTIC | an implement seat *escalated* (matrix diagnostic class): hypotheses become durable tests + logging in the SAME PR (diagnostic-in-fix discipline), never prose tracethrough |
 | SYNTHESIS / DOCUMENTATION | baseline = docs_baseline (smart model); maintenance = docs_maintenance once hierarchy exists; stage-7 deltas by the change author |
 | INTEGRATION | I seat exclusively (merge serialization invariant — instruction/protocol-enforced today on BOTH runtimes; `.rules`/policy emission is the Phase-3 enforcement target, `MODEL_MATRIX.md` §1a) |
-| CAPTURE | every seat captures; O triages; periodic label/epic/roadmap reviews are dispatched doing-work |
+| CAPTURE | every seat captures; O triages and routes each capture to a layer (intake: join a group or slot in); periodic label/epic/roadmap reviews are dispatched doing-work |
 | CROSS REVIEW | cross_review class: fresh-context audits + codex second-opinion lane; reviewers are NEVER the authoring session |
 | FRONTEND | implement seats with frontend charter (design-system conventions, i18n/mobile principles from Layer B skills) |
 

@@ -14,6 +14,14 @@ TODO: one observable outcome, agreed with the owner; link its intent/invariants/
 |-|-|-|-|
 | 1 | TODO | TODO | Not dispatched |
 
+## Lane
+
+1. TODO: the ordered slice queue through the CI lane, one line each.
+
+## Queued next
+
+1. TODO: ordered rows — after / source / thread / issue; nothing here starts without its gate.
+
 ## Parked
 
 - TODO: work outside the active path, with its record and re-entry condition.

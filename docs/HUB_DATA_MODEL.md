@@ -38,7 +38,7 @@ All keys are compound with `project_id` (immutable, issued at adoption; never in
 | `roles` | seat registry + liveness — **authority defined by the seat-control contract** (`SEAT_PROTOCOL.md` §1): authoritative on multi-host (postgrest) fleets; a derived mirror of the file-backed registry on single-host fleets | letter, runtime, model, effort, capabilities |
 | `dispatches` | units of assigned work | status ladder; prereq ids; scope class; refs (issue/PR) |
 | `status_events` | dispatch transitions | the event stream dispatch state folds from |
-| `threads` | long-running workstreams | state: live/parked/dead/shipped; checklist; depends_on |
+| `threads` | long-running workstreams | state: live/parked/dead/shipped; checklist = slices (degree = done/total); depends_on; derived, no new enum: parked + a predecessor live or queued = queued, parked + every predecessor shipped = ready |
 | `findings` | discoveries awaiting routing | route → thread; resolve |
 | `attention` | user-facing questions/blocks | severity; one-tap metadata; answer verb |
 | `journal` | rules/decisions/milestones | supersedes chain by hub_id |
