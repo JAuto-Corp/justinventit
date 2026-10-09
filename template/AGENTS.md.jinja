@@ -1,5 +1,5 @@
 # {{ project_name }} — Agent Entry Contract
-<!-- jv-entry-contract: 3 -->
+<!-- jv-entry-contract: 4 -->
 
 This file is the canonical entry contract for every runtime (Codex reads it natively; Claude Code imports it
 from `CLAUDE.md`). Runtime-specific extras live in `CLAUDE.md`; nothing below depends on a particular runtime.
@@ -28,10 +28,22 @@ Commissioned seats follow DELIVERY's drain/reconcile-before-act rule; ad-hoc ses
 consume no seat mail. These entry projections are hand-written; policy generation is not built.
 
 1. Read `docs/PLAYBOOK.md` — session entry point, identifies active lifecycle phase
-2. If in execution phase: Read `docs/CURRENT_WORK.md` → `context/WORKING.md` → Phase SPEC.md
+2. Read `docs/FOCUS.md` first (or the host-local path this file names): § Path in order = now, § Queued next =
+   next and why, § Parked = not now. Then the row's thread → epic folder → SPEC → PROGRESS. `docs/CURRENT_WORK.md`
+   and `context/WORKING.md` are per-workspace scratch, never cross-session truth.
 3. Sync: `git fetch origin && git log --oneline HEAD..origin/$(git branch --show-current) | head -5`
 
 ## Development Loop (Non-Negotiable)
+
+```text
+Layers (each artifact names its parent; each PR body names its thread):
+0 Intake: O routes each idea to a layer; fragments join a group (one source, FOCUS row, thread, anchor issue).
+1 Milestone: FOCUS § Owner outcome + the owner's decision surface.
+2 Workstream: FOCUS row + hub thread + epic folder or source index; degree = checklist done/total.
+3 Slice: one PR + SPEC/brief + one thread checklist item; ordered in the Lane.
+4 Dispatch: one brief + hub row + ≤30-line seat note naming the dispatch id; one seat, one dispatch.
+States: workstreams live/queued/ready/parked/shipped/dead; slices draft → accepted → green → merged → deployed → witnessed; dispatches use the hub ladder.
+```
 
 **No code without scenarios. No scenarios without acceptance criteria.** One loop for every runtime; the same
 stages as the framework's `DEV_LOOP.md` §1, in this order:

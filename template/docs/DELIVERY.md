@@ -159,14 +159,23 @@ those outcomes. No dashboard or new mandatory metric event is required.
 ## Active milestone and standing authorities
 
 Maintain one project-owned `docs/FOCUS.md` under 60 lines: owner outcome, ordered steps
-with one owner/state each, parked work and capacity/CI lane order. Re-read it at ordinary
-boot and before dispatch; update a line when state changes, with detail linked elsewhere.
+with one owner/state each, the Lane, queued next, parked work and capacity/CI lane order.
+It may live host-local instead (AGENTS.md names the path) when edit cadence or customer
+data rule out the repo; cloud and clone sessions then get the active row in their dispatch.
+Re-read it at ordinary boot and before dispatch; update a line when state changes, with
+detail linked elsewhere.
 Only business decisions go to the owner. Technical/process decisions go to the director
 as a short packet or use an existing standing authority. Prioritize by actual exposure;
 a single-user pre-public deployment does not acquire an internet-facing threat model by
 analogy. Existing security, correctness and effect gates remain binding.
 Why: the owner-visible milestone was getting displaced by ceremony and speculative work.
 Origin: **JA, 2026-09-30**, `FOCUS.md` and `PONYTAIL-BOOT-v1.md` Notch-up.
+
+A pre-scope workstream keeps ONE source index (requirements, evidence map, dated field
+examples; host-local when it holds customer data). Fragments join it as a dated file plus an
+index row, never a new issue or epic; a FOCUS row, a hub thread `next_gate` and one anchor
+issue titled with the group's name each point at it. Scoping materializes the epic from it.
+Why: a related idea spawned a duplicate epic. Origin: **JA, 2026-10-07**, DEV-STRUCTURE-PLAN §0b.
 
 After ruling a recurring mechanical failure class, the director can grant a bounded
 standing authority: named holder, exact predicate/evidence, permitted action, invalidations

@@ -16,15 +16,15 @@ For local team coordination, configure the [mailbox and hub client](CLUSTER.md).
 |-|-|
 | Setup | Fill in the AGENTS.md codebase map, review hooks, try first ATDD cycle |
 | Planning | Create SPEC.md + SCENARIOS.md for next feature |
-| Execution | Read state chain: CURRENT_WORK → WORKING → SPEC → SCENARIOS → PROGRESS |
+| Execution | FOCUS first (`docs/FOCUS.md` or the host path AGENTS.md names) → thread → epic folder → SPEC → SCENARIOS → PROGRESS |
 | Validation | Run `/verify:complete` before marking phase done |
 
 ## State Chain
 
 Read in order when in execution phase:
 
-1. `docs/CURRENT_WORK.md` — what epic/sprint/phase is active
-2. `context/WORKING.md` — immediate next action (append-only blocks)
+1. `docs/FOCUS.md` (or the host path AGENTS.md names) — the active row, then its thread and epic folder
+2. `docs/CURRENT_WORK.md`, `context/WORKING.md` — per-workspace scratch (phase pointer, next action); never cross-session truth
 3. Phase `SPEC.md` — acceptance criteria
 4. Phase `SCENARIOS.md` — Gherkin scenarios (ENTRY GATE)
 5. Phase `PROGRESS.md` — implementation checklist
