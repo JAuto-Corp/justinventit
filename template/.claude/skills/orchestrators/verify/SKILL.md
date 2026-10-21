@@ -23,9 +23,9 @@ Prove work does what the SPEC said, then gate the phase/sprint. `/verify:complet
 
 ## Shared foundations
 
-**State chain** (read in order — see `CLAUDE.md` § Session State Management): `docs/CURRENT_WORK.md` → `context/WORKING.md` → phase `SPEC.md` / `SCENARIOS.md` / `PROGRESS.md`.
+**State chain** (read in order — see `AGENTS.md` § Session State Management): `docs/CURRENT_WORK.md` → `context/WORKING.md` → phase `SPEC.md` / `SCENARIOS.md` / `PROGRESS.md`.
 
-**Configured commands**: reference the project's type-check and build commands abstractly — read `type_check_command` / `build_command` from `.copier-answers.yml`, or `CLAUDE.md` § Essential Commands. Never hardcode a stack's tooling.
+**Configured commands**: reference the project's type-check and build commands abstractly — read `type_check_command` / `build_command` from `.copier-answers.yml`, or `AGENTS.md` § Essential Commands. Never hardcode a stack's tooling.
 
 **Multi-perspective audit**: every audit command deploys parallel Explore agents (see the `patterns` skill § Multi-Explorer Pattern) — one per perspective that applies to the changed surface, each returning a bounded (<2000 char) summary. Explorers cannot load skills; after they report, YOU invoke the project's matching best-practices skill(s) (`.claude/skills/domain/`) and cross-reference their findings. The perspective menu and report template live in `audit.md`.
 

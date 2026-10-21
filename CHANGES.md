@@ -6,6 +6,8 @@ Release entries follow `docs/ADOPTION.md`: one row per change id; `tier` is the 
 
 ## Unreleased
 
+- 2026-10-04 prompt audit (JV-G1-4): o overrides W-A’s retained-origin choice; remove project-specific Origin lines from template delivery/review/mode guidance and retain Why lines.
+
 ### BREAKING-CHANGE: W-C3 pacemaker recovery retirement
 
 The W-C3 update replaces the generated pacemaker's automatic prompt injection,

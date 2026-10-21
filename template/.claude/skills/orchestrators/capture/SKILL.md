@@ -5,7 +5,7 @@ description: "Turn signals surfaced during work into tracked issues. Park discov
 
 # Capture
 
-Signals in, issues out. During work you surface things outside the current task — a blocker, a defect, an adjacent idea, or system friction. Emit a signal and keep moving; the stop actions log it; `capture` is the deliberate pass that turns those logs into tracked issues (and framework fixes). This closes the feedback loop `docs/SELF_IMPROVEMENT.md` describes.
+Signals in, issues out. During work you surface things outside the current task — a blocker, a defect, an adjacent idea, or system friction. Emit a signal and keep moving; the stop actions log it; `capture` is the deliberate pass that turns those logs into tracked issues (and framework fixes).
 
 > Park it and keep moving. A discovery you chase mid-task is two tasks half-done. Capture fast, label correctly, continue — then process the parking lot on purpose.
 
@@ -41,7 +41,7 @@ The signal vocabulary lives in the `patterns` skill (§ Discovery Signals, § Fr
 
 ## Processing friction (PROJECT vs FRAMEWORK)
 
-`FRICTION_LOG.md` entries land tagged `Classification: TODO`. Resolve each per `docs/SELF_IMPROVEMENT.md` § Classification Guide:
+`FRICTION_LOG.md` entries land tagged `Classification: TODO`. Resolve each:
 
 - **PROJECT** — a local skill/hook/rule was wrong for this codebase. Fix the artifact in-repo (see the `workflow` skill), then set `Resolution:` on the log entry.
 - **FRAMEWORK** — an orchestration/hook/state-format problem shared by every project. File it upstream, then let `copier update` pull the fix back:

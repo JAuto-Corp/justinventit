@@ -3,15 +3,12 @@
 > Canonical provider-neutral policy, rendered unchanged by Copier. The framework's
 > DEV_LOOP and TDD_GATE define the surrounding gates; the project's entry contract
 > selects its profile. This policy defines review practice, not automatic enforcement.
-> The September 29–30 amendments below supersede the earlier correction/provider defaults.
 
 ## Why
 
 The value of review is finding **real consequences in the context of the whole system**. In
-one measured week of same-family review (JA, 2026-09-24..26; o's tally of the verdict files in
-the host review verdict archive, JA PRs #3674, #3677/#3683, #3662 and #3682 among others), about
-39% of 160+ review runs returned BLOCK, and single slices took up to 19 runs (#3674). The rounds produced two kinds
-of finding:
+one measured week of same-family review, about 39% of 160+ runs returned BLOCK and single
+slices took up to 19 runs. The rounds produced two kinds of finding:
 
 - **Signal.** A consequence someone would feel: live under-billing (attached add-ons
   dropped from 18 invoices), invoice lines deleted by a rebuild, a price preview hiding
@@ -109,10 +106,7 @@ full audit or TDD requirement to a change that already qualifies for one.
    Local-only harness hardening remains capped at one round, with residuals recorded.
 
 Why: tests shared design blind spots, while repeated reviews grew slices and correction
-loops. Origin: **JA, 2026-09-29**, owner-approved `REVIEW-TEST-FLOW-PILOT.md` and
-`feedback-review-test-flow-traceability.md` (baseline: JA PR #3716); SPEC cap and minimum
-solution-shape pointer: **JA, 2026-09-30**, `PONYTAIL-BOOT-v1.md` Notch-up. These are historical sources,
-not runtime paths. No new mutation runner or enforcement hook ships with this policy.
+loops. No new mutation runner or enforcement hook ships with this policy.
 
 ## 5. Scoreboard (learn which review is signal)
 
@@ -121,7 +115,7 @@ When the director dispositions a finding, it records one tag:
 with the reviewer's model family and charter. Periodically compare signal rates per
 reviewer, family and charter, and adjust the matrix. In the existing record also track
 rounds per slice, findings per stage and escaped defects (CI or production); do not add
-a new reporting system. Origin: JA review/test pilot, 2026-09-29. A retro-review batch by a different
+a new reporting system. A retro-review batch by a different
 family over already-landed work is the canonical experiment: it shows what one family
 missed that the other found.
 
@@ -144,10 +138,8 @@ cross-provider evidence. Keep role independence, fresh context/blindness, requir
 count, assertion approvals, RED/GREEN, integration and effect gates. Substitution neither
 supplies a missing independent opinion nor permits a lower tier or runtime-policy bypass.
 
-Why: the earlier defer-until-reset interpretation stranded authorized work without adding
-an independent opinion. Origin: **JA, 2026-09-17**, `DELIVERY-PROGRESSION-v1.md`, owner
-ruling `01M2RD3E9FA4QNW2N1AM82MNJN`. This is the single availability rule; it supersedes
-older “owed opinion” fallback wording, without changing initial audit cardinality.
+Why: a defer-until-reset reading stranded authorized work without adding an independent
+opinion. This is the single availability rule; it does not change initial audit cardinality.
 
 ## 7. Execution hygiene (lessons that cost cycles)
 
@@ -169,8 +161,6 @@ older “owed opinion” fallback wording, without changing initial audit cardin
 - **Project contract:** the project's entry contract (AGENTS.md / CLAUDE.md) references this
   document in its development-loop line. The project's gate-integrity doc names §3 as the
   definition of an actionable finding.
-- **Historical JA reference (2026-09-26), not a consumer dependency:** `scripts/sol-review.sh` charters, the review-queue
-  prompt template, `AGENTS.md` § Development Loop, and `docs/agentic/GATE_INTEGRITY.md`.
 
 The entry projections are hand-written until policy generation exists. Reading this policy
 sets instruction behavior; it does not install hooks, reviewer pins or model enforcement.

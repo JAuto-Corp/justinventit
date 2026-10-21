@@ -7,7 +7,7 @@ description: "Generic execution-mode playbooks for e2e scenarios — suite (auto
 
 How to exercise one acceptance scenario. Pick per scenario: the automated **suite** is the default and the only mode that records gating evidence unattended — the others are for scrutiny, debugging, or no-UI flows and rely on `/verify:complete` to record their result.
 
-Every command below is abstract — use the project's configured runner (`CLAUDE.md` § Essential Commands), never a specific tool's API.
+Every command below is abstract — use the project's configured runner (`AGENTS.md` § Essential Commands), never a specific tool's API.
 
 ## suite — automated run (evidence path)
 

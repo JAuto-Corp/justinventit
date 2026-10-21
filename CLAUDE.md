@@ -12,7 +12,7 @@ template/                  Copier template (what gets scaffolded into projects)
   context/                 State file templates
   docs/                    Doc templates (PLAYBOOK, CURRENT_WORK, etc.)
   scripts/                 Utility script templates
-  CLAUDE.md.jinja          Main CLAUDE.md template
+  AGENTS.md.jinja          Canonical entry contract (CLAUDE.md.jinja imports it)
 
 docs/                      Framework documentation
 copier.yml                 Copier questionnaire + config
@@ -25,7 +25,7 @@ copier.yml                 Copier questionnaire + config
 ## Before Working
 
 1. Read `docs/ROADMAP.md` — find the next unchecked item in the current milestone
-2. Read `context/WORKING.md` — check the last observation block for session context
+2. Read `template/docs/SKILL_MODES.md` and `template/.agents/skills/ponytail/SKILL.md` — the ponytail mode policy
 3. Read `docs/DOGFOODING.md` — understand the bootstrap development workflow
 
 ## Development Protocol

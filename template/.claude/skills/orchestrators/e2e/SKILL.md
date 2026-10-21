@@ -11,7 +11,7 @@ Exercise the running system the way a user (or an upstream caller) would, and pr
 
 ## The configured runner (never hardcode a framework)
 
-Read the `testing` answer from `.copier-answers.yml` — it names the project's chosen E2E framework (or `none`). The concrete run command lives in `CLAUDE.md` § Essential Commands; always invoke e2e through that command and never assume a specific tool's API. If `testing: none`, there is no automated suite — verify scenarios manually and record completion with `[EVIDENCE_OVERRIDE:manual-testing]`.
+Read the `testing` answer from `.copier-answers.yml` — it names the project's chosen E2E framework (or `none`). The concrete run command lives in `AGENTS.md` § Essential Commands; always invoke e2e through that command and never assume a specific tool's API. If `testing: none`, there is no automated suite — verify scenarios manually and record completion with `[EVIDENCE_OVERRIDE:manual-testing]`.
 
 ---
 
@@ -41,7 +41,7 @@ Interactive, stateful session tools (browser drivers, live app sessions) run fro
 
 ## How e2e evidence feeds the gates
 
-`SCENARIOS.md` is the ATDD contract (`CLAUDE.md` § TDD Gate: no code without scenarios). Each scenario id must have a recorded **passing** run before `[PHASE_COMPLETE]`:
+`SCENARIOS.md` is the ATDD contract (`AGENTS.md` § Development Loop: no code without scenarios). Each scenario id must have a recorded **passing** run before `[PHASE_COMPLETE]`:
 
 | Gate | What it checks |
 |-|-|

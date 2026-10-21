@@ -34,9 +34,9 @@ Run the checklist for the artifact you touched before you commit. A system edit 
 
 - [ ] `paths` globs scope it to the intended file class only.
 
-## CLAUDE.md
+## AGENTS.md / CLAUDE.md
 
-- [ ] Under 200 lines.
-- [ ] Framework edits went into `CLAUDE.md.jinja` between the forge markers; project edits went outside them.
+- [ ] `AGENTS.md` under 200 lines; `CLAUDE.md` restates nothing from it.
+- [ ] `CLAUDE.md` project edits sit outside the forge markers.
 
 Then record the change in `context/WORKING.md` and commit.

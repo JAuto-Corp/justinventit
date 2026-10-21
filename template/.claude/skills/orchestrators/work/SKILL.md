@@ -23,7 +23,7 @@ Orchestrates the full lifecycle of an issue: START → (WORK) → PAUSE/HANDOFF 
 
 ## State Chain
 
-Read in this order every session (see `docs/ARCHITECTURE.md` § Layer 2):
+Read in this order every session:
 
 1. `docs/CURRENT_WORK.md` — active epic/sprint/phase pointer (+ SPEC path)
 2. `context/WORKING.md` — immediate next action (append-only observation blocks)
@@ -54,7 +54,7 @@ Classes and triggers are defined once in `AGENTS.md` § Scope classification (Qu
 
 ## ATDD Gate
 
-The cycle is **Plan → RED → GREEN → VALIDATE** (see `docs/ARCHITECTURE.md` § Layer 3).
+The cycle is **Plan → RED → GREEN → VALIDATE**.
 
 - **Entry** (`start`/`continue`, Standard+): `SCENARIOS.md` must exist before any code — distill it from `SPEC.md` if missing. The stop hook `checks/01-tdd-gate.sh` blocks session exit if Standard+ scope has no scenarios.
 - **Exit** (`done`/phase completion): before signaling `[PHASE_COMPLETE]`, every scenario must have a recorded RED-then-GREEN run and `PROGRESS.md` must be fully checked. Enforced by stop hooks `checks/03-scenario-evidence.sh` (passing run), `checks/04-tdd-cycle.sh` (RED before GREEN), `checks/05-progress-evidence.sh` (no unchecked items + commit evidence). Run `/verify:complete` as the exit gate.
