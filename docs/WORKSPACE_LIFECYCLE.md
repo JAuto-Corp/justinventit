@@ -84,7 +84,7 @@ Rules:
 
 | Class | Persistence | Writes from | Notes |
 |-|-|-|-|
-| production | permanent | deploy pipeline only | never a test/dev target |
+| production | permanent | deploy pipeline only | never a test target; reads are a normal dev capability, writes go through the deploy pipeline only |
 | shared persistent (staging-class) | permanent | fleet, gated | **never** the hub backend: a postgrest hub lives in its own project (`hub/README.md`), because staging-class databases get cloned, reset and truncated on the product's schedule and their service-role key reaches product data; intentional prod-clone semantics are a PROJECT property, stated in Layer B |
 | transient branch DB | epic/PR lifetime | its epic worktree + CI | provisioned/healed/rebased by integrator-owned tooling; identified by PR label, not local files |
 | local/embedded (sqlite hub, evidence ledger) | host lifetime | owning seat/tooling | runtime state category; never git-tracked |
